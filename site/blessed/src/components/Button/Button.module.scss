@@ -1,0 +1,51 @@
+@import '@/scss/variables.module.scss';
+
+.button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    height: 48px;
+    min-height: 48px;
+    min-width: 48px;
+    border: none;
+    outline: none;
+    appearance: none;
+    border-radius: 30px;
+    padding: 12px 24px;
+    color: #000000;
+    cursor: pointer;
+    transition: background-color .2s;
+
+    &__label {
+        display: block;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        color: #000000;
+        font-size: 18px;
+        font-weight: 500;
+    }
+
+    &__fill {
+        width: 100%;
+    }
+
+    &:disabled {
+        cursor: default;
+        opacity: .5;
+    }
+
+    &__icon {
+        min-width: 24px;
+        min-height: 24px;
+        filter: brightness(0) saturate(100%) invert(0%) sepia(100%) saturate(7497%) hue-rotate(310deg) brightness(82%) contrast(103%);
+    }
+}
+
+
+.active {
+    img {
+        filter: brightness(0) saturate(100%) invert(100%) sepia(22%) saturate(6672%) hue-rotate(306deg) brightness(106%) contrast(105%) !important;
+    }
+}

@@ -1,0 +1,3189 @@
+{
+	"info": {
+		"_postman_id": "",
+		"name": "BlessedApi",
+		"description": "Все запросы могут быть выполнены только с использованием header'a `X-Telegram-Init-Data`, в котором должна храниться строка с `InitData` в чистом виде.  \nКаждый запрос с неверным `InitData` может вернуть 400 с пояснением ошибки.  \nКаждый запрос, требующий авторизации может вернуть 401 без пояснения.  \nКаждый запрос может вернуть 500, о каждом случае просьба сообщать `JohnTheAPI`",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "33310425",
+		"_collection_link": "https://blessed-team.postman.co/workspace/Blessed-team-Workspace~46c1fa3a-5f0e-4420-833f-66ffd7bdcaa8/collection/24350344-e20cc85d-de38-4bd3-90bb-7b64a4c17b32?action=share&source=collection_link&creator=33310425"
+	},
+	"item": [
+		{
+			"name": "USERS",
+			"item": [
+				{
+					"name": "AUTH",
+					"item": [
+						{
+							"name": "/users/auth/signup",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"Nickname\" : \"CoolUser\",\n    \"AvatarId\" : 43\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/users/auth/signup?referral=354345644",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"users",
+										"auth",
+										"signup"
+									],
+									"query": [
+										{
+											"key": "referral",
+											"value": "354345644"
+										}
+									]
+								},
+								"description": "## Добавление пользователя в базу данных\n\n##### signUpInput (body)\n\n`Nickname string` - обязательное поле (3-32 символа)  \n`AvatarID int` - обязательное поле (значение 1-100)\n\n---\n\n##### Опциональные параметры:\n\n`referral` - ID пригласившего пользователя\n\n---\n\nВозможные ответы:\n\n- 200\n    \n- 400 + пояснение\n    \n- 409 + пояснение (пользователь с таким id либо ником уже есть в бд)"
+							},
+							"response": []
+						},
+						{
+							"name": "/users/auth",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/users/auth",
+									"protocol": "https",
+									"host": [
+										"bitrave",
+										"co"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"users",
+										"auth"
+									]
+								},
+								"description": "Проверка прав пользователя\n---\nПредполагается, что этот запрос будет отправлен первым при запуске `WebApp`\n\n---\n\nВозможные ответы:\n- 200 - пользователь есть в базе данных, доступ есть\n- 401 - пользователя нет в бд, необходим redirect на регистрацию"
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "EXCHANGE",
+					"item": [
+						{
+							"name": "/users/exchange",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"AmountBcoins\" : 2000\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/users/exchange",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"users",
+										"exchange"
+									]
+								},
+								"description": "Обмен Бкойнов на рупии\n---\n\n##### ExchangeBalance\n`ID int64`\\\n`UserID int64` - id пользователя\\\n`AmountRupee float64` - количество бонусных рупий\\\n`CurrentTurnover float64` - текущий оборот бонусных рупий\\\n`RequiredTurnover float64` - необходимый оборот для вывода рупий на основной баланс\n\n\n---\n\nВозможные ответы:\n- 200 \n- 400 + пояснение \n- 402 - у пользователя не хватает бкойнов"
+							},
+							"response": []
+						},
+						{
+							"name": "/users/exchange",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/users/exchange",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"users",
+										"exchange"
+									]
+								},
+								"description": "Получение бонусного баланса пользователя\n---\n\n`AmountBcoins` - количество бкойнов к обмену\n\n---\n\nВозможные ответы:\n- 200 \n- 404 - пользователь не имеет бонусный баланс"
+							},
+							"response": [
+								{
+									"name": "/users/exchange",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "X-Telegram-Init-Data",
+												"value": "{{init_data}}",
+												"type": "text"
+											}
+										],
+										"url": {
+											"raw": "https://bitrave.co:8443/api/users/exchange",
+											"protocol": "https",
+											"host": [
+												"65",
+												"21",
+												"240",
+												"202"
+											],
+											"port": "8443",
+											"path": [
+												"api",
+												"users",
+												"exchange"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Credentials",
+											"value": "true"
+										},
+										{
+											"key": "Access-Control-Allow-Headers",
+											"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+										},
+										{
+											"key": "Access-Control-Allow-Methods",
+											"value": "GET, POST, PUT, DELETE, OPTIONS"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json; charset=utf-8"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 15 Sep 2024 15:23:47 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "89"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"ID\": 1,\n    \"UserID\": 545454545,\n    \"AmountRupee\": 200,\n    \"CurrentTurnover\": 0,\n    \"RequiredTurnover\": 1000\n}"
+								}
+							]
+						}
+					],
+					"description": "Модель создана для реализации пятикратного вейджера на вывод средств, полученных без траты реальных денег. Если пользователь имеет бонусный баланс, первыми средства на ставку списываются с него, а после, если таковых не хватило, используется основной баланс пользователя. При выигрыше, оба баланса обновляются пропорционально затраченной с каждого баланса валюты. Когда пользователь достигает необходимый оборот, средства с бонусного баланса переводятся на основной, тем самым открывая пользователю возможность вывода выигранных средств. Если после объявления результата ставки, оплаченной бонусной валютой, счет бонусной валюты равен нулю, бонусный баланс полностью удаляется. Оборот, выполненный с бонусного баланса не учитывается в выполнении задачи `trave pass`'а, ровно как и оборот реальных денег пользователя не учитывается при обновлении необходимого бонусного оборота. Все средства, полученные с выигрыша подарочной ставки (из колеса фортуны или пропуска) добавляются на бонусный счет пользователя с увеличением необходимого оборота для их вывода."
+				},
+				{
+					"name": "/users",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Telegram-Init-Data",
+								"value": "{{init_data}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://bitrave.co:8443/api/users",
+							"protocol": "https",
+							"host": [
+								"65",
+								"21",
+								"240",
+								"202"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"users"
+							]
+						},
+						"description": "Получение данных пользователя\n---\nid пользователя получается из  `Telegram Init Data`\n\n---\n\nВозможные ответы:\n- 200\n- 404\n\n"
+					},
+					"response": [
+						{
+							"name": "/users",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/users",
+									"protocol": "https",
+									"host": [
+										"91",
+										"149",
+										"255",
+										"191"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"users"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 14 Aug 2024 20:50:37 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "160"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"ID\": 354345644,\n    \"Nickname\": \"pipikaks\",\n    \"AvatarID\": 1,\n    \"BalanceBi\": 0,\n    \"BalanceRupee\": 0,\n    \"TurnoverRupee\": 0,\n    \"DailyClicks\": 0,\n    \"TravePassLevelID\": 1,\n    \"LastClicksReset\": \"2024-08-28T03:29:56.143761+03:00\",\n    \"CreatedAt\": \"2024-08-28T03:29:50.625519+03:00\",\n    \"ReferredBy\": 7519160253,\n    \"ReferralIDs\": null\n}"
+						}
+					]
+				},
+				{
+					"name": "/users/deposits",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Telegram-Init-Data",
+								"value": "{{init_data}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://bitrave.co:8443/api/users/deposits",
+							"protocol": "https",
+							"host": [
+								"65",
+								"21",
+								"240",
+								"202"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"users",
+								"deposits"
+							]
+						},
+						"description": "Получение депозитов пользователя\n---\nid пользователя получается из `telegram init data`.\n\n---\n\nВозможные ответы:\n- 200\n- 404"
+					},
+					"response": [
+						{
+							"name": "/users/deposits",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/users/deposits",
+									"protocol": "https",
+									"host": [
+										"91",
+										"149",
+										"255",
+										"191"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"users",
+										"deposits"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 14 Aug 2024 18:50:15 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "176"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"Id\": 1,\n        \"UserId\": 545454545,\n        \"AmountRupee\": 666,\n        \"CreatedAt\": \"2024-08-14T18:48:26.51502Z\"\n    },\n    {\n        \"Id\": 2,\n        \"UserId\": 545454545,\n        \"AmountRupee\": 666,\n        \"CreatedAt\": \"2024-08-14T18:50:12.871913Z\"\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "/users/referrals",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Telegram-Init-Data",
+								"value": "{{init_data}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://bitrave.co:8443/api/users/referrals",
+							"protocol": "https",
+							"host": [
+								"65",
+								"21",
+								"240",
+								"202"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"users",
+								"referrals"
+							]
+						},
+						"description": "## Рефераллы пользователя (омега версия)\n\n---\n\nВозможные ответы:\n\n- 200 - лист рефераллов\n    \n- 500 - что-то пошло не так"
+					},
+					"response": [
+						{
+							"name": "/users/referrals",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/users/referrals",
+									"protocol": "https",
+									"host": [
+										"91",
+										"149",
+										"255",
+										"191"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"users",
+										"referrals"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Fri, 30 Aug 2024 13:51:04 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "728"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"ID\": 1,\n        \"ReferrerID\": 545454545,\n        \"ReferredID\": 1,\n        \"ReferredNickname\": \"JohnTheAPI_referal1\",\n        \"ReferredFirstDepositID\": 1,\n        \"ReferredFirstDeposit\": {\n            \"ID\": 1,\n            \"UserID\": 1,\n            \"AmountRupee\": 100,\n            \"BonusExpiresIn\": \"0001-01-01T02:30:17+02:30\",\n            \"CreatedAt\": \"2024-08-30T16:50:39.1869+03:00\"\n        },\n        \"EarnedAmount\": 20\n    },\n    {\n        \"ID\": 2,\n        \"ReferrerID\": 545454545,\n        \"ReferredID\": 2,\n        \"ReferredNickname\": \"JohnTheAPI_referal2\",\n        \"ReferredFirstDepositID\": 2,\n        \"ReferredFirstDeposit\": {\n            \"ID\": 2,\n            \"UserID\": 2,\n            \"AmountRupee\": 100,\n            \"BonusExpiresIn\": \"0001-01-01T02:30:17+02:30\",\n            \"CreatedAt\": \"2024-08-30T16:50:39.189924+03:00\"\n        },\n        \"EarnedAmount\": 20\n    },\n    {\n        \"ID\": 3,\n        \"ReferrerID\": 545454545,\n        \"ReferredID\": 3,\n        \"ReferredNickname\": \"JohnTheAPI_referal3\",\n        \"ReferredFirstDepositID\": null,\n        \"ReferredFirstDeposit\": null,\n        \"EarnedAmount\": 0\n    }\n]"
+						}
+					]
+				}
+			],
+			"description": "## Пользователь\n\n`ID int` - id пользователя из telegram\\\n`Nickname string` - выбранный ник пользователя\\\n`AvatarID int` - id выбранного пользователем аватара(пока не реализовано)\\\n`BalanceBi float64` - баланс пользователя в бикойнах\\\n`BalanceRupee float64` - баланс пользователя в рупиях\\\n`TurnoverRupee float64` - оборот пользователя в рупиях\\\n`DailyClicks` - количество кликов за день\\\n`TravePassLevelID int64` - id текущего уровня пропуска\\\n`LastClicksReset time.Time` - время последнего обнуления кликов\\\n`CreatedAt time.Time` - время создания пользователя"
+		},
+		{
+			"name": "TRAVE PASS",
+			"item": [
+				{
+					"name": "/travepass",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Telegram-Init-Data",
+								"value": "{{init_data}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://bitrave.co:8443/api/travepass",
+							"protocol": "https",
+							"host": [
+								"65",
+								"21",
+								"240",
+								"202"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"travepass"
+							]
+						},
+						"description": "Получение всех уровней пропуска\n---\n\nВозможные ответы:\n- 200 + уровни пропуска\n- 404 + сообщение"
+					},
+					"response": [
+						{
+							"name": "/travepass",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/travepass",
+									"protocol": "https",
+									"host": [
+										"91",
+										"149",
+										"255",
+										"191"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"travepass"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 07 Sep 2024 13:44:44 GMT"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"ID\": 0,\n        \"Requirements\": [],\n        \"Benefits\": []\n    },\n    {\n        \"ID\": 1,\n        \"Requirements\": [\n            {\n                \"ID\": 1,\n                \"TravePassLevelID\": 1,\n                \"RequirementID\": 1,\n                \"Requirement\": {\n                    \"ID\": 1,\n                    \"PolymorphicRequirementID\": 1,\n                    \"PolymorphicRequirementType\": \"requirement_binary_option\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 1,\n                        \"MinBetRupee\": 168,\n                        \"BetsAmount\": 5,\n                        \"WinsAmount\": 0,\n                        \"TotalWinningsRupee\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 1,\n                \"TravePassLevelID\": 1,\n                \"BenefitID\": 1,\n                \"Benefit\": {\n                    \"ID\": 1,\n                    \"PolymorphicBenefitID\": 1,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 1,\n                        \"BCoinsAmount\": 2000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 2,\n        \"Requirements\": [\n            {\n                \"ID\": 2,\n                \"TravePassLevelID\": 2,\n                \"RequirementID\": 2,\n                \"Requirement\": {\n                    \"ID\": 2,\n                    \"PolymorphicRequirementID\": 1,\n                    \"PolymorphicRequirementType\": \"requirement_replenishment\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 1,\n                        \"AmountRupee\": 880\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 2,\n                \"TravePassLevelID\": 2,\n                \"BenefitID\": 2,\n                \"Benefit\": {\n                    \"ID\": 2,\n                    \"PolymorphicBenefitID\": 1,\n                    \"PolymorphicBenefitType\": \"benefit_fortune_wheel\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 1,\n                        \"FreeSpinsAmount\": 1\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 3,\n        \"Requirements\": [\n            {\n                \"ID\": 3,\n                \"TravePassLevelID\": 3,\n                \"RequirementID\": 3,\n                \"Requirement\": {\n                    \"ID\": 3,\n                    \"PolymorphicRequirementID\": 1,\n                    \"PolymorphicRequirementType\": \"requirement_turnover\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 1,\n                        \"AmountRupee\": 1760,\n                        \"TimeDuration\": 86400\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 3,\n                \"TravePassLevelID\": 3,\n                \"BenefitID\": 3,\n                \"Benefit\": {\n                    \"ID\": 3,\n                    \"PolymorphicBenefitID\": 1,\n                    \"PolymorphicBenefitType\": \"benefit_clicker\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 1,\n                        \"TimeDuration\": 86400,\n                        \"BonusMultiplier\": 2,\n                        \"Reset\": false\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 4,\n        \"Requirements\": [\n            {\n                \"ID\": 4,\n                \"TravePassLevelID\": 4,\n                \"RequirementID\": 4,\n                \"Requirement\": {\n                    \"ID\": 4,\n                    \"PolymorphicRequirementID\": 1,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 1,\n                        \"ClicksAmount\": 10000,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": false\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 4,\n                \"TravePassLevelID\": 4,\n                \"BenefitID\": 4,\n                \"Benefit\": {\n                    \"ID\": 4,\n                    \"PolymorphicBenefitID\": 2,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 2,\n                        \"BCoinsAmount\": 2500,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 5,\n        \"Requirements\": [\n            {\n                \"ID\": 5,\n                \"TravePassLevelID\": 5,\n                \"RequirementID\": 5,\n                \"Requirement\": {\n                    \"ID\": 5,\n                    \"PolymorphicRequirementID\": 1,\n                    \"PolymorphicRequirementType\": \"requirement_mini_game\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 1,\n                        \"GameID\": 1,\n                        \"MinBetRupee\": 236,\n                        \"BetsAmount\": 5,\n                        \"WinsAmount\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 5,\n                \"TravePassLevelID\": 5,\n                \"BenefitID\": 5,\n                \"Benefit\": {\n                    \"ID\": 5,\n                    \"PolymorphicBenefitID\": 1,\n                    \"PolymorphicBenefitType\": \"benefit_mini_game\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 1,\n                        \"GameID\": 2,\n                        \"FreeBetsAmount\": 5,\n                        \"FreeDepositRupee\": 168\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 6,\n        \"Requirements\": [\n            {\n                \"ID\": 6,\n                \"TravePassLevelID\": 6,\n                \"RequirementID\": 6,\n                \"Requirement\": {\n                    \"ID\": 6,\n                    \"PolymorphicRequirementID\": 2,\n                    \"PolymorphicRequirementType\": \"requirement_replenishment\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 2,\n                        \"AmountRupee\": 1760\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 6,\n                \"TravePassLevelID\": 6,\n                \"BenefitID\": 6,\n                \"Benefit\": {\n                    \"ID\": 6,\n                    \"PolymorphicBenefitID\": 2,\n                    \"PolymorphicBenefitType\": \"benefit_clicker\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 2,\n                        \"TimeDuration\": 0,\n                        \"BonusMultiplier\": 0,\n                        \"Reset\": true\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 7,\n        \"Requirements\": [\n            {\n                \"ID\": 7,\n                \"TravePassLevelID\": 7,\n                \"RequirementID\": 7,\n                \"Requirement\": {\n                    \"ID\": 7,\n                    \"PolymorphicRequirementID\": 2,\n                    \"PolymorphicRequirementType\": \"requirement_binary_option\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 2,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 0,\n                        \"WinsAmount\": 5,\n                        \"TotalWinningsRupee\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 7,\n                \"TravePassLevelID\": 7,\n                \"BenefitID\": 7,\n                \"Benefit\": {\n                    \"ID\": 7,\n                    \"PolymorphicBenefitID\": 3,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 3,\n                        \"BCoinsAmount\": 5000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 8,\n        \"Requirements\": [\n            {\n                \"ID\": 8,\n                \"TravePassLevelID\": 8,\n                \"RequirementID\": 8,\n                \"Requirement\": {\n                    \"ID\": 8,\n                    \"PolymorphicRequirementID\": 2,\n                    \"PolymorphicRequirementType\": \"requirement_turnover\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 2,\n                        \"AmountRupee\": 6300,\n                        \"TimeDuration\": 172800\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 8,\n                \"TravePassLevelID\": 8,\n                \"BenefitID\": 8,\n                \"Benefit\": {\n                    \"ID\": 8,\n                    \"PolymorphicBenefitID\": 1,\n                    \"PolymorphicBenefitType\": \"benefit_replenishment\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 1,\n                        \"BonusMultiplier\": 0.2,\n                        \"TimeDuration\": 86400\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 9,\n        \"Requirements\": [\n            {\n                \"ID\": 9,\n                \"TravePassLevelID\": 9,\n                \"RequirementID\": 9,\n                \"Requirement\": {\n                    \"ID\": 9,\n                    \"PolymorphicRequirementID\": 2,\n                    \"PolymorphicRequirementType\": \"requirement_mini_game\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 2,\n                        \"GameID\": 0,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 15,\n                        \"WinsAmount\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 9,\n                \"TravePassLevelID\": 9,\n                \"BenefitID\": 9,\n                \"Benefit\": {\n                    \"ID\": 9,\n                    \"PolymorphicBenefitID\": 2,\n                    \"PolymorphicBenefitType\": \"benefit_fortune_wheel\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 2,\n                        \"FreeSpinsAmount\": 3\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 10,\n        \"Requirements\": [\n            {\n                \"ID\": 10,\n                \"TravePassLevelID\": 10,\n                \"RequirementID\": 10,\n                \"Requirement\": {\n                    \"ID\": 10,\n                    \"PolymorphicRequirementID\": 2,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 2,\n                        \"ClicksAmount\": 10000,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": false\n                    }\n                }\n            },\n            {\n                \"ID\": 11,\n                \"TravePassLevelID\": 10,\n                \"RequirementID\": 11,\n                \"Requirement\": {\n                    \"ID\": 11,\n                    \"PolymorphicRequirementID\": 1,\n                    \"PolymorphicRequirementType\": \"requirement_exchange\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 1,\n                        \"BCoinsAmount\": 1000\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 10,\n                \"TravePassLevelID\": 10,\n                \"BenefitID\": 10,\n                \"Benefit\": {\n                    \"ID\": 10,\n                    \"PolymorphicBenefitID\": 2,\n                    \"PolymorphicBenefitType\": \"benefit_mini_game\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 2,\n                        \"GameID\": 1,\n                        \"FreeBetsAmount\": 1,\n                        \"FreeDepositRupee\": 744\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 11,\n        \"Requirements\": [\n            {\n                \"ID\": 12,\n                \"TravePassLevelID\": 11,\n                \"RequirementID\": 12,\n                \"Requirement\": {\n                    \"ID\": 12,\n                    \"PolymorphicRequirementID\": 3,\n                    \"PolymorphicRequirementType\": \"requirement_binary_option\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 3,\n                        \"MinBetRupee\": 2540,\n                        \"BetsAmount\": 10,\n                        \"WinsAmount\": 0,\n                        \"TotalWinningsRupee\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 11,\n                \"TravePassLevelID\": 11,\n                \"BenefitID\": 11,\n                \"Benefit\": {\n                    \"ID\": 11,\n                    \"PolymorphicBenefitID\": 4,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 4,\n                        \"BCoinsAmount\": 3000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 12,\n        \"Requirements\": [\n            {\n                \"ID\": 13,\n                \"TravePassLevelID\": 12,\n                \"RequirementID\": 13,\n                \"Requirement\": {\n                    \"ID\": 13,\n                    \"PolymorphicRequirementID\": 3,\n                    \"PolymorphicRequirementType\": \"requirement_replenishment\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 3,\n                        \"AmountRupee\": 4200\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 12,\n                \"TravePassLevelID\": 12,\n                \"BenefitID\": 12,\n                \"Benefit\": {\n                    \"ID\": 12,\n                    \"PolymorphicBenefitID\": 2,\n                    \"PolymorphicBenefitType\": \"benefit_replenishment\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 2,\n                        \"BonusMultiplier\": 0.1,\n                        \"TimeDuration\": 86400\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 13,\n        \"Requirements\": [\n            {\n                \"ID\": 14,\n                \"TravePassLevelID\": 13,\n                \"RequirementID\": 14,\n                \"Requirement\": {\n                    \"ID\": 14,\n                    \"PolymorphicRequirementID\": 3,\n                    \"PolymorphicRequirementType\": \"requirement_turnover\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 3,\n                        \"AmountRupee\": 16800,\n                        \"TimeDuration\": 86400\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 13,\n                \"TravePassLevelID\": 13,\n                \"BenefitID\": 13,\n                \"Benefit\": {\n                    \"ID\": 13,\n                    \"PolymorphicBenefitID\": 3,\n                    \"PolymorphicBenefitType\": \"benefit_clicker\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 3,\n                        \"TimeDuration\": 86400,\n                        \"BonusMultiplier\": 2,\n                        \"Reset\": false\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 14,\n        \"Requirements\": [\n            {\n                \"ID\": 15,\n                \"TravePassLevelID\": 14,\n                \"RequirementID\": 15,\n                \"Requirement\": {\n                    \"ID\": 15,\n                    \"PolymorphicRequirementID\": 3,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 3,\n                        \"ClicksAmount\": 10000,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": false\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 14,\n                \"TravePassLevelID\": 14,\n                \"BenefitID\": 14,\n                \"Benefit\": {\n                    \"ID\": 14,\n                    \"PolymorphicBenefitID\": 5,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 5,\n                        \"BCoinsAmount\": 0,\n                        \"RupeeAmount\": 880\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 15,\n        \"Requirements\": [\n            {\n                \"ID\": 16,\n                \"TravePassLevelID\": 15,\n                \"RequirementID\": 16,\n                \"Requirement\": {\n                    \"ID\": 16,\n                    \"PolymorphicRequirementID\": 3,\n                    \"PolymorphicRequirementType\": \"requirement_mini_game\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 3,\n                        \"GameID\": 1,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 5,\n                        \"WinsAmount\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 15,\n                \"TravePassLevelID\": 15,\n                \"BenefitID\": 15,\n                \"Benefit\": {\n                    \"ID\": 15,\n                    \"PolymorphicBenefitID\": 4,\n                    \"PolymorphicBenefitType\": \"benefit_clicker\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 4,\n                        \"TimeDuration\": 0,\n                        \"BonusMultiplier\": 0,\n                        \"Reset\": true\n                    }\n                }\n            },\n            {\n                \"ID\": 16,\n                \"TravePassLevelID\": 15,\n                \"BenefitID\": 16,\n                \"Benefit\": {\n                    \"ID\": 16,\n                    \"PolymorphicBenefitID\": 6,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 6,\n                        \"BCoinsAmount\": 3000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 16,\n        \"Requirements\": [\n            {\n                \"ID\": 17,\n                \"TravePassLevelID\": 16,\n                \"RequirementID\": 17,\n                \"Requirement\": {\n                    \"ID\": 17,\n                    \"PolymorphicRequirementID\": 4,\n                    \"PolymorphicRequirementType\": \"requirement_binary_option\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 4,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 0,\n                        \"WinsAmount\": 3,\n                        \"TotalWinningsRupee\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 17,\n                \"TravePassLevelID\": 16,\n                \"BenefitID\": 17,\n                \"Benefit\": {\n                    \"ID\": 17,\n                    \"PolymorphicBenefitID\": 7,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 7,\n                        \"BCoinsAmount\": 4000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 17,\n        \"Requirements\": [\n            {\n                \"ID\": 18,\n                \"TravePassLevelID\": 17,\n                \"RequirementID\": 18,\n                \"Requirement\": {\n                    \"ID\": 18,\n                    \"PolymorphicRequirementID\": 4,\n                    \"PolymorphicRequirementType\": \"requirement_replenishment\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 4,\n                        \"AmountRupee\": 4200\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 18,\n                \"TravePassLevelID\": 17,\n                \"BenefitID\": 18,\n                \"Benefit\": {\n                    \"ID\": 18,\n                    \"PolymorphicBenefitID\": 1,\n                    \"PolymorphicBenefitType\": \"benefit_binary_option\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 1,\n                        \"FreeBetsAmount\": 1,\n                        \"FreeBetDepositRupee\": 880\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 18,\n        \"Requirements\": [\n            {\n                \"ID\": 19,\n                \"TravePassLevelID\": 18,\n                \"RequirementID\": 19,\n                \"Requirement\": {\n                    \"ID\": 19,\n                    \"PolymorphicRequirementID\": 4,\n                    \"PolymorphicRequirementType\": \"requirement_turnover\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 4,\n                        \"AmountRupee\": 25200,\n                        \"TimeDuration\": 172800\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 19,\n                \"TravePassLevelID\": 18,\n                \"BenefitID\": 19,\n                \"Benefit\": {\n                    \"ID\": 19,\n                    \"PolymorphicBenefitID\": 3,\n                    \"PolymorphicBenefitType\": \"benefit_fortune_wheel\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 3,\n                        \"FreeSpinsAmount\": 5\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 19,\n        \"Requirements\": [\n            {\n                \"ID\": 20,\n                \"TravePassLevelID\": 19,\n                \"RequirementID\": 20,\n                \"Requirement\": {\n                    \"ID\": 20,\n                    \"PolymorphicRequirementID\": 4,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 4,\n                        \"ClicksAmount\": 10000,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": false\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 20,\n                \"TravePassLevelID\": 19,\n                \"BenefitID\": 20,\n                \"Benefit\": {\n                    \"ID\": 20,\n                    \"PolymorphicBenefitID\": 8,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 8,\n                        \"BCoinsAmount\": 0,\n                        \"RupeeAmount\": 1320\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 20,\n        \"Requirements\": [\n            {\n                \"ID\": 21,\n                \"TravePassLevelID\": 20,\n                \"RequirementID\": 21,\n                \"Requirement\": {\n                    \"ID\": 21,\n                    \"PolymorphicRequirementID\": 4,\n                    \"PolymorphicRequirementType\": \"requirement_mini_game\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 4,\n                        \"GameID\": 0,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 20,\n                        \"WinsAmount\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 21,\n                \"TravePassLevelID\": 20,\n                \"BenefitID\": 21,\n                \"Benefit\": {\n                    \"ID\": 21,\n                    \"PolymorphicBenefitID\": 9,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 9,\n                        \"BCoinsAmount\": 10000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            },\n            {\n                \"ID\": 22,\n                \"TravePassLevelID\": 20,\n                \"BenefitID\": 22,\n                \"Benefit\": {\n                    \"ID\": 22,\n                    \"PolymorphicBenefitID\": 5,\n                    \"PolymorphicBenefitType\": \"benefit_clicker\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 5,\n                        \"TimeDuration\": 259200,\n                        \"BonusMultiplier\": 2,\n                        \"Reset\": false\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 21,\n        \"Requirements\": [\n            {\n                \"ID\": 22,\n                \"TravePassLevelID\": 21,\n                \"RequirementID\": 22,\n                \"Requirement\": {\n                    \"ID\": 22,\n                    \"PolymorphicRequirementID\": 5,\n                    \"PolymorphicRequirementType\": \"requirement_binary_option\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 5,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 0,\n                        \"WinsAmount\": 0,\n                        \"TotalWinningsRupee\": 1320\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 23,\n                \"TravePassLevelID\": 21,\n                \"BenefitID\": 23,\n                \"Benefit\": {\n                    \"ID\": 23,\n                    \"PolymorphicBenefitID\": 10,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 10,\n                        \"BCoinsAmount\": 0,\n                        \"RupeeAmount\": 1320\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 22,\n        \"Requirements\": [\n            {\n                \"ID\": 23,\n                \"TravePassLevelID\": 22,\n                \"RequirementID\": 23,\n                \"Requirement\": {\n                    \"ID\": 23,\n                    \"PolymorphicRequirementID\": 5,\n                    \"PolymorphicRequirementType\": \"requirement_mini_game\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 5,\n                        \"GameID\": 3,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 3,\n                        \"WinsAmount\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 24,\n                \"TravePassLevelID\": 22,\n                \"BenefitID\": 24,\n                \"Benefit\": {\n                    \"ID\": 24,\n                    \"PolymorphicBenefitID\": 4,\n                    \"PolymorphicBenefitType\": \"benefit_fortune_wheel\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 4,\n                        \"FreeSpinsAmount\": 3\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 23,\n        \"Requirements\": [\n            {\n                \"ID\": 24,\n                \"TravePassLevelID\": 23,\n                \"RequirementID\": 24,\n                \"Requirement\": {\n                    \"ID\": 24,\n                    \"PolymorphicRequirementID\": 5,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 5,\n                        \"ClicksAmount\": 0,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": true\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 25,\n                \"TravePassLevelID\": 23,\n                \"BenefitID\": 25,\n                \"Benefit\": {\n                    \"ID\": 25,\n                    \"PolymorphicBenefitID\": 11,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 11,\n                        \"BCoinsAmount\": 30000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 24,\n        \"Requirements\": [\n            {\n                \"ID\": 25,\n                \"TravePassLevelID\": 24,\n                \"RequirementID\": 25,\n                \"Requirement\": {\n                    \"ID\": 25,\n                    \"PolymorphicRequirementID\": 6,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 6,\n                        \"ClicksAmount\": 20000,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": false\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 26,\n                \"TravePassLevelID\": 24,\n                \"BenefitID\": 26,\n                \"Benefit\": {\n                    \"ID\": 26,\n                    \"PolymorphicBenefitID\": 12,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 12,\n                        \"BCoinsAmount\": 0,\n                        \"RupeeAmount\": 1760\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 25,\n        \"Requirements\": [\n            {\n                \"ID\": 26,\n                \"TravePassLevelID\": 25,\n                \"RequirementID\": 26,\n                \"Requirement\": {\n                    \"ID\": 26,\n                    \"PolymorphicRequirementID\": 6,\n                    \"PolymorphicRequirementType\": \"requirement_mini_game\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 6,\n                        \"GameID\": 1,\n                        \"MinBetRupee\": 440,\n                        \"BetsAmount\": 5,\n                        \"WinsAmount\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 27,\n                \"TravePassLevelID\": 25,\n                \"BenefitID\": 27,\n                \"Benefit\": {\n                    \"ID\": 27,\n                    \"PolymorphicBenefitID\": 3,\n                    \"PolymorphicBenefitType\": \"benefit_mini_game\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 3,\n                        \"GameID\": 2,\n                        \"FreeBetsAmount\": 7,\n                        \"FreeDepositRupee\": 152\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 26,\n        \"Requirements\": [\n            {\n                \"ID\": 27,\n                \"TravePassLevelID\": 26,\n                \"RequirementID\": 27,\n                \"Requirement\": {\n                    \"ID\": 27,\n                    \"PolymorphicRequirementID\": 5,\n                    \"PolymorphicRequirementType\": \"requirement_replenishment\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 5,\n                        \"AmountRupee\": 3420\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 28,\n                \"TravePassLevelID\": 26,\n                \"BenefitID\": 28,\n                \"Benefit\": {\n                    \"ID\": 28,\n                    \"PolymorphicBenefitID\": 6,\n                    \"PolymorphicBenefitType\": \"benefit_clicker\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 6,\n                        \"TimeDuration\": 0,\n                        \"BonusMultiplier\": 0,\n                        \"Reset\": true\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 27,\n        \"Requirements\": [\n            {\n                \"ID\": 28,\n                \"TravePassLevelID\": 27,\n                \"RequirementID\": 28,\n                \"Requirement\": {\n                    \"ID\": 28,\n                    \"PolymorphicRequirementID\": 6,\n                    \"PolymorphicRequirementType\": \"requirement_binary_option\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 6,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 0,\n                        \"WinsAmount\": 10,\n                        \"TotalWinningsRupee\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 29,\n                \"TravePassLevelID\": 27,\n                \"BenefitID\": 29,\n                \"Benefit\": {\n                    \"ID\": 29,\n                    \"PolymorphicBenefitID\": 13,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 13,\n                        \"BCoinsAmount\": 12000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 28,\n        \"Requirements\": [\n            {\n                \"ID\": 29,\n                \"TravePassLevelID\": 28,\n                \"RequirementID\": 29,\n                \"Requirement\": {\n                    \"ID\": 29,\n                    \"PolymorphicRequirementID\": 5,\n                    \"PolymorphicRequirementType\": \"requirement_turnover\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 5,\n                        \"AmountRupee\": 12600,\n                        \"TimeDuration\": 259200\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 30,\n                \"TravePassLevelID\": 28,\n                \"BenefitID\": 30,\n                \"Benefit\": {\n                    \"ID\": 30,\n                    \"PolymorphicBenefitID\": 3,\n                    \"PolymorphicBenefitType\": \"benefit_replenishment\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 3,\n                        \"BonusMultiplier\": 0.25,\n                        \"TimeDuration\": 86400\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 29,\n        \"Requirements\": [\n            {\n                \"ID\": 30,\n                \"TravePassLevelID\": 29,\n                \"RequirementID\": 30,\n                \"Requirement\": {\n                    \"ID\": 30,\n                    \"PolymorphicRequirementID\": 7,\n                    \"PolymorphicRequirementType\": \"requirement_mini_game\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 7,\n                        \"GameID\": 0,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 30,\n                        \"WinsAmount\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 31,\n                \"TravePassLevelID\": 29,\n                \"BenefitID\": 31,\n                \"Benefit\": {\n                    \"ID\": 31,\n                    \"PolymorphicBenefitID\": 5,\n                    \"PolymorphicBenefitType\": \"benefit_fortune_wheel\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 5,\n                        \"FreeSpinsAmount\": 5\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 30,\n        \"Requirements\": [\n            {\n                \"ID\": 31,\n                \"TravePassLevelID\": 30,\n                \"RequirementID\": 31,\n                \"Requirement\": {\n                    \"ID\": 31,\n                    \"PolymorphicRequirementID\": 7,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 7,\n                        \"ClicksAmount\": 0,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": true\n                    }\n                }\n            },\n            {\n                \"ID\": 32,\n                \"TravePassLevelID\": 30,\n                \"RequirementID\": 32,\n                \"Requirement\": {\n                    \"ID\": 32,\n                    \"PolymorphicRequirementID\": 2,\n                    \"PolymorphicRequirementType\": \"requirement_exchange\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 2,\n                        \"BCoinsAmount\": 1000\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 32,\n                \"TravePassLevelID\": 30,\n                \"BenefitID\": 32,\n                \"Benefit\": {\n                    \"ID\": 32,\n                    \"PolymorphicBenefitID\": 4,\n                    \"PolymorphicBenefitType\": \"benefit_mini_game\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 4,\n                        \"GameID\": 2,\n                        \"FreeBetsAmount\": 1,\n                        \"FreeDepositRupee\": 1016\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 31,\n        \"Requirements\": [\n            {\n                \"ID\": 33,\n                \"TravePassLevelID\": 31,\n                \"RequirementID\": 33,\n                \"Requirement\": {\n                    \"ID\": 33,\n                    \"PolymorphicRequirementID\": 7,\n                    \"PolymorphicRequirementType\": \"requirement_binary_option\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 7,\n                        \"MinBetRupee\": 8400,\n                        \"BetsAmount\": 25,\n                        \"WinsAmount\": 0,\n                        \"TotalWinningsRupee\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 33,\n                \"TravePassLevelID\": 31,\n                \"BenefitID\": 33,\n                \"Benefit\": {\n                    \"ID\": 33,\n                    \"PolymorphicBenefitID\": 14,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 14,\n                        \"BCoinsAmount\": 15000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 32,\n        \"Requirements\": [\n            {\n                \"ID\": 34,\n                \"TravePassLevelID\": 32,\n                \"RequirementID\": 34,\n                \"Requirement\": {\n                    \"ID\": 34,\n                    \"PolymorphicRequirementID\": 6,\n                    \"PolymorphicRequirementType\": \"requirement_replenishment\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 6,\n                        \"AmountRupee\": 12600\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 34,\n                \"TravePassLevelID\": 32,\n                \"BenefitID\": 34,\n                \"Benefit\": {\n                    \"ID\": 34,\n                    \"PolymorphicBenefitID\": 4,\n                    \"PolymorphicBenefitType\": \"benefit_replenishment\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 4,\n                        \"BonusMultiplier\": 0.2,\n                        \"TimeDuration\": 86400\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 33,\n        \"Requirements\": [\n            {\n                \"ID\": 35,\n                \"TravePassLevelID\": 33,\n                \"RequirementID\": 35,\n                \"Requirement\": {\n                    \"ID\": 35,\n                    \"PolymorphicRequirementID\": 6,\n                    \"PolymorphicRequirementType\": \"requirement_turnover\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 6,\n                        \"AmountRupee\": 84000,\n                        \"TimeDuration\": 259200\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 35,\n                \"TravePassLevelID\": 33,\n                \"BenefitID\": 35,\n                \"Benefit\": {\n                    \"ID\": 35,\n                    \"PolymorphicBenefitID\": 7,\n                    \"PolymorphicBenefitType\": \"benefit_clicker\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 7,\n                        \"TimeDuration\": 432000,\n                        \"BonusMultiplier\": 2,\n                        \"Reset\": false\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 34,\n        \"Requirements\": [\n            {\n                \"ID\": 36,\n                \"TravePassLevelID\": 34,\n                \"RequirementID\": 36,\n                \"Requirement\": {\n                    \"ID\": 36,\n                    \"PolymorphicRequirementID\": 8,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 8,\n                        \"ClicksAmount\": 30000,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": false\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 36,\n                \"TravePassLevelID\": 34,\n                \"BenefitID\": 36,\n                \"Benefit\": {\n                    \"ID\": 36,\n                    \"PolymorphicBenefitID\": 15,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 15,\n                        \"BCoinsAmount\": 0,\n                        \"RupeeAmount\": 2540\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 35,\n        \"Requirements\": [\n            {\n                \"ID\": 37,\n                \"TravePassLevelID\": 35,\n                \"RequirementID\": 37,\n                \"Requirement\": {\n                    \"ID\": 37,\n                    \"PolymorphicRequirementID\": 8,\n                    \"PolymorphicRequirementType\": \"requirement_mini_game\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 8,\n                        \"GameID\": 1,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 10,\n                        \"WinsAmount\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 37,\n                \"TravePassLevelID\": 35,\n                \"BenefitID\": 37,\n                \"Benefit\": {\n                    \"ID\": 37,\n                    \"PolymorphicBenefitID\": 8,\n                    \"PolymorphicBenefitType\": \"benefit_clicker\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 8,\n                        \"TimeDuration\": 0,\n                        \"BonusMultiplier\": 0,\n                        \"Reset\": true\n                    }\n                }\n            },\n            {\n                \"ID\": 38,\n                \"TravePassLevelID\": 35,\n                \"BenefitID\": 38,\n                \"Benefit\": {\n                    \"ID\": 38,\n                    \"PolymorphicBenefitID\": 16,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 16,\n                        \"BCoinsAmount\": 7000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 36,\n        \"Requirements\": [\n            {\n                \"ID\": 38,\n                \"TravePassLevelID\": 36,\n                \"RequirementID\": 38,\n                \"Requirement\": {\n                    \"ID\": 38,\n                    \"PolymorphicRequirementID\": 8,\n                    \"PolymorphicRequirementType\": \"requirement_binary_option\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 8,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 0,\n                        \"WinsAmount\": 5,\n                        \"TotalWinningsRupee\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 39,\n                \"TravePassLevelID\": 36,\n                \"BenefitID\": 39,\n                \"Benefit\": {\n                    \"ID\": 39,\n                    \"PolymorphicBenefitID\": 17,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 17,\n                        \"BCoinsAmount\": 18000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 37,\n        \"Requirements\": [\n            {\n                \"ID\": 39,\n                \"TravePassLevelID\": 37,\n                \"RequirementID\": 39,\n                \"Requirement\": {\n                    \"ID\": 39,\n                    \"PolymorphicRequirementID\": 7,\n                    \"PolymorphicRequirementType\": \"requirement_replenishment\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 7,\n                        \"AmountRupee\": 8400\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 40,\n                \"TravePassLevelID\": 37,\n                \"BenefitID\": 40,\n                \"Benefit\": {\n                    \"ID\": 40,\n                    \"PolymorphicBenefitID\": 2,\n                    \"PolymorphicBenefitType\": \"benefit_binary_option\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 2,\n                        \"FreeBetsAmount\": 1,\n                        \"FreeBetDepositRupee\": 20\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 38,\n        \"Requirements\": [\n            {\n                \"ID\": 40,\n                \"TravePassLevelID\": 38,\n                \"RequirementID\": 40,\n                \"Requirement\": {\n                    \"ID\": 40,\n                    \"PolymorphicRequirementID\": 7,\n                    \"PolymorphicRequirementType\": \"requirement_turnover\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 7,\n                        \"AmountRupee\": 126000,\n                        \"TimeDuration\": 345600\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 41,\n                \"TravePassLevelID\": 38,\n                \"BenefitID\": 41,\n                \"Benefit\": {\n                    \"ID\": 41,\n                    \"PolymorphicBenefitID\": 6,\n                    \"PolymorphicBenefitType\": \"benefit_fortune_wheel\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 6,\n                        \"FreeSpinsAmount\": 7\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 39,\n        \"Requirements\": [\n            {\n                \"ID\": 41,\n                \"TravePassLevelID\": 39,\n                \"RequirementID\": 41,\n                \"Requirement\": {\n                    \"ID\": 41,\n                    \"PolymorphicRequirementID\": 9,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 9,\n                        \"ClicksAmount\": 30000,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": false\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 42,\n                \"TravePassLevelID\": 39,\n                \"BenefitID\": 42,\n                \"Benefit\": {\n                    \"ID\": 42,\n                    \"PolymorphicBenefitID\": 18,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 18,\n                        \"BCoinsAmount\": 0,\n                        \"RupeeAmount\": 2100\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 40,\n        \"Requirements\": [\n            {\n                \"ID\": 42,\n                \"TravePassLevelID\": 40,\n                \"RequirementID\": 42,\n                \"Requirement\": {\n                    \"ID\": 42,\n                    \"PolymorphicRequirementID\": 9,\n                    \"PolymorphicRequirementType\": \"requirement_mini_game\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 9,\n                        \"GameID\": 0,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 30,\n                        \"WinsAmount\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 43,\n                \"TravePassLevelID\": 40,\n                \"BenefitID\": 43,\n                \"Benefit\": {\n                    \"ID\": 43,\n                    \"PolymorphicBenefitID\": 19,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 19,\n                        \"BCoinsAmount\": 20000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 41,\n        \"Requirements\": [\n            {\n                \"ID\": 43,\n                \"TravePassLevelID\": 41,\n                \"RequirementID\": 43,\n                \"Requirement\": {\n                    \"ID\": 43,\n                    \"PolymorphicRequirementID\": 9,\n                    \"PolymorphicRequirementType\": \"requirement_binary_option\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 9,\n                        \"MinBetRupee\": 12600,\n                        \"BetsAmount\": 30,\n                        \"WinsAmount\": 0,\n                        \"TotalWinningsRupee\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 44,\n                \"TravePassLevelID\": 41,\n                \"BenefitID\": 44,\n                \"Benefit\": {\n                    \"ID\": 44,\n                    \"PolymorphicBenefitID\": 20,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 20,\n                        \"BCoinsAmount\": 25000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 42,\n        \"Requirements\": [\n            {\n                \"ID\": 44,\n                \"TravePassLevelID\": 42,\n                \"RequirementID\": 44,\n                \"Requirement\": {\n                    \"ID\": 44,\n                    \"PolymorphicRequirementID\": 8,\n                    \"PolymorphicRequirementType\": \"requirement_replenishment\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 8,\n                        \"AmountRupee\": 16800\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 45,\n                \"TravePassLevelID\": 42,\n                \"BenefitID\": 45,\n                \"Benefit\": {\n                    \"ID\": 45,\n                    \"PolymorphicBenefitID\": 5,\n                    \"PolymorphicBenefitType\": \"benefit_replenishment\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 5,\n                        \"BonusMultiplier\": 0.25,\n                        \"TimeDuration\": 86400\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 43,\n        \"Requirements\": [\n            {\n                \"ID\": 45,\n                \"TravePassLevelID\": 43,\n                \"RequirementID\": 45,\n                \"Requirement\": {\n                    \"ID\": 45,\n                    \"PolymorphicRequirementID\": 8,\n                    \"PolymorphicRequirementType\": \"requirement_turnover\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 8,\n                        \"AmountRupee\": 168000,\n                        \"TimeDuration\": 432000\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 46,\n                \"TravePassLevelID\": 43,\n                \"BenefitID\": 46,\n                \"Benefit\": {\n                    \"ID\": 46,\n                    \"PolymorphicBenefitID\": 9,\n                    \"PolymorphicBenefitType\": \"benefit_clicker\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 9,\n                        \"TimeDuration\": 604800,\n                        \"BonusMultiplier\": 2,\n                        \"Reset\": false\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 44,\n        \"Requirements\": [\n            {\n                \"ID\": 46,\n                \"TravePassLevelID\": 44,\n                \"RequirementID\": 46,\n                \"Requirement\": {\n                    \"ID\": 46,\n                    \"PolymorphicRequirementID\": 10,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 10,\n                        \"ClicksAmount\": 50000,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": false\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 47,\n                \"TravePassLevelID\": 44,\n                \"BenefitID\": 47,\n                \"Benefit\": {\n                    \"ID\": 47,\n                    \"PolymorphicBenefitID\": 21,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 21,\n                        \"BCoinsAmount\": 0,\n                        \"RupeeAmount\": 4200\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 45,\n        \"Requirements\": [\n            {\n                \"ID\": 47,\n                \"TravePassLevelID\": 45,\n                \"RequirementID\": 47,\n                \"Requirement\": {\n                    \"ID\": 47,\n                    \"PolymorphicRequirementID\": 10,\n                    \"PolymorphicRequirementType\": \"requirement_mini_game\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 10,\n                        \"GameID\": 1,\n                        \"MinBetRupee\": 880,\n                        \"BetsAmount\": 10,\n                        \"WinsAmount\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 48,\n                \"TravePassLevelID\": 45,\n                \"BenefitID\": 48,\n                \"Benefit\": {\n                    \"ID\": 48,\n                    \"PolymorphicBenefitID\": 5,\n                    \"PolymorphicBenefitType\": \"benefit_mini_game\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 5,\n                        \"GameID\": 2,\n                        \"FreeBetsAmount\": 10,\n                        \"FreeDepositRupee\": 236\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 46,\n        \"Requirements\": [\n            {\n                \"ID\": 48,\n                \"TravePassLevelID\": 46,\n                \"RequirementID\": 48,\n                \"Requirement\": {\n                    \"ID\": 48,\n                    \"PolymorphicRequirementID\": 9,\n                    \"PolymorphicRequirementType\": \"requirement_replenishment\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 9,\n                        \"AmountRupee\": 6740\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 49,\n                \"TravePassLevelID\": 46,\n                \"BenefitID\": 49,\n                \"Benefit\": {\n                    \"ID\": 49,\n                    \"PolymorphicBenefitID\": 10,\n                    \"PolymorphicBenefitType\": \"benefit_clicker\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 10,\n                        \"TimeDuration\": 0,\n                        \"BonusMultiplier\": 0,\n                        \"Reset\": true\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 47,\n        \"Requirements\": [\n            {\n                \"ID\": 49,\n                \"TravePassLevelID\": 47,\n                \"RequirementID\": 49,\n                \"Requirement\": {\n                    \"ID\": 49,\n                    \"PolymorphicRequirementID\": 10,\n                    \"PolymorphicRequirementType\": \"requirement_binary_option\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 10,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 0,\n                        \"WinsAmount\": 15,\n                        \"TotalWinningsRupee\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 50,\n                \"TravePassLevelID\": 47,\n                \"BenefitID\": 50,\n                \"Benefit\": {\n                    \"ID\": 50,\n                    \"PolymorphicBenefitID\": 22,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 22,\n                        \"BCoinsAmount\": 40000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 48,\n        \"Requirements\": [\n            {\n                \"ID\": 50,\n                \"TravePassLevelID\": 48,\n                \"RequirementID\": 50,\n                \"Requirement\": {\n                    \"ID\": 50,\n                    \"PolymorphicRequirementID\": 9,\n                    \"PolymorphicRequirementType\": \"requirement_turnover\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 9,\n                        \"AmountRupee\": 210000,\n                        \"TimeDuration\": 432000\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 51,\n                \"TravePassLevelID\": 48,\n                \"BenefitID\": 51,\n                \"Benefit\": {\n                    \"ID\": 51,\n                    \"PolymorphicBenefitID\": 6,\n                    \"PolymorphicBenefitType\": \"benefit_replenishment\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 6,\n                        \"BonusMultiplier\": 0.3,\n                        \"TimeDuration\": 86400\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 49,\n        \"Requirements\": [\n            {\n                \"ID\": 51,\n                \"TravePassLevelID\": 49,\n                \"RequirementID\": 51,\n                \"Requirement\": {\n                    \"ID\": 51,\n                    \"PolymorphicRequirementID\": 11,\n                    \"PolymorphicRequirementType\": \"requirement_mini_game\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 11,\n                        \"GameID\": 0,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 40,\n                        \"WinsAmount\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 52,\n                \"TravePassLevelID\": 49,\n                \"BenefitID\": 52,\n                \"Benefit\": {\n                    \"ID\": 52,\n                    \"PolymorphicBenefitID\": 7,\n                    \"PolymorphicBenefitType\": \"benefit_fortune_wheel\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 7,\n                        \"FreeSpinsAmount\": 10\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 50,\n        \"Requirements\": [\n            {\n                \"ID\": 52,\n                \"TravePassLevelID\": 50,\n                \"RequirementID\": 52,\n                \"Requirement\": {\n                    \"ID\": 52,\n                    \"PolymorphicRequirementID\": 11,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 11,\n                        \"ClicksAmount\": 0,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": true\n                    }\n                }\n            },\n            {\n                \"ID\": 53,\n                \"TravePassLevelID\": 50,\n                \"RequirementID\": 53,\n                \"Requirement\": {\n                    \"ID\": 53,\n                    \"PolymorphicRequirementID\": 3,\n                    \"PolymorphicRequirementType\": \"requirement_exchange\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 3,\n                        \"BCoinsAmount\": 10000\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 53,\n                \"TravePassLevelID\": 50,\n                \"BenefitID\": 53,\n                \"Benefit\": {\n                    \"ID\": 53,\n                    \"PolymorphicBenefitID\": 6,\n                    \"PolymorphicBenefitType\": \"benefit_mini_game\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 6,\n                        \"GameID\": 2,\n                        \"FreeBetsAmount\": 1,\n                        \"FreeDepositRupee\": 5080\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 51,\n        \"Requirements\": [\n            {\n                \"ID\": 54,\n                \"TravePassLevelID\": 51,\n                \"RequirementID\": 54,\n                \"Requirement\": {\n                    \"ID\": 54,\n                    \"PolymorphicRequirementID\": 11,\n                    \"PolymorphicRequirementType\": \"requirement_binary_option\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 11,\n                        \"MinBetRupee\": 168000,\n                        \"BetsAmount\": 40,\n                        \"WinsAmount\": 0,\n                        \"TotalWinningsRupee\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 54,\n                \"TravePassLevelID\": 51,\n                \"BenefitID\": 54,\n                \"Benefit\": {\n                    \"ID\": 54,\n                    \"PolymorphicBenefitID\": 23,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 23,\n                        \"BCoinsAmount\": 35000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 52,\n        \"Requirements\": [\n            {\n                \"ID\": 55,\n                \"TravePassLevelID\": 52,\n                \"RequirementID\": 55,\n                \"Requirement\": {\n                    \"ID\": 55,\n                    \"PolymorphicRequirementID\": 10,\n                    \"PolymorphicRequirementType\": \"requirement_replenishment\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 10,\n                        \"AmountRupee\": 25200\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 55,\n                \"TravePassLevelID\": 52,\n                \"BenefitID\": 55,\n                \"Benefit\": {\n                    \"ID\": 55,\n                    \"PolymorphicBenefitID\": 7,\n                    \"PolymorphicBenefitType\": \"benefit_replenishment\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 7,\n                        \"BonusMultiplier\": 0.35,\n                        \"TimeDuration\": 86400\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 53,\n        \"Requirements\": [\n            {\n                \"ID\": 56,\n                \"TravePassLevelID\": 53,\n                \"RequirementID\": 56,\n                \"Requirement\": {\n                    \"ID\": 56,\n                    \"PolymorphicRequirementID\": 10,\n                    \"PolymorphicRequirementType\": \"requirement_turnover\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 10,\n                        \"AmountRupee\": 252000,\n                        \"TimeDuration\": 518400\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 56,\n                \"TravePassLevelID\": 53,\n                \"BenefitID\": 56,\n                \"Benefit\": {\n                    \"ID\": 56,\n                    \"PolymorphicBenefitID\": 11,\n                    \"PolymorphicBenefitType\": \"benefit_clicker\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 11,\n                        \"TimeDuration\": 864000,\n                        \"BonusMultiplier\": 2,\n                        \"Reset\": false\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 54,\n        \"Requirements\": [\n            {\n                \"ID\": 57,\n                \"TravePassLevelID\": 54,\n                \"RequirementID\": 57,\n                \"Requirement\": {\n                    \"ID\": 57,\n                    \"PolymorphicRequirementID\": 12,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 12,\n                        \"ClicksAmount\": 0,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": true\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 57,\n                \"TravePassLevelID\": 54,\n                \"BenefitID\": 57,\n                \"Benefit\": {\n                    \"ID\": 57,\n                    \"PolymorphicBenefitID\": 24,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 24,\n                        \"BCoinsAmount\": 0,\n                        \"RupeeAmount\": 6300\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 55,\n        \"Requirements\": [\n            {\n                \"ID\": 58,\n                \"TravePassLevelID\": 55,\n                \"RequirementID\": 58,\n                \"Requirement\": {\n                    \"ID\": 58,\n                    \"PolymorphicRequirementID\": 12,\n                    \"PolymorphicRequirementType\": \"requirement_mini_game\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 12,\n                        \"GameID\": 1,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 15,\n                        \"WinsAmount\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 58,\n                \"TravePassLevelID\": 55,\n                \"BenefitID\": 58,\n                \"Benefit\": {\n                    \"ID\": 58,\n                    \"PolymorphicBenefitID\": 12,\n                    \"PolymorphicBenefitType\": \"benefit_clicker\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 12,\n                        \"TimeDuration\": 0,\n                        \"BonusMultiplier\": 0,\n                        \"Reset\": true\n                    }\n                }\n            },\n            {\n                \"ID\": 59,\n                \"TravePassLevelID\": 55,\n                \"BenefitID\": 59,\n                \"Benefit\": {\n                    \"ID\": 59,\n                    \"PolymorphicBenefitID\": 25,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 25,\n                        \"BCoinsAmount\": 90000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 56,\n        \"Requirements\": [\n            {\n                \"ID\": 59,\n                \"TravePassLevelID\": 56,\n                \"RequirementID\": 59,\n                \"Requirement\": {\n                    \"ID\": 59,\n                    \"PolymorphicRequirementID\": 12,\n                    \"PolymorphicRequirementType\": \"requirement_binary_option\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 12,\n                        \"MinBetRupee\": 0,\n                        \"BetsAmount\": 0,\n                        \"WinsAmount\": 10,\n                        \"TotalWinningsRupee\": 0\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 60,\n                \"TravePassLevelID\": 56,\n                \"BenefitID\": 60,\n                \"Benefit\": {\n                    \"ID\": 60,\n                    \"PolymorphicBenefitID\": 26,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 26,\n                        \"BCoinsAmount\": 50000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 57,\n        \"Requirements\": [\n            {\n                \"ID\": 60,\n                \"TravePassLevelID\": 57,\n                \"RequirementID\": 60,\n                \"Requirement\": {\n                    \"ID\": 60,\n                    \"PolymorphicRequirementID\": 11,\n                    \"PolymorphicRequirementType\": \"requirement_replenishment\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 11,\n                        \"AmountRupee\": 84000\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 61,\n                \"TravePassLevelID\": 57,\n                \"BenefitID\": 61,\n                \"Benefit\": {\n                    \"ID\": 61,\n                    \"PolymorphicBenefitID\": 1,\n                    \"PolymorphicBenefitType\": \"benefit_item\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 1,\n                        \"ItemName\": \"iPhone 16 pro 256gb\"\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 58,\n        \"Requirements\": [\n            {\n                \"ID\": 61,\n                \"TravePassLevelID\": 58,\n                \"RequirementID\": 61,\n                \"Requirement\": {\n                    \"ID\": 61,\n                    \"PolymorphicRequirementID\": 11,\n                    \"PolymorphicRequirementType\": \"requirement_turnover\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 11,\n                        \"AmountRupee\": 336000,\n                        \"TimeDuration\": 86400\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 62,\n                \"TravePassLevelID\": 58,\n                \"BenefitID\": 62,\n                \"Benefit\": {\n                    \"ID\": 62,\n                    \"PolymorphicBenefitID\": 8,\n                    \"PolymorphicBenefitType\": \"benefit_fortune_wheel\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 8,\n                        \"FreeSpinsAmount\": 15\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 59,\n        \"Requirements\": [\n            {\n                \"ID\": 62,\n                \"TravePassLevelID\": 59,\n                \"RequirementID\": 62,\n                \"Requirement\": {\n                    \"ID\": 62,\n                    \"PolymorphicRequirementID\": 13,\n                    \"PolymorphicRequirementType\": \"requirement_clicker\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 13,\n                        \"ClicksAmount\": 0,\n                        \"TimeDuration\": 0,\n                        \"HitLimit\": true\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 63,\n                \"TravePassLevelID\": 59,\n                \"BenefitID\": 63,\n                \"Benefit\": {\n                    \"ID\": 63,\n                    \"PolymorphicBenefitID\": 2,\n                    \"PolymorphicBenefitType\": \"benefit_item\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 2,\n                        \"ItemName\": \"iPhone 16 pro max 512gb\"\n                    }\n                }\n            }\n        ]\n    },\n    {\n        \"ID\": 60,\n        \"Requirements\": [\n            {\n                \"ID\": 63,\n                \"TravePassLevelID\": 60,\n                \"RequirementID\": 63,\n                \"Requirement\": {\n                    \"ID\": 63,\n                    \"PolymorphicRequirementID\": 12,\n                    \"PolymorphicRequirementType\": \"requirement_turnover\",\n                    \"PolymorphicRequirement\": {\n                        \"ID\": 12,\n                        \"AmountRupee\": 8400000,\n                        \"TimeDuration\": 172800\n                    }\n                }\n            }\n        ],\n        \"Benefits\": [\n            {\n                \"ID\": 64,\n                \"TravePassLevelID\": 60,\n                \"BenefitID\": 64,\n                \"Benefit\": {\n                    \"ID\": 64,\n                    \"PolymorphicBenefitID\": 3,\n                    \"PolymorphicBenefitType\": \"benefit_item\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 3,\n                        \"ItemName\": \"30000$ Car\"\n                    }\n                }\n            },\n            {\n                \"ID\": 65,\n                \"TravePassLevelID\": 60,\n                \"BenefitID\": 65,\n                \"Benefit\": {\n                    \"ID\": 65,\n                    \"PolymorphicBenefitID\": 27,\n                    \"PolymorphicBenefitType\": \"benefit_credit\",\n                    \"PolymorphicBenefit\": {\n                        \"ID\": 27,\n                        \"BCoinsAmount\": 1000000,\n                        \"RupeeAmount\": 0\n                    }\n                }\n            }\n        ]\n    }\n]"
+						}
+					]
+				},
+				{
+					"name": "/travepass/requirements",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Telegram-Init-Data",
+								"value": "{{init_data}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://bitrave.co:8443/api/travepass/requirements",
+							"protocol": "https",
+							"host": [
+								"65",
+								"21",
+								"240",
+								"202"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"travepass",
+								"requirements"
+							]
+						},
+						"description": "Требования !следующего! уровня пропуска\n---\nВозвращается модель `TravePassLevelRequirement`, содержащая модель `Requirement`, содержащую полиморфную модель задания. Модели описаны в начале папки.\n\n---\n\nВозможные ответы:\n- 200\n- 404 - вероятно, ошибка миграции"
+					},
+					"response": [
+						{
+							"name": "/travepass/requirements",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/travepass/requirements",
+									"protocol": "https",
+									"host": [
+										"91",
+										"149",
+										"255",
+										"191"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"travepass",
+										"requirements"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 07 Sep 2024 13:46:08 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "263"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"ID\": 1,\n        \"TravePassLevelID\": 1,\n        \"RequirementID\": 1,\n        \"Requirement\": {\n            \"ID\": 1,\n            \"PolymorphicRequirementID\": 1,\n            \"PolymorphicRequirementType\": \"requirement_binary_option\",\n            \"PolymorphicRequirement\": {\n                \"ID\": 1,\n                \"MinBetRupee\": 168,\n                \"BetsAmount\": 5,\n                \"WinsAmount\": 0,\n                \"TotalWinningsRupee\": 0\n            }\n        }\n    }\n]"
+						}
+					]
+				}
+			],
+			"description": "## Trave pass\n\nОпределенное количество уровней пропуска изначально храниться в базе данных.  \nTrave pass с нулевым id - базовый, назначается пользователю при регистрации, остальные уровни разблокируются при достижении указанных в них требований.  \nУровни пропуска расположены в базе данных по порядку разблокировки, т.е. id нулевого уровня - 0, шестидесятого - 60.\n\n---\n\n##### TravePassLevel - уровень пропуска\n\n`ID int64`  \n`Benefits []TravePassLevelBenefit` - массив с наградами за получение уровня  \n`Requirements []TravePassLevelRequirement` - массив с задачами для достижения уровня\n\n---\n\n##### TravePassLevelBenefit - награда за уровень пропуска\n\n`ID int64`  \n`TravePassLevelID int64` - id уровня, к которому бонус относится  \n`BenefitID int64` - id модели бонуса\\\\\n\n---\n\n##### TravePassLevelRequirement - задание для получения уровня\n\n`ID int64`  \n`TravePassLevelID int64` - id уровня пропуска  \n`RequirementID int64` - id модели задния\n\n---\n\n##### Benefit - задание\n\n`ID int64`  \n`PolymorphicBenefitID int64` - id полиморфной модели награды  \n`PolymorphicBenefitType string` - тип полиморфной модели награды  \n`PolymorphicBenefit` - сама полиморфная модель награды (изначально не определенного типа)\n\n---\n\n##### Requirement - требование\n\n`ID int64`  \n`PolymorphicRequirementID int64` - id полиморфной модели требования  \n`PolymorphicRequirementType string` - тип полиморфной модели требования  \n`PolymorphicRequirement` - сама полиморфная модель требования (изначально не определенного типа)\n\n---\n\n#### Типы наград за уровень\n\n---\n\n##### BenefitBinaryOption - награда в бинарном опцоне\n\nполиморфный тип - `benefit_binary_option`  \n`ID int64`  \n`FreeBetsAmount int` - количество подарочных ставок  \n`FreeBetDepositRupee float64` - депозит каждой подарочной ставки\n\n---\n\n##### BenefitClicker - награда в кликере\n\nполиморфный тип - `benefit_clicker`  \n`ID int64`  \n`TimeDuration int64` - время действия бонуса в секундах  \n`BonusMultiplier float64` - во сколько раз больше приносит один клик  \n`Reset bool` - обнуление дневного лимита кликов  \nКак правило, если `Reset = true`, остальные поля нулевые или наоборот\n\n---\n\n##### BenefitCredit - награда начисления на баланс\n\nполиморфный тип - `benefit_credit`  \n`ID int64`  \n`BCoinsAmount int` - количество начисляемых бкойнов на баланс  \n`RupeeAmount float64` - количество начисляемых рупий на баланс  \nКак правило, ненулевое значение только одно - либо рупии, либо бкойны\n\n---\n\n##### BenefitMiniGame - награда на бонусы в мини-играх (альфа версия)\n\n`NvutiGameID = 1`  \n`DiceGameID = 2`  \n`RouletteGameID = 3`\n\nполиморфный тип - `benefit_mini_game`  \n`ID int64`  \n`GameID int64` - id игры, на которую действует бонус  \n`FreeBetsAmount int` - количество бесплатных ставок  \n`FreeDepositRupee float64` - депозит на каждую бесплатную ставку\n\n---\n\n##### BenefitItem - награда в виде вещи (айфон, машина)\n\nполиморфный тип - `benefit_item`  \n`ID int64`  \n`ItemName string` - наименование вещи\n\n---\n\n##### BenefitReplenishment - награда на пополнение баланса\n\nполиморфный тип - `benefit_replenishment`  \n`ID int64`  \n`PercentageBonus float64` - бонус к пополнению в процентах  \n`TimeDuration int64` - время действия бонуса к пополнению в секундах\n\n---\n\n#### Типы задач для открытия уровня\n\n---\n\n##### RequirementMiniGame - задание в мини играх\n\n`NvutiGameID = 1`  \n`DiceGameID = 2`  \n`RouletteGameID = 3`\n\nполиморфный тип - `requirement_mini_game`  \n`ID int64`  \n`GameID int64` - id игры в которой необходимо выполнить задание, если 0, задание выполняется в любых играх  \n`MinBetRupee float64` - минимальная ставка  \n`BetsAmount int` - необходимое количество ставок  \n`WinsAmount int` - необходимое количество побед  \nЕсли значение поля равно нулю - поле не имеет значения\n\n---\n\n##### RequirementClicker - задание на кликер\n\nполиморфный тип - `requirement_clicker`  \n`ID int64`  \n`ClicksAmount int` - необходимое количество кликов  \n`TimeDuration int64` - время, за которое необходимо сделать клики в секундах  \n`HitLimit bool` - если true, необходимо достичь лимита кликов за день  \nЕсли `HitLimit` true, остальные значения нулевые\n\n---\n\n##### RequirementExchange - задание на обмен валюты\n\nполиморфный тип - `requirement_exchange`  \n`ID int64`  \n`BCoinsAmount int` - количество бкойнов, которые необходимо обменять на рупии\n\n---\n\n##### RequirementReplenishment - задание на пополнение баланса\n\nполиморфный тип - `requirement_replenishment`  \n`ID int64`  \n`AmountRupee float64` - необходимая сумма пополнения\n\n---\n\n##### RequirementTurnover - задание на пополнение баланса\n\nполиморфный тип - `requirement_turnover`  \n`ID int64`  \n`AmountRupee float64` - сумма необходимого оборота  \n`TimeDuration int64` - время, за которое необходимо набрать оборот в секундах\n\n---\n\n##### RequirementBinaryOption - задание на бинарный опцион\n\nполиморфный тип - `requirement_binary_option`  \n`ID int64`  \n`MinBetRupee float64` - минимальная необходимая ставка  \n`BetsAmount int` - необходимое количество ставок  \n`WinsAmount int` - необходимое количество побед  \n`TotalWinningsRupee float64` - необходимая общая сумма выигрыша  \nЕсли значение поля равно нулю - поле не имеет значения"
+		},
+		{
+			"name": "REQUIREMENTS",
+			"item": [
+				{
+					"name": "/requirements/progress",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Telegram-Init-Data",
+								"value": "{{init_data}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://bitrave.co:8443/api/requirements/progress",
+							"protocol": "https",
+							"host": [
+								"65",
+								"21",
+								"240",
+								"202"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"requirements",
+								"progress"
+							]
+						},
+						"description": "## Получение прогресса заданий на повышение уровня пропуска для пользователя\n\nВозвращаемая модель описана ниже\n\n---\n\nВозможные ответы:\n\n- 200\n    \n- 404 - последний уровень, либо ошибка миграции\n    \n\n---\n\n##### RequirementProgress - прогресс задания на повышение уровня пропуска\n\n`ID int64`  \\\n`UserID int64` - id пользователя  \\\n`RequirementID int64` - id оригинального задания \\\n`Requirement Requirement` - само оригинальное задание\\\n`PolymorphicRequirementProgressID int64` - id полиморфной модели прогресса по заданию  \\\n`PolymorphicRequirementProgressType string` - тип полиморфной модели прогресса по заданию  \\\n`PolymorphicRequirementProgress` - сам полиморфный прогресс по заданию\n\n---\n\n##### Типы прогрессов (схожи с заданиями)\n\n---\n\n##### RequirementProgressClicker - прогресс задания на кликер\n\nполиморфный тип - `requirement_progress_clicker`  \\\n`ID int64`  \\\n`CurrentClicks int` - текущее количество кликов  \\\n`StartedAt time.Time` - время старта выполнения задания\n\n---\n\n##### RequirementProgressExchange - прогресс задания на кликер\n\nполиморфный тип - `requirement_progress_exchange`  \\\n`ID int64`  \\\n`CurrentBCoinsExchanged int` - текущая сумма обмена в Бкойнах\n\n---\n\n##### RequirementProgressMiniGame - прогресс задания на мини игры\n\nполиморфный тип - `requirement_progress_mini_game`  \\\n`ID int64`  \\\n`CurrentBets int` - текущее количество ставок  \\\n`CurrentWins int` - текущее количество побед  \\\n`CurrentTurnoverRupee float64` - текущий оборот в рупиях\n\n---\n\n##### RequirementProgressReplenishment - прогресс задания пополнение баланса\n\nполиморфный тип - `requirement_progress_replenishment`  \\\n`ID int64`  \\\n`CurrentReplenishmentRupee float64` - текущая сумма пополнения баланса\n\n---\n\n##### RequirementProgressTurnover - прогресс задания на оборот\n\nполиморфный тип - `requirement_progress_turnover`  \\\n`ID int64`  \\\n`CurrentRupeeTurnover float64` - текущий оборот в рупиях  \\\n`StartedAt time.Time` - время начала выполнения задания\n\n---\n\n##### RequirementProgressBinaryOption - прогресс задания на бинарный опцион\n\nполиморфный тип - `requirement_progress_binary_option`  \\\n`ID int64`  \\\n`BetsAmount int` - текущее количество ставок  \\\n`WinsAmount int` - текущее количество побед  \\\n`TotalWinningsRupee float64` - общая сумма выигрыша в рупиях"
+					},
+					"response": [
+						{
+							"name": "/requirements/progress",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "query_id=TgData",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/requirements/progress",
+									"protocol": "https",
+									"host": [
+										"91",
+										"149",
+										"255",
+										"191"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"requirements",
+										"progress"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 07 Sep 2024 13:46:17 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "467"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"ID\": 1,\n        \"UserID\": 545454545,\n        \"RequirementID\": 1,\n        \"Requirement\": {\n            \"ID\": 1,\n            \"PolymorphicRequirementID\": 1,\n            \"PolymorphicRequirementType\": \"requirement_binary_option\",\n            \"PolymorphicRequirement\": {\n                \"ID\": 1,\n                \"MinBetRupee\": 168,\n                \"BetsAmount\": 5,\n                \"WinsAmount\": 0,\n                \"TotalWinningsRupee\": 0\n            }\n        },\n        \"PolymorphicRequirementProgressID\": 1,\n        \"PolymorphicRequirementProgressType\": \"requirement_progress_binary_option\",\n        \"PolymorphicRequirementProgress\": {\n            \"ID\": 1,\n            \"BetsAmount\": 0,\n            \"WinsAmount\": 0,\n            \"TotalWinningsRupee\": 0\n        }\n    }\n]"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "BENEFITS",
+			"item": [
+				{
+					"name": "/benefits/progress",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Telegram-Init-Data",
+								"value": "{{init_data}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://bitrave.co:8443/api/benefits/progress",
+							"protocol": "https",
+							"host": [
+								"65",
+								"21",
+								"240",
+								"202"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"benefits",
+								"progress"
+							]
+						},
+						"description": "Получение прогресса пользователя по получению наград\n---\n\nВозвращается массив моделей BenefitProgress (схожа с RequirementProgress)\n\n---\n\nВозможные ответы:\n- 200\n- 404\n\n##### BenefitProgress\n\n`ID int64`\\\n`UserID int64` - id пользователя \\\n`BenefitID int64` - id самой награды \\\n`Benefit Benefit` - сама награда, описана в начале папки \\\n`PolymorphicBenefitProgressID int64` - id полиморфной модели прогресса получения награды \\\n`PolymorphicBenefitProgressType string` - тип полиморфной модели прогресса получения награды\\\n`PolymorphicBenefitProgress` - сама полиморфная модель прогресса получения награды\n\n---\n\n##### BenefitProgressBinaryOption\n\nполиморфный тип - `benefit_binary_option_progress`\\\n`ID int64`\\\n`FreeBetsAmount int` - количество бесплатных ставок\\\n`FreeBetDepositRupee float64` - подарочный депозит на каждую из подарочных ставок\n\n---\n\n##### BenefitProgressClicker\n\nполиморфный тип - `benefit_clicker_progress`\\\n`ID int64`\\\n`ValidUntil time.Time` - дата окончания действия множителя\\\n`BonusMultiplier float64` - множитель Бкойнов за клик\n\n---\n\n##### BenefitProgressFortuneWheel\n\nполиморфный тип - `benefit_fortune_wheel_progress`\\\n`ID int64`\\\n`FreeSpinsAmount int` - количество бесплатных вращений\n\n---\n\n##### BenefitProgressMiniGame\n\nполиморфный тип - `benefit_mini_game_progress`\\\n`ID int64`\\\n`GameID int64` - id игры, к которой применяется бонус\\\n`FreeBetsAmount int` - количество бесплатных ставок\\\n`FreeDepositRupee float64` - депозит на каждую ставку\n\n---\n\n##### BenefitProgressReplenishment\n\nполиморфный тип - `benefit_replenishment_progress`\\\n`ID int64`\\\n`ValidUntil time.Time` - дата истечения срока действия множителя к пополнению\\\n`BonusMultiplier float64` - множитель к пополнению баланса\n\n"
+					},
+					"response": [
+						{
+							"name": "/benefits/progress",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "query_id=TgData",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/benefits/progress",
+									"protocol": "https",
+									"host": [
+										"91",
+										"149",
+										"255",
+										"191"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"benefits",
+										"progress"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 07 Sep 2024 14:23:20 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "755"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"ID\": 1,\n        \"UserID\": 545454545,\n        \"BenefitID\": 2,\n        \"Benefit\": {\n            \"ID\": 2,\n            \"PolymorphicBenefitID\": 1,\n            \"PolymorphicBenefitType\": \"benefit_fortune_wheel\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 1,\n                \"FreeSpinsAmount\": 1\n            }\n        },\n        \"PolymorphicBenefitProgressID\": 1,\n        \"PolymorphicBenefitProgressType\": \"benefit_fortune_wheel_progress\",\n        \"PolymorphicBenefitProgress\": {\n            \"ID\": 1,\n            \"FreeSpinsAmount\": 1\n        }\n    },\n    {\n        \"ID\": 2,\n        \"UserID\": 545454545,\n        \"BenefitID\": 3,\n        \"Benefit\": {\n            \"ID\": 3,\n            \"PolymorphicBenefitID\": 1,\n            \"PolymorphicBenefitType\": \"benefit_clicker\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 1,\n                \"TimeDuration\": 86400,\n                \"BonusMultiplier\": 2,\n                \"Reset\": false\n            }\n        },\n        \"PolymorphicBenefitProgressID\": 1,\n        \"PolymorphicBenefitProgressType\": \"benefit_clicker_progress\",\n        \"PolymorphicBenefitProgress\": {\n            \"ID\": 1,\n            \"ValidUntil\": \"2024-09-08T17:22:46.46201+03:00\",\n            \"BonusMultiplier\": 2\n        }\n    }\n]"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "CLICKER",
+			"item": [
+				{
+					"name": "/clicker",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Telegram-Init-Data",
+								"value": "{{init_data}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://bitrave.co:8443/api/clicker",
+							"protocol": "https",
+							"host": [
+								"65",
+								"21",
+								"240",
+								"202"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"clicker"
+							]
+						},
+						"description": "Получение текущей цены одного клика (сколько пользователь получает бкойнов за клик)\n---\n---\nВозможные ответы:\n- 200"
+					},
+					"response": [
+						{
+							"name": "/clicker",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/clicker",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"clicker"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 15 Sep 2024 15:17:54 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "39"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"BiPerClick\": 1000,\n    \"BonusMultiplier\": 2\n}"
+						}
+					]
+				},
+				{
+					"name": "/clicker",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Telegram-Init-Data",
+								"value": "{{init_data}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ClicksCount\" : 1000,\n    \"BiPerClick\" : 100\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://bitrave.co:8443/api/clicker",
+							"protocol": "https",
+							"host": [
+								"65",
+								"21",
+								"240",
+								"202"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"clicker"
+							]
+						},
+						"description": "Сохранение кликов пользователя\n---\n\nЕсли `BiPerClick`, отправленный пользователем совпадает с рассчитанным, ответ 200 без body.\\\nЕсли ответ имеет код 200 и содержит body с `BiPerClick`, значения отправленные клиентом отличаются от рассчитанных, пользователю начисляется рассчитанное на сервере значения вне зависимости от отправленного с клиента. \n\n---\n\n##### clicksInput (body)\n`ClicksCount int` - обязательное поле, количество сделанных кликов (0-1000)\\\n`BiPerClick float64` - отображаемая для пользователя цена одного клика\n\n---\n\nВозможные ответы:\n- 200 \n- 400 + пояснение\n- 417 - пользователь достиг лимита кликов"
+					},
+					"response": [
+						{
+							"name": "/clicker",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"ClicksCount\" : 1000,\n    \"BiPerClick\" : 100\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/clicker",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"clicker"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Sun, 15 Sep 2024 15:17:24 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "39"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"BiPerClick\": 1000,\n    \"BonusMultiplier\": 2\n}"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "GAMES",
+			"item": [
+				{
+					"name": "BINARY OPTIONS",
+					"item": [
+						{
+							"name": "/games/binary/place",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"Amount\" : 1,\r\n\t\"Duration\" : 10,\r\n    \"Direction\": \"up\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/binary/place",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"binary",
+										"place"
+									]
+								},
+								"description": "## Ставка на бинарные опционы\n\n\"Amount\" : `float` // сумма  \n\"Duration\" : `int` // время ставки (10 - 600) в секундах  \n\"Direction\": \"`up`\" // up/down\n\n---\n\nВозможные ответы:\n\n- 200 - ставка зарегестрирована\n    \n- 400 - неправильные тело запроса\n    \n- 402 - недостаточно денег на балансе\n    \n- 500 - что-то пошло не так"
+							},
+							"response": [
+								{
+									"name": "/games/binary/place",
+									"originalRequest": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "X-Telegram-Init-Data",
+												"value": "{{init_data}}",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"Amount\" : 400,\r\n\t\"Duration\" : 20,\r\n    \"Direction\": \"up\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://bitrave.co:8443/api/games/binary/place",
+											"protocol": "https",
+											"host": [
+												"91",
+												"149",
+												"255",
+												"191"
+											],
+											"port": "8443",
+											"path": [
+												"api",
+												"games",
+												"binary",
+												"place"
+											]
+										}
+									},
+									"_postman_previewlanguage": null,
+									"header": null,
+									"cookie": [],
+									"body": "{\r\n    \"ID\": 4,\r\n    \"UserID\": 354345644,\r\n    \"Amount\": 400,\r\n    \"Direction\": \"up\",\r\n    \"OpenedAt\": \"2024-08-26T02:12:44.904403123+03:00\",\r\n    \"ExpiresAt\": \"2024-08-26T02:13:04.904403123+03:00\",\r\n    \"OpenPrice\": 64656.21,\r\n    \"ClosePrice\": 0,\r\n    \"Outcome\": \"\",\r\n    \"Payout\": 0,\r\n    \"CreatedAt\": \"2024-08-26T02:12:44.905058807+03:00\",\r\n    \"UpdatedAt\": \"2024-08-26T02:12:44.905058807+03:00\"\r\n}"
+								}
+							]
+						},
+						{
+							"name": "/games/binary/outcome",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/binary/outcome",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"binary",
+										"outcome"
+									]
+								},
+								"description": "## Исход ставки на бинарных опционах\n\n---\n\nВозможные ответы:\n\n- 200 - ставка(и) найдена\n    \n- 500 - что-то не так\n    \n\nВозвращает  \nJson список последних 10 ставок  \nБаланс пользователя"
+							},
+							"response": [
+								{
+									"name": "/games/binary/outcome",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "X-Telegram-Init-Data",
+												"value": "{{init_data}}",
+												"type": "text"
+											}
+										],
+										"url": {
+											"raw": "https://bitrave.co:8443/api/games/binary/outcome",
+											"protocol": "https",
+											"host": [
+												"91",
+												"149",
+												"255",
+												"191"
+											],
+											"port": "8443",
+											"path": [
+												"api",
+												"games",
+												"binary",
+												"outcome"
+											]
+										}
+									},
+									"_postman_previewlanguage": null,
+									"header": null,
+									"cookie": [],
+									"body": "{\r\n    \"latestBets\": [\r\n        {\r\n            \"amount\": 400,\r\n            \"betID\": 4,\r\n            \"closePrice\": 64671.23,\r\n            \"direction\": \"up\",\r\n            \"expiresAt\": \"2024-08-26T02:13:04.904403+03:00\",\r\n            \"openPrice\": 64656.21,\r\n            \"openedAt\": \"2024-08-26T02:12:44.904403+03:00\",\r\n            \"outcome\": \"win\",\r\n            \"payout\": 720\r\n        },\r\n        {\r\n            \"amount\": 400,\r\n            \"betID\": 3,\r\n            \"closePrice\": 64407.03,\r\n            \"direction\": \"up\",\r\n            \"expiresAt\": \"2024-08-26T00:19:09.294198+03:00\",\r\n            \"openPrice\": 64411,\r\n            \"openedAt\": \"2024-08-26T00:18:49.294198+03:00\",\r\n            \"outcome\": \"loss\",\r\n            \"payout\": 0\r\n        },\r\n        {\r\n            \"amount\": 400,\r\n            \"betID\": 2,\r\n            \"closePrice\": 64245.99,\r\n            \"direction\": \"up\",\r\n            \"expiresAt\": \"2024-08-25T23:50:32.788422+03:00\",\r\n            \"openPrice\": 64240.95,\r\n            \"openedAt\": \"2024-08-25T23:50:12.788422+03:00\",\r\n            \"outcome\": \"win\",\r\n            \"payout\": 720\r\n        },\r\n        {\r\n            \"amount\": 400,\r\n            \"betID\": 1,\r\n            \"closePrice\": 64169,\r\n            \"direction\": \"up\",\r\n            \"expiresAt\": \"2024-08-25T23:19:33.738889+03:00\",\r\n            \"openPrice\": 64169,\r\n            \"openedAt\": \"2024-08-25T23:19:13.738889+03:00\",\r\n            \"outcome\": \"loss\",\r\n            \"payout\": 0\r\n        }\r\n    ],\r\n    \"userBalance\": 840\r\n}"
+								}
+							]
+						},
+						{
+							"name": "/games/binary/benefits",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/binary/benefits",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"binary",
+										"benefits"
+									]
+								},
+								"description": "Получение текущих бонусов пользователя на бинарный опцион\n---\nВозвращается массив моделей `BenefitBinaryOptionProgress`, описанной в запросе `benefits/progress`\n\n---\nВозможные ответы:\n- 200\n- 404 + пустой массив, если бонусов нет\n"
+							},
+							"response": [
+								{
+									"name": "/games/binary/benefits",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "X-Telegram-Init-Data",
+												"value": "{{init_data}}",
+												"type": "text"
+											}
+										],
+										"url": {
+											"raw": "https://bitrave.co:8443/api/games/binary/benefits",
+											"protocol": "https",
+											"host": [
+												"65",
+												"21",
+												"240",
+												"202"
+											],
+											"port": "8443",
+											"path": [
+												"api",
+												"games",
+												"binary",
+												"benefits"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Credentials",
+											"value": "true"
+										},
+										{
+											"key": "Access-Control-Allow-Headers",
+											"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+										},
+										{
+											"key": "Access-Control-Allow-Methods",
+											"value": "GET, POST, PUT, DELETE, OPTIONS"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json; charset=utf-8"
+										},
+										{
+											"key": "Date",
+											"value": "Thu, 12 Sep 2024 18:32:12 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "110"
+										}
+									],
+									"cookie": [],
+									"body": "[\n    {\n        \"ID\": 1,\n        \"FreeBetsAmount\": 1,\n        \"FreeBetDepositRupee\": 880\n    },\n    {\n        \"ID\": 2,\n        \"FreeBetsAmount\": 1,\n        \"FreeBetDepositRupee\": 1760\n    }\n]"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "NVUTI",
+					"item": [
+						{
+							"name": "/games/nvuti/place",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"Amount\" : 50,\r\n\t\"WinPercent\" : 30,\r\n    \"Direction\": \"less\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/nvuti/place",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"nvuti",
+										"place"
+									]
+								},
+								"description": "## Ставка Nvuti\n\n\"Amount\" : `float` // сумма  \n\"WinPercent\" : `int` // (1-95) шанс победы  \n\"Direction\": \"`up`\" // less/more\n\n---\n\nВозможные ответы:\n\n- 200 - ставка сделана + есть результат\n    \n- 400 - неверное тело запроса\n    \n- 402 - недостаточно денег на балансе\n    \n- 500 - что-то пошло не так"
+							},
+							"response": [
+								{
+									"name": "place",
+									"originalRequest": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "X-Telegram-Init-Data",
+												"value": "{{init_data}}",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"Amount\" : 50,\r\n\t\"WinPercent\" : 30,\r\n    \"Direction\": \"less\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://bitrave.co:8443/api/games/nvuti/place",
+											"protocol": "https",
+											"host": [
+												"91",
+												"149",
+												"255",
+												"191"
+											],
+											"port": "8443",
+											"path": [
+												"api",
+												"games",
+												"nvuti",
+												"place"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Credentials",
+											"value": "true"
+										},
+										{
+											"key": "Access-Control-Allow-Headers",
+											"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+										},
+										{
+											"key": "Access-Control-Allow-Methods",
+											"value": "GET, POST, PUT, DELETE, OPTIONS"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json; charset=utf-8"
+										},
+										{
+											"key": "Date",
+											"value": "Tue, 03 Sep 2024 23:04:26 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "67"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"payout\": 166.66666666666669,\n    \"result\": {\n        \"won\": true,\n        \"number\": 155833\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "DICE",
+					"item": [
+						{
+							"name": "/games/dice/place",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"Amount\" : 50,\r\n\t\"WinPercent\" : 30,\r\n    \"Direction\": \"less\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/dice/place",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"dice",
+										"place"
+									]
+								},
+								"description": "## Ставка Dice\n\n\"Amount\" : `float` // сумма  \n\"WinPercent\" : `int` // (1-95) шанс победы  \n\"Direction\": \"`up`\" // less/more\n\n---\n\nВозможные ответы:\n\n- 200 - ставка сделана + есть результат\n    \n- 400 - неверное тело запроса\n    \n- 402 - недостаточно денег на балансе\n    \n- 500 - что-то пошло не так"
+							},
+							"response": [
+								{
+									"name": "/games/dice/place",
+									"originalRequest": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "X-Telegram-Init-Data",
+												"value": "{{init_data}}",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n    \"Amount\" : 50,\r\n\t\"WinPercent\" : 30,\r\n    \"Direction\": \"less\"\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://bitrave.co:8443/api/games/dice/place",
+											"protocol": "https",
+											"host": [
+												"91",
+												"149",
+												"255",
+												"191"
+											],
+											"port": "8443",
+											"path": [
+												"api",
+												"games",
+												"dice",
+												"place"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Credentials",
+											"value": "true"
+										},
+										{
+											"key": "Access-Control-Allow-Headers",
+											"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+										},
+										{
+											"key": "Access-Control-Allow-Methods",
+											"value": "GET, POST, PUT, DELETE, OPTIONS"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json; charset=utf-8"
+										},
+										{
+											"key": "Date",
+											"value": "Wed, 04 Sep 2024 14:04:51 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "68"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"payout\": 166.66666666666669,\n    \"result\": {\n        \"won\": false,\n        \"number\": 912312\n    }\n}"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "FORTUNE WHEEL",
+					"item": [
+						{
+							"name": "/games/fortunewheel/spins",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/fortunewheel/spins",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"fortunewheel",
+										"spins"
+									]
+								}
+							},
+							"response": [
+								{
+									"name": "/games/fortunewheel/spins",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "X-Telegram-Init-Data",
+												"value": "{{init_data}}",
+												"type": "text"
+											}
+										],
+										"url": {
+											"raw": "https://bitrave.co:8443/api/games/fortunewheel/spins",
+											"protocol": "https",
+											"host": [
+												"65",
+												"21",
+												"240",
+												"202"
+											],
+											"port": "8443",
+											"path": [
+												"api",
+												"games",
+												"fortunewheel",
+												"spins"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Credentials",
+											"value": "true"
+										},
+										{
+											"key": "Access-Control-Allow-Headers",
+											"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+										},
+										{
+											"key": "Access-Control-Allow-Methods",
+											"value": "GET, POST, PUT, DELETE, OPTIONS"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json; charset=utf-8"
+										},
+										{
+											"key": "Date",
+											"value": "Sun, 15 Sep 2024 15:08:24 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "16"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"TotalSpins\": 2\n}"
+								}
+							]
+						},
+						{
+							"name": "/games/fortunewheel/info",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/fortunewheel/info",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"fortunewheel",
+										"info"
+									]
+								},
+								"description": "## Актуальное инфо по колесу\n\n---\n\nВозможные ответы:\n\n- 200 - сектора по колесу\n    \n- 500 - GGs"
+							},
+							"response": [
+								{
+									"name": "/games/fortunewheel/info",
+									"originalRequest": {
+										"method": "GET",
+										"header": [
+											{
+												"key": "X-Telegram-Init-Data",
+												"value": "{{init_data}}",
+												"type": "text"
+											}
+										],
+										"url": {
+											"raw": "https://bitrave.co:8443/api/games/fortunewheel/info",
+											"protocol": "https",
+											"host": [
+												"65",
+												"21",
+												"240",
+												"202"
+											],
+											"port": "8443",
+											"path": [
+												"api",
+												"games",
+												"fortunewheel",
+												"info"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Credentials",
+											"value": "true"
+										},
+										{
+											"key": "Access-Control-Allow-Headers",
+											"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+										},
+										{
+											"key": "Access-Control-Allow-Methods",
+											"value": "GET, POST, PUT, DELETE, OPTIONS"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json; charset=utf-8"
+										},
+										{
+											"key": "Date",
+											"value": "Tue, 10 Sep 2024 07:07:11 GMT"
+										},
+										{
+											"key": "Transfer-Encoding",
+											"value": "chunked"
+										}
+									],
+									"cookie": [],
+									"body": "[\n    {\n        \"ID\": 1,\n        \"ColorHex\": \"#FF0000\",\n        \"BenefitID\": 66,\n        \"Benefit\": {\n            \"ID\": 66,\n            \"PolymorphicBenefitID\": 28,\n            \"PolymorphicBenefitType\": \"benefit_credit\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 28,\n                \"BCoinsAmount\": 10000,\n                \"RupeeAmount\": 0\n            }\n        }\n    },\n    {\n        \"ID\": 2,\n        \"ColorHex\": \"#00FF00\",\n        \"BenefitID\": 67,\n        \"Benefit\": {\n            \"ID\": 67,\n            \"PolymorphicBenefitID\": 9,\n            \"PolymorphicBenefitType\": \"benefit_fortune_wheel\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 9,\n                \"FreeSpinsAmount\": 1\n            }\n        }\n    },\n    {\n        \"ID\": 3,\n        \"ColorHex\": \"#0000FF\",\n        \"BenefitID\": 68,\n        \"Benefit\": {\n            \"ID\": 68,\n            \"PolymorphicBenefitID\": 8,\n            \"PolymorphicBenefitType\": \"benefit_replenishment\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 8,\n                \"BonusMultiplier\": 1.05,\n                \"TimeDuration\": 86400\n            }\n        }\n    },\n    {\n        \"ID\": 4,\n        \"ColorHex\": \"#FFFF00\",\n        \"BenefitID\": 69,\n        \"Benefit\": {\n            \"ID\": 69,\n            \"PolymorphicBenefitID\": 13,\n            \"PolymorphicBenefitType\": \"benefit_clicker\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 13,\n                \"TimeDuration\": 3600,\n                \"BonusMultiplier\": 2,\n                \"Reset\": false\n            }\n        }\n    },\n    {\n        \"ID\": 5,\n        \"ColorHex\": \"#FF00FF\",\n        \"BenefitID\": 70,\n        \"Benefit\": {\n            \"ID\": 70,\n            \"PolymorphicBenefitID\": 14,\n            \"PolymorphicBenefitType\": \"benefit_clicker\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 14,\n                \"TimeDuration\": 0,\n                \"BonusMultiplier\": 0,\n                \"Reset\": true\n            }\n        }\n    },\n    {\n        \"ID\": 6,\n        \"ColorHex\": \"#00FFFF\",\n        \"BenefitID\": 71,\n        \"Benefit\": {\n            \"ID\": 71,\n            \"PolymorphicBenefitID\": 3,\n            \"PolymorphicBenefitType\": \"benefit_binary_option\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 3,\n                \"FreeBetsAmount\": 1,\n                \"FreeBetDepositRupee\": 304\n            }\n        }\n    },\n    {\n        \"ID\": 7,\n        \"ColorHex\": \"#800000\",\n        \"BenefitID\": 72,\n        \"Benefit\": {\n            \"ID\": 72,\n            \"PolymorphicBenefitID\": 29,\n            \"PolymorphicBenefitType\": \"benefit_credit\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 29,\n                \"BCoinsAmount\": 30000,\n                \"RupeeAmount\": 0\n            }\n        }\n    },\n    {\n        \"ID\": 8,\n        \"ColorHex\": \"#008000\",\n        \"BenefitID\": 73,\n        \"Benefit\": {\n            \"ID\": 73,\n            \"PolymorphicBenefitID\": 10,\n            \"PolymorphicBenefitType\": \"benefit_fortune_wheel\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 10,\n                \"FreeSpinsAmount\": 2\n            }\n        }\n    },\n    {\n        \"ID\": 9,\n        \"ColorHex\": \"#000080\",\n        \"BenefitID\": 74,\n        \"Benefit\": {\n            \"ID\": 74,\n            \"PolymorphicBenefitID\": 9,\n            \"PolymorphicBenefitType\": \"benefit_replenishment\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 9,\n                \"BonusMultiplier\": 1.1,\n                \"TimeDuration\": 86400\n            }\n        }\n    },\n    {\n        \"ID\": 10,\n        \"ColorHex\": \"#808000\",\n        \"BenefitID\": 75,\n        \"Benefit\": {\n            \"ID\": 75,\n            \"PolymorphicBenefitID\": 15,\n            \"PolymorphicBenefitType\": \"benefit_clicker\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 15,\n                \"TimeDuration\": 86400,\n                \"BonusMultiplier\": 2,\n                \"Reset\": false\n            }\n        }\n    },\n    {\n        \"ID\": 11,\n        \"ColorHex\": \"#800080\",\n        \"BenefitID\": 76,\n        \"Benefit\": {\n            \"ID\": 76,\n            \"PolymorphicBenefitID\": 30,\n            \"PolymorphicBenefitType\": \"benefit_credit\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 30,\n                \"BCoinsAmount\": 50000,\n                \"RupeeAmount\": 0\n            }\n        }\n    },\n    {\n        \"ID\": 12,\n        \"ColorHex\": \"#008080\",\n        \"BenefitID\": 77,\n        \"Benefit\": {\n            \"ID\": 77,\n            \"PolymorphicBenefitID\": 11,\n            \"PolymorphicBenefitType\": \"benefit_fortune_wheel\",\n            \"PolymorphicBenefit\": {\n                \"ID\": 11,\n                \"FreeSpinsAmount\": 3\n            }\n        }\n    }\n]"
+								}
+							]
+						},
+						{
+							"name": "/games/fortunewheel/spin",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/fortunewheel/spin",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"fortunewheel",
+										"spin"
+									]
+								},
+								"description": "## Прокрутить колесо фортуны\n\n---\n\nВозможные ответы:\n\n- 200 - удачный прокрут + данные о выпавшем секторе\n    \n- 403 - Кончились спины\n    \n- 500 - GGs"
+							},
+							"response": [
+								{
+									"name": "/fortunewheel/spin",
+									"originalRequest": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "X-Telegram-Init-Data",
+												"value": "{{init_data}}",
+												"type": "text"
+											}
+										],
+										"url": {
+											"raw": "https://bitrave.co:8443/api/fortunewheel/spin",
+											"protocol": "https",
+											"host": [
+												"91",
+												"149",
+												"255",
+												"191"
+											],
+											"port": "8443",
+											"path": [
+												"api",
+												"fortunewheel",
+												"spin"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Credentials",
+											"value": "true"
+										},
+										{
+											"key": "Access-Control-Allow-Headers",
+											"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+										},
+										{
+											"key": "Access-Control-Allow-Methods",
+											"value": "GET, POST, PUT, DELETE, OPTIONS"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json; charset=utf-8"
+										},
+										{
+											"key": "Date",
+											"value": "Mon, 02 Sep 2024 03:10:39 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "74"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"sector\": {\n        \"bcoins_amount\": 1000,\n        \"sector_number\": 10,\n        \"color_hex\": \"#808000\"\n    }\n}"
+								}
+							]
+						},
+						{
+							"name": "/games/fortunewheel/wins",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/fortunewheel/wins",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"fortunewheel",
+										"wins"
+									]
+								},
+								"description": "## Получить данные о последних выигрышах\n\n---\n\nВозможные ответы:\n\n- 200 - лист, в котором ДО 10 записей о последних выигрышах\n    \n- 404 - нет последних выигрышей\n    \n- 500 - GGs"
+							},
+							"response": []
+						},
+						{
+							"name": "/games/fortunewheel/add",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"UserID\": 7519160253,\r\n  \"Spins\": 50\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/fortunewheel/add",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"fortunewheel",
+										"add"
+									]
+								},
+								"description": "## Добавить спинов юзеру по ID\n\n---\n\nСуществуюет только для тестов, будет удален позже  \nВозможные ответы:\n\n- 200 - добавлены спины + количество спинов у юзера в боди ответа\n    \n- 403 - Ошибка в теле запроса\n    \n- 500 - GGs"
+							},
+							"response": [
+								{
+									"name": "/fortunewheel/add",
+									"originalRequest": {
+										"method": "POST",
+										"header": [
+											{
+												"key": "X-Telegram-Init-Data",
+												"value": "{{init_data}}",
+												"type": "text"
+											}
+										],
+										"body": {
+											"mode": "raw",
+											"raw": "{\r\n  \"UserID\": 7519160253,\r\n  \"Spins\": 50\r\n}",
+											"options": {
+												"raw": {
+													"language": "json"
+												}
+											}
+										},
+										"url": {
+											"raw": "https://bitrave.co:8443/api/fortunewheel/add",
+											"protocol": "https",
+											"host": [
+												"91",
+												"149",
+												"255",
+												"191"
+											],
+											"port": "8443",
+											"path": [
+												"api",
+												"fortunewheel",
+												"add"
+											]
+										}
+									},
+									"status": "OK",
+									"code": 200,
+									"_postman_previewlanguage": "json",
+									"header": [
+										{
+											"key": "Access-Control-Allow-Credentials",
+											"value": "true"
+										},
+										{
+											"key": "Access-Control-Allow-Headers",
+											"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+										},
+										{
+											"key": "Access-Control-Allow-Methods",
+											"value": "GET, POST, PUT, DELETE, OPTIONS"
+										},
+										{
+											"key": "Access-Control-Allow-Origin",
+											"value": "*"
+										},
+										{
+											"key": "Content-Type",
+											"value": "application/json; charset=utf-8"
+										},
+										{
+											"key": "Date",
+											"value": "Mon, 02 Sep 2024 03:09:49 GMT"
+										},
+										{
+											"key": "Content-Length",
+											"value": "55"
+										}
+									],
+									"cookie": [],
+									"body": "{\n    \"message\": \"Spins added successfully\",\n    \"total_spins\": 93\n}"
+								}
+							]
+						}
+					],
+					"description": "WebSocket info:\n\nEndpoint\n\nwss://server.exampe/api/ws/fortunewheel/live?init_data={encoded_init_data}\n\n{encoded_init_data} = telegram init data\n\nWhat info you will get:\n\n1. **Live feed of user wins**\n    \n\n`{'nickname': 'Hehehe2', 'amount': 5000, 'timestamp': 1725576104520} {'nickname': 'Hehehe2', 'amount': 5000, 'timestamp': 1725576105815}`"
+				},
+				{
+					"name": "ROULETTE X14",
+					"item": [
+						{
+							"name": "/games/roulettex14/info",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/roulettex14/info",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"roulettex14",
+										"info"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "/games/roulettex14/place",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    // \"Color\": \"red\",\r\n    \"Color\": \"black\",\r\n    \"Amount\" : 100\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/roulettex14/place",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"roulettex14",
+										"place"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "/games/roulettex14/history",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/roulettex14/history",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"roulettex14",
+										"history"
+									]
+								},
+								"description": "\" // less/more\n\n---\n\nВозможные ответы:\n\n- 200 - ставка сделана + есть результат\n    \n- 400 - неверное тело запроса\n    \n- 402 - недостаточно денег на балансе\n    \n- 500 - что-то пошло не так"
+							},
+							"response": []
+						}
+					],
+					"description": "WebSocket info:\n\nEndpoint  \n`wss://server.example/api/ws/roulettex14/live?init_data={encoded_init_data}\"`\n\n{encoded_init_data} = telegram init data\n\nWhat info you will get:\n\n**1\\. Tick info:**  \n`{'is_betting_open': True, 'remaining_time': 7, 'timer_type': 'backend', 'type': 'timer_tick'}`\n\n`{'is_betting_open': False, 'remaining_time': 2, 'timer_type': 'backend', 'type': 'timer_tick'}`\n\n`{'is_betting_open': False, 'remaining_time': 6, 'timer_type': 'frontend', 'type': 'timer_tick'}`\n\nbetting open/closed info, remaining time until spin will be performed\n\n`timer_type:`  \nBackend = actual timer on the wheel itself  \nFrontend = timeout for animation on frontend\n\n**2\\. Spin result:**  \n`{'sector_id': 4, 'sector_number': 9, 'type': 'spin_result', 'winning_color': 'black'}`  \nInternal sector id, number on this secotor, color that won\n\n**3\\. New game begin announcement**  \n`{'message': 'New game starting', 'type': 'new_game'}`\n\nThis is message that new game is going to start, it's followed by timer tick for sync\n\n{'is_betting_open': True, 'remaining_time': 15, 'timer_type': 'backend', 'type': 'timer_tick'}  \n{'is_betting_open': True, 'remaining_time': 14, 'timer_type': 'backend', 'type': 'timer_tick'}\n\n**4\\. User bets**\n\n`{'amount': 100, 'avatar_id': 43, 'bet_color': 'black', 'nickname': 'Hehehe2', 'user_id': 7519160253} {'amount': 200, 'avatar_id': 43, 'bet_color': 'black', 'nickname': 'Hehehe2', 'user_id': 7519160253} {'is_betting_open': True, 'remaining_time': 13, 'timer_type': 'backend', 'type': 'timer_tick'} {'amount': 300, 'avatar_id': 43, 'bet_color': 'black', 'nickname': 'Hehehe2', 'user_id': 7519160253} {'is_betting_open': True, 'remaining_time': 12, 'timer_type': 'backend', 'type': 'timer_tick'}`\n\n`{'amount': 100, 'avatar_id': 43, 'bet_color': 'green', 'nickname': 'Hehehe2', 'user_id': 7519160253} {'amount': 400, 'avatar_id': 43, 'bet_color': 'black', 'nickname': 'Hehehe2', 'user_id': 7519160253}`\n\nIt send data for every user bet, including the one on page itself. Important note: if some user bet on same color again, it send it bet info with already updated amount.\n\nExample:\n\nUser bet 100 on black: `{'amount': 100, black ...`\n\nThen User bet 200 more: `{'amount': 300, black ...`\n\n**5\\. Bet result and payout**\n\n`{'amount': 400, 'bet_color': 'black', 'outcome': 'win', 'payout': 800} {'amount': 200, 'bet_color': 'red', 'outcome': 'lose', 'payout': 0} {'amount': 200, 'bet_color': 'green', 'outcome': 'lose', 'payout': 0}`\n\nOnly for bets that was made, and only to user that made this bets."
+				},
+				{
+					"name": "CRASH GAME",
+					"item": [
+						{
+							"name": "/games/crashgame/place",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"Amount\" : 100,\r\n    \"CashOutMultiplier\": 1.5\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/crashgame/place",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"crashgame",
+										"place"
+									]
+								},
+								"description": "## Ставка в crash game\n\nBody:  \n`Amount float64` - сумма ставки в рупиях, минимум 1  \n`CashOutMultiplier float64` - автовывод, если задан, минимум 1x\n\n---\n\nВозможные ответы:\n\n- 200\n    \n- 400 - неверный body\n    \n- 402 - не хватает средств на балансе\n    \n- 403 - ставки закрыты"
+							},
+							"response": []
+						},
+						{
+							"name": "/games/crashgame/cashout",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/crashgame/cashout",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"crashgame",
+										"cashout"
+									]
+								},
+								"description": "Досрочный вывод ставки\n---\n\nВозможные ответы:\n- 200\n- 403 - игра не началась \n- 404 - активная ставка не найдена"
+							},
+							"response": []
+						},
+						{
+							"name": "/games/crashgame/history",
+							"request": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/crashgame/history",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"crashgame",
+										"history"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "/games/benefits?game_id=",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "X-Telegram-Init-Data",
+								"value": "{{init_data}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://bitrave.co:8443/api/games/benefits?game_id=2",
+							"protocol": "https",
+							"host": [
+								"65",
+								"21",
+								"240",
+								"202"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"games",
+								"benefits"
+							],
+							"query": [
+								{
+									"key": "game_id",
+									"value": "2"
+								}
+							]
+						},
+						"description": "Получение текущих бонусов пользователя на мини игру\n---\nВозвращается массив моделей `BenefitMiniGameProgress`, описанной в запросе `benefits/progress`\n\nПараметр запроса `game_id` обязательный, доложен быть числом, а также должна существовать игра с заданным id.\n- 1 - `nvuti`\n- 2 - `dice`\n- 3 - `roulette x14`\n\n\n---\nВозможные ответы:\n- 200\n- 400 + пояснение о неверном параметре `game_id`\n- 404 + пустой массив, если бонусов нет"
+					},
+					"response": [
+						{
+							"name": "/games/benefits?game_id=2",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/games/benefits?game_id=2",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"games",
+										"benefits"
+									],
+									"query": [
+										{
+											"key": "game_id",
+											"value": "2"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Fri, 13 Sep 2024 07:51:35 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "133"
+								}
+							],
+							"cookie": [],
+							"body": "[\n    {\n        \"ID\": 1,\n        \"GameID\": 2,\n        \"FreeBetsAmount\": 10,\n        \"FreeBetDepositRupee\": 236\n    },\n    {\n        \"ID\": 2,\n        \"GameID\": 2,\n        \"FreeBetsAmount\": 1,\n        \"FreeBetDepositRupee\": 5080\n    }\n]"
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "PAYMENT SYSTEM",
+			"item": [
+				{
+					"name": "/payments/postback",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"access_key\": \"8dd2f6a788e16e19c500192d7a932724\",\n    \"signature\": \"58ca28614bd8683824a169d6c2b01b0ebb7a868f\",\n    \"transactions\": [\n        {\n            \"amount\": 112666,\n            \"status\": \"Success\",\n            \"currency\": \"INR\",\n            \"order_id\": \"67057125312afd59\",\n            \"created_at\": 1728409951,\n            \"activated_at\": null,\n            \"custom_user_id\": \"7349049774\",\n            \"payment_system\": \"upi_p2p\",\n            \"custom_transaction_id\": null\n        }\n    ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://185.234.64.246:8443/api/payments/postback",
+							"protocol": "https",
+							"host": [
+								"185",
+								"234",
+								"64",
+								"246"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"payments",
+								"postback"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "/payments/postback withdrawal",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"signature\": \"893dc9477b41ac93a4e05272aa01bf768150a3b4\",\n    \"access_key\": \"cd6c33c3865ddde039a64a6d12294f83\",\n    \"transactions\": [\n        {\n            \"amount\": 1000,\n            \"status\": \"Failed\",\n            \"currency\": \"INR\",\n            \"order_id\": \"6707a0b518136d03\",\n            \"created_at\": 1728553142,\n            \"activated_at\": null,\n            \"custom_user_id\": \"545454545\",\n            \"payment_system\": \"imps\",\n            \"custom_transaction_id\": null\n        }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/payments/postback",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"payments",
+										"postback"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 10 Oct 2024 12:00:53 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "15"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"status\": \"OK\"\n}"
+						},
+						{
+							"name": "/payments/postback deposit",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"access_key\": \"cd6c33c3865ddde039a64a6d12294f83\",\n    \"signature\": \"0be9414cfe2b16ceb2dd3b604e30c9d3d97339af\",\n    \"transactions\": [\n        {\n            \"amount\": 500,\n            \"status\": \"Success\",\n            \"currency\": \"INR\",\n            \"order_id\": \"67057125312afd43\",\n            \"created_at\": 1728409951,\n            \"activated_at\": 1728410373,\n            \"custom_user_id\": \"545454545\",\n            \"payment_system\": \"upi_p2p\",\n            \"custom_transaction_id\": null\n        }\n    ]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/payments/postback",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"payments",
+										"postback"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Thu, 10 Oct 2024 18:50:53 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "15"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"status\": \"OK\"\n}"
+						}
+					]
+				},
+				{
+					"name": "/payments/create",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Telegram-Init-Data",
+								"value": "{{init_data}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"amount\": 500\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://bitrave.co:8443/api/payments/create",
+							"protocol": "https",
+							"host": [
+								"65",
+								"21",
+								"240",
+								"202"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"payments",
+								"create"
+							]
+						},
+						"description": "## Создание страницы для оплаты\n\nBody:  \n`amount` - желаемая сумма пополнения пользователя\n\n---\n\nВозможные ответы:\n\n- 200\n    \n- 404 + сообщение - пользователь не найден\n    \n- 400 - невозможно считать тело, `amount` не задан\n    \n- 406 - заданный `amount` меньше минимальной суммы пополнения (1600 рупий)"
+					},
+					"response": [
+						{
+							"name": "/payments/create",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://bitrave.co:8443/api/payments/create",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"payments",
+										"create"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Mon, 07 Oct 2024 08:26:14 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "165"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"url\": \"https://a-pay1.one/pay/hi?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTUwODI3OSwiZXhwIjoxNzI4MjkzMTc0fQ.RIxgBUrYWG357c9z5yWMABfB4oS9tvtj6c6ii0hwglg\"\n}"
+						}
+					]
+				},
+				{
+					"name": "/payments/withdrawal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "X-Telegram-Init-Data",
+								"value": "{{init_data}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 200,\n    \"payment_system\": \"imps\",\n    \"data\": {\n        \"account_name\": \"abcd\",\n        \"account_number\": \"123\",\n        \"bank_code\": \"ABCD0123456\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://bitrave.co:8443/api/payments/withdrawal",
+							"protocol": "https",
+							"host": [
+								"bitrave",
+								"co"
+							],
+							"port": "8443",
+							"path": [
+								"api",
+								"payments",
+								"withdrawal"
+							]
+						},
+						"description": "## Запрос на вывод средств\n\n[Официальные доки](https://api.a-pay.one/#tag/Withdrawal/paths/~1Remotes~1create-withdrawal/post)\n\nВ примерах есть 2 типа возвращаемых ошибок:  \nОт платежной системы - /payments/withdrawal APAY  \nОт нашего api - /payments/withdrawal API  \nЕсли запрос полностью корректный:  \n200 - Платежный сервис принял запрос  \n202 - Платежка не может обработать запрос, статус failed или rejected\n\n---\n\nВозможные ответы:\n\n- 200\n    \n- 202\n    \n- 400 + пояснение\n    \n- 402 - у пользователя не хватает баланса, либо не выполнено условие на минимальную необходимую для вывода сумму депозитов (13000 рупий)"
+					},
+					"response": [
+						{
+							"name": "/payments/withdrawal APAY error",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"amount\": 1000,\n    \"payment_system\": \"imps\",\n    \"data\": {\n        \"account_name\": \"545454545\",\n        \"account_number\": \"545454545\",\n        \"bank_code\": \"545454545\"\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/payments/withdrawal",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"payments",
+										"withdrawal"
+									]
+								}
+							},
+							"status": "Bad Request",
+							"code": 400,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 09 Oct 2024 13:49:09 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "86"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"code\": 400,\n    \"message\": \"amount of withdrawal is more than balance sum\",\n    \"success\": false\n}"
+						},
+						{
+							"name": "/payments/withdrawal API error",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "X-Telegram-Init-Data",
+										"value": "{{init_data}}",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"amount\": 100000,\n    \"payment_system\": \"imps\",\n    \"data\": {\n        \"account_name\": \"545454545\",\n        \"account_number\": \"545454545\",\n        \"bank_code\": \"545454545\"\n    }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://bitrave.co:8443/api/payments/withdrawal",
+									"protocol": "https",
+									"host": [
+										"65",
+										"21",
+										"240",
+										"202"
+									],
+									"port": "8443",
+									"path": [
+										"api",
+										"payments",
+										"withdrawal"
+									]
+								}
+							},
+							"status": "Payment Required",
+							"code": 402,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Access-Control-Allow-Credentials",
+									"value": "true"
+								},
+								{
+									"key": "Access-Control-Allow-Headers",
+									"value": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, X-Telegram-Init-Data"
+								},
+								{
+									"key": "Access-Control-Allow-Methods",
+									"value": "GET, POST, PUT, DELETE, OPTIONS"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Wed, 09 Oct 2024 15:08:01 GMT"
+								},
+								{
+									"key": "Content-Length",
+									"value": "32"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"error\": \"insufficient balance\"\n}"
+						}
+					]
+				},
+				{
+					"name": "APAY Create withdrawal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "apikey",
+								"value": "40e7498cdad6a2a0a30eacd80c4e2e00",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"amount\": 10,\n    \"currency\": \"INR\",\n    \"payment_system\": \"imps\",\n    \"custom_user_id\": \"545454545\",\n    \"data\": {\n        \"account_name\": \"123\",\n        \"account_number\": \"123\",\n        \"bank_code\": \"123\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://pay-crm.com/Remotes/create-withdrawal?project_id=9133557",
+							"protocol": "https",
+							"host": [
+								"pay-crm",
+								"com"
+							],
+							"path": [
+								"Remotes",
+								"create-withdrawal"
+							],
+							"query": [
+								{
+									"key": "project_id",
+									"value": "9133557"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "APAY create payment page",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Apikey",
+								"value": "40e7498cdad6a2a0a30eacd80c4e2e00",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"amount\": 300.6,\r\n    \"currency\": \"INR\",\r\n    \"custom_user_id\": \"222\",\r\n    \"return_url\": \"https://example.com\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://pay-crm.com/Remotes/create-payment-page",
+							"protocol": "https",
+							"host": [
+								"pay-crm",
+								"com"
+							],
+							"path": [
+								"Remotes",
+								"create-payment-page"
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "APAY create payment page",
+							"originalRequest": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Apikey",
+										"value": "40e7498cdad6a2a0a30eacd80c4e2e00",
+										"type": "text"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"buttons\": [300,500,1000],\r\n    \"currency\": \"INR\",\r\n    \"custom_user_id\": \"123\",\r\n    \"return_url\": \"https://example.com\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "https://pay-crm.com/Remotes/create-payment-page",
+									"protocol": "https",
+									"host": [
+										"pay-crm",
+										"com"
+									],
+									"path": [
+										"Remotes",
+										"create-payment-page"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Sun, 06 Oct 2024 16:06:01 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "CF-Cache-Status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Report-To",
+									"value": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=H9bJkiYFiOvzLDO5erv2kaAMoJqSG3Rv9gx7NdwE16laBaRVdwcvKd4IEKSHWcWVcSRmeCEfKnPWPHt2CX4smgNaIM%2Fq0lwkzho6e4Q7fsDm6yc2LK%2BSa2DwO4S%2F6Q%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"
+								},
+								{
+									"key": "NEL",
+									"value": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "8ce6e574edbfc245-VIE"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"url\": \"https://a-pay1.one/pay/hi?token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6MTUwMDA5NiwiZXhwIjoxNzI4MjM0MzYxfQ.3neCtB_sJnJd5pedpNP1OhMyArOZPNNZThfKVTqZfZY\",\n    \"order_id\": \"6702b5692c16d2f1\"\n}"
+						}
+					]
+				},
+				{
+					"name": "APAY Check payment",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Apikey",
+								"value": "40e7498cdad6a2a0a30eacd80c4e2e00",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://pay-crm.com/Remotes/deposit-info?project_id=9133557&order_id=67039a591b8aeea3",
+							"protocol": "https",
+							"host": [
+								"pay-crm",
+								"com"
+							],
+							"path": [
+								"Remotes",
+								"deposit-info"
+							],
+							"query": [
+								{
+									"key": "project_id",
+									"value": "9133557"
+								},
+								{
+									"key": "order_id",
+									"value": "67039a591b8aeea3"
+								}
+							]
+						}
+					},
+					"response": [
+						{
+							"name": "Check payment",
+							"originalRequest": {
+								"method": "GET",
+								"header": [
+									{
+										"key": "Apikey",
+										"value": "40e7498cdad6a2a0a30eacd80c4e2e00",
+										"type": "text"
+									}
+								],
+								"url": {
+									"raw": "https://pay-crm.com/Remotes/deposit-info?project_id=9133557&order_id=67029be2f7b75c95",
+									"protocol": "https",
+									"host": [
+										"pay-crm",
+										"com"
+									],
+									"path": [
+										"Remotes",
+										"deposit-info"
+									],
+									"query": [
+										{
+											"key": "project_id",
+											"value": "9133557"
+										},
+										{
+											"key": "order_id",
+											"value": "67029be2f7b75c95"
+										}
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": "json",
+							"header": [
+								{
+									"key": "Date",
+									"value": "Sun, 06 Oct 2024 16:05:39 GMT"
+								},
+								{
+									"key": "Content-Type",
+									"value": "application/json"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								},
+								{
+									"key": "Connection",
+									"value": "keep-alive"
+								},
+								{
+									"key": "Access-Control-Allow-Origin",
+									"value": "*"
+								},
+								{
+									"key": "CF-Cache-Status",
+									"value": "DYNAMIC"
+								},
+								{
+									"key": "Report-To",
+									"value": "{\"endpoints\":[{\"url\":\"https:\\/\\/a.nel.cloudflare.com\\/report\\/v4?s=B%2ByUdxFIrZ7Uk%2BixC5xg5rclg5%2FqwylDEMznYqY7lnAj1EGLb3RxFMH7JlviKZhsQQqpTk%2F2dHkqO3kJ%2FYSZSkoHWPMATxtOndrbhc8%2FK2Yb6Gb6MV735Lg5MBZUCw%3D%3D\"}],\"group\":\"cf-nel\",\"max_age\":604800}"
+								},
+								{
+									"key": "NEL",
+									"value": "{\"success_fraction\":0,\"report_to\":\"cf-nel\",\"max_age\":604800}"
+								},
+								{
+									"key": "Server",
+									"value": "cloudflare"
+								},
+								{
+									"key": "CF-RAY",
+									"value": "8ce6e4e92d25c245-VIE"
+								},
+								{
+									"key": "Content-Encoding",
+									"value": "br"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"status\": \"Pending\",\n    \"order_id\": \"67029be2f7b75c95\",\n    \"amount\": 1000,\n    \"currency\": \"INR\",\n    \"custom_transaction_id\": null,\n    \"custom_user_id\": \"123\",\n    \"created_at\": 1728224361,\n    \"payment_system\": \"upi_p2p\"\n}"
+						}
+					]
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "init_data",
+			"value": "query_id=init_data_telegram",
+			"type": "string"
+		}
+	]
+}

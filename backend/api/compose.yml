@@ -1,0 +1,57 @@
+services:
+  api:
+    container_name: BlessedApi
+    restart: always
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command: ./api
+    ports:
+      - 8080:8080
+      - 8443:8443
+    volumes:
+      - /var/log/BlessedLogs/:/logs/
+      - ../ssl:/app/ssl
+    env_file:
+      - ../.env
+    networks:
+      - db-network
+    depends_on:
+      - redis
+
+  redis:
+    container_name: BlessedRedis
+    image: redis:6.2-alpine
+    restart: always
+    volumes:
+      - redis-data:/data
+    networks:
+      - db-network
+
+  api_test:
+    container_name: BlessedApiTest
+    build:
+      context: ./
+      dockerfile: Dockerfile.test
+    command: go test ./... -v
+    volumes:
+      - /var/log/BlessedLogs/:/logs/
+    env_file:
+      - ../.env
+    networks:
+      - db-network
+    ports: []
+    healthcheck:
+      test: ["CMD", "test", "-f", "/test-result/success"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      - redis
+
+volumes:
+  redis-data:
+
+networks:
+  db-network:
+    external: true

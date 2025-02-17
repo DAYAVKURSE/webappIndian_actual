@@ -1,0 +1,23 @@
+$low-white: #BCBCBC;
+$mid-white: #DADADA;
+$low-black: #0B0B0B;
+$biege: #F2E8D9;
+$maga: #CFA3F2;
+$blue: #ACB5FF;
+$yellow: #FFF597;
+$light-yellow: #FFD689;
+$green: #EDFF8C;
+$red: #FFC397;
+
+:export {
+    lowWhite: $low-white;
+    lowBlack: $low-black;
+    lowMid: $mid-white;
+    biege: $biege;
+    maga: $maga;
+    blue: $blue;
+    yellow: $yellow;
+    lightYellow: $light-yellow;
+    green: $green;
+    red: $red;
+}

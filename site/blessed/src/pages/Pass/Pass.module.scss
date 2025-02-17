@@ -1,0 +1,216 @@
+@import "@/scss/variables.module.scss";
+
+.pass {
+    display: grid;
+
+    &_container {
+        display: grid;
+        padding: 18px;
+        gap: 10px;
+    }
+
+    &_title {
+        font-size: 32px;
+        font-weight: 600;
+        width: fit-content;
+        justify-self: center;
+    }
+
+    &_text {
+        font-size: 18px;
+        font-weight: 400;
+        width: fit-content;
+        justify-self: center;
+    }
+
+    &_level_container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 6px;
+        margin-top: 16px;
+    }
+
+    &_level {
+        display: flex;
+        gap: 6px;
+        font-size: 16px;
+        font-weight: 500;
+        align-items: center;
+        justify-content: center;
+        background-color: #0B0B0B;
+        border-radius: 30px;
+        padding: 6px 14px;
+        color: #acb5ff;
+        width: fit-content;
+        height: fit-content;
+        min-width: 90px;
+        min-height: 30px;
+        color: #ffd689;
+
+        &_active {
+            font-weight: bold;
+            background-color: #0B0B0B;
+        }
+
+        img {
+            filter: brightness(0) saturate(100%) invert(84%) sepia(23%) saturate(820%) hue-rotate(337deg) brightness(101%) contrast(105%);
+            cursor: pointer;
+        }
+    }
+
+    &_requirements {
+        display: flex;
+        padding: 16px;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 10px;
+        align-self: stretch;
+        border-radius: 31px;
+        background: $low-black;
+
+        h3 {
+            color: $mid-white;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: $mid-white;
+            font-size: 16px;
+        }
+    }
+
+    &_requirement {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+        filter: brightness(0) saturate(100%) invert(78%) sepia(57%) saturate(323%) hue-rotate(343deg) brightness(101%) contrast(102%);
+
+        p {
+            line-height: 24px;
+        }
+    }
+
+    &_benefit {
+        display: flex;
+        height: 48px;
+        padding: 12px 24px;
+        align-items: center;
+        gap: 10px;
+        align-self: stretch;
+        border-radius: 31px;
+        background: $light-yellow;
+
+        p {
+            color: #0B0B0B;
+            text-align: center;
+            font-size: 16px;
+            font-style: normal;
+            font-weight: 500;
+            line-height: 24px;
+        }
+    }
+
+    &_container {
+        display: flex;
+        padding: 10px 18px;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 24px;
+        align-self: stretch;
+    }
+}
+
+/* Стили для карусели */
+.carouselContainer {
+    width: 100%;
+    perspective: 1000px;
+    padding: 20px 0 10px 0;
+    height: 200px;
+
+    .react-multi-carousel-item {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+}
+
+.carouselItem {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.3s cubic-bezier(0, 0.66, 0.58, 1);
+
+    img {
+        width: 146px;
+        opacity: 0.5;
+        transition: all 0.3s cubic-bezier(0, 0.66, 0.58, 1);
+        cursor: pointer;
+        width: 90%;
+    }
+}
+
+.carouselItemActive {
+    transform: scale(1.2);
+
+    img {
+        width: 188px;
+        opacity: 1;
+    }
+}
+
+.slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+    max-width: 600px;
+    --value: 0%;
+
+    &_value {
+        color: #ACB5FF;
+        font-size: 24px;
+        font-style: normal;
+        font-weight: 600;
+        line-height: 24px;
+        margin-left: 10px;
+    }
+
+    &::-webkit-slider-runnable-track {
+        background: #0B0B0B;
+        height: 0.5rem;
+    }
+
+    &::-moz-range-track {
+        background: #0B0B0B;
+        height: 0.5rem;
+    }
+
+    &::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        margin-top: -8px;
+        background-color: #FFF;
+        width: 24px;
+        height: 24px;
+        border-radius: 24px;
+    }
+
+    &::-moz-range-progress {
+        background-color: #ACB5FF;
+    }
+
+    &::-webkit-slider-runnable-track {
+        background: linear-gradient(to right, #ACB5FF var(--value), #0B0B0B var(--value));
+        border-radius: 24px;
+    }
+
+    &::-moz-range-track {
+        background: linear-gradient(to right, #ACB5FF, #0B0B0B);
+    }
+}

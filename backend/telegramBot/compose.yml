@@ -1,0 +1,14 @@
+services:
+  tgbot:
+    container_name: telegramBot
+    restart: always
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command: python main.py
+    ports:
+      - 88:88
+    volumes:
+      - ../ssl:/app/ssl
+    env_file:
+      - ../.env

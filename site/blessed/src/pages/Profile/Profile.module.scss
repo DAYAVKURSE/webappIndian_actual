@@ -1,0 +1,136 @@
+@import "@/scss/variables.module.scss";
+
+.profile {
+    padding: 0 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+
+    &_username {
+        font-size: 32px;
+        font-weight: 600;
+    }
+
+    &__balance {
+        font-size: 32px;
+        font-weight: 600;
+        color: $green;
+        width: fit-content;
+
+        &_desc {
+            font-size: 18px;
+            margin-top: 8px;
+            font-weight: 400;
+            color: $mid-white;
+        }
+
+        &_container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+    }
+
+    &__buttons {
+        display: flex;
+        gap: 10px;
+    }
+
+    &_container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    &_block {
+        padding: 24px;
+        border-radius: 30px;
+        width: 100%;
+        background-color: $low-black;
+        color: $mid-white;
+        font-size: 16px;
+        margin-top: 8px;
+        font-weight: 400;
+    }
+
+    &__referrals {
+        position: relative;
+
+        &_title {
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        &_subtitle {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        &__details {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            align-items: center;
+
+            &_title {
+                font-size: 18px;
+                font-weight: 500;
+                margin-bottom: 10px;
+            }
+            
+            &_detail {
+                display: flex;
+                gap: 5px;
+                align-items: center;
+            }
+
+            &_text {
+                font-size: 16px;
+                font-weight: 500;
+
+            }
+            
+            &_red {
+                filter: brightness(0) saturate(100%) invert(89%) sepia(99%) saturate(461%) hue-rotate(312deg) brightness(101%) contrast(101%);
+            }
+
+            &_green {
+                filter: brightness(0) saturate(100%) invert(93%) sepia(6%) saturate(2533%) hue-rotate(18deg) brightness(106%) contrast(101%);
+            }
+        }
+    }
+
+    &__list {
+        display: flex;
+        flex-direction: column;
+        padding: 24px;
+        border-radius: 30px;
+        width: 100%;
+        background-color: $low-black;
+        color: $mid-white;
+        font-size: 16px;
+        margin-top: 8px;
+        font-weight: 400;
+
+        ol {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            list-style-type: decimal;
+            list-style-position: inside;
+            padding: 0;
+            margin: 0;
+
+            li {
+                padding-bottom: 10px;
+                border-bottom: 1px solid #1C1C1C;
+                &:last-child {
+                    border-bottom: none;
+                    padding-bottom: 0;
+                }
+            }
+        }
+    }
+}

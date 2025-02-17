@@ -1,0 +1,26 @@
+# Stage 1: Build and cache Go modules
+FROM golang:1.20-alpine AS builder
+WORKDIR /app
+COPY . .
+
+# Set up cache directories
+RUN mkdir -p /go-cache /gomod-cache
+RUN go env -w GOCACHE=/go-cache
+RUN go env -w GOMODCACHE=/gomod-cache
+
+# Download Go modules using cache mount
+RUN --mount=type=cache,target=/go-cache --mount=type=cache,target=/gomod-cache go mod download
+
+# Stage 2: Run tests using the cached modules
+FROM golang:1.20-alpine AS test
+WORKDIR /app
+COPY . .
+COPY --from=builder /go-cache /go-cache
+COPY --from=builder /gomod-cache /gomod-cache
+
+# Set up cache directories
+RUN go env -w GOCACHE=/go-cache
+RUN go env -w GOMODCACHE=/gomod-cache
+
+# Run tests
+CMD go test ./... -v && touch /test-result/success

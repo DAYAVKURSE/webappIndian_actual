@@ -1,0 +1,18 @@
+@import "@/scss/variables.module.scss";
+
+.toast {
+    background-color: $low-black !important;
+    color: $biege !important;
+    border: none;
+    z-index: 100;
+}
+
+.toastSuccess {
+    background-color: $low-black !important;
+    color: $green !important;
+}
+
+.toastError {
+    background-color: $low-black !important;
+    color: $red !important;
+}

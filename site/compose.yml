@@ -1,0 +1,11 @@
+services:
+  web:
+    container_name: reactSite
+    restart: always
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command: nginx -g "daemon off;"
+    ports:
+      - 80:80
+      - 443:443

@@ -1,0 +1,161 @@
+@import '@/scss/variables.module.scss';
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Poppins', 'Roboto', sans-serif;
+    font-weight: 400;
+    margin: 0;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-smoothing: antialiased;
+    background-color: #000;
+    color: #fff;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    height: 100%;
+}
+
+#root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    // touch-action: pan-x pan-y;
+}
+
+:root {
+    touch-action: pan-x pan-y;
+    height: 100%
+}
+
+* {
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
+}
+
+main {
+    height: fit-content;
+}
+
+code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+html {
+    scroll-behavior: smooth;
+    height: 100%;
+}
+
+*,
+*:before,
+*:after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+    margin: 0;
+}
+
+ul,
+ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+li {
+    margin-bottom: 0;
+}
+
+input[type='text'] {
+    line-height: inherit;
+    box-shadow: none;
+}
+
+img {
+    display: block;
+    height: auto;
+    margin: 0;
+    max-width: 100%;
+}
+
+a {
+    color: inherit;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+button {
+    font-family: inherit;
+}
+
+button:not(:disabled) {
+    cursor: pointer;
+}
+
+input {
+    font-family: inherit;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: url('@/fonts/Gilroy-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: local('Gilroy Bold'), local('Gilroy-Bold');
+    src: url('@/fonts/Gilroy-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: local('Gilroy ExtraBold'), local('Gilroy-ExtraBold'),
+        url('@/fonts/Gilroy-ExtraBold.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Hanson';
+    src: url('@/fonts/Hanson-Bold.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}

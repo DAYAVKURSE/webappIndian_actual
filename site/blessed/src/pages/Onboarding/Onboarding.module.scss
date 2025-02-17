@@ -1,0 +1,125 @@
+@import "@/scss/variables.module.scss";
+
+.onboarding {
+    display: flex;
+    flex-direction: column;
+    gap: 88px;
+    justify-content: end;
+    height: 100%;
+
+    &__img {
+        width: 100%;
+        justify-self: center;
+        align-self: center;
+    }
+
+    &__content {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        animation: fadeIn 0.5s ease;
+        padding: 20px;
+
+        justify-content: end;
+        align-items: start;
+
+        &_title {
+            width: fit-content;
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        &_desc {
+            font-size: 18px;
+            font-weight: 400;
+        }
+    }
+
+    &__buttons {
+        display: flex;
+        gap: 12px;
+        width: 100%;
+
+        &_input {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+        }
+    }
+
+    &__dots {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+        margin-top: 20px;
+
+        &_dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 10px;
+            background-color: $light-yellow;
+            opacity: .5;
+            transition: width 0.2s ease, opacity 0.2s ease;
+            margin-bottom: 22px;
+
+            &_active {
+                width: 50px;
+                opacity: 1;
+            }
+        }
+    }
+}
+
+@media (max-height: 800px) {
+    .onboarding {
+        gap: 40px;
+
+        &__img {
+            width: 80%;
+        }
+    }
+}
+
+@media (max-height: 590px) {
+    .onboarding {
+        gap: 0;
+    }
+}
+
+.slideEnter {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+.slideEnterActive {
+    opacity: 1;
+    transform: translateX(0);
+    transition: opacity 250ms ease-in-out, transform 250ms ease-in-out;
+}
+
+.slideExit {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.slideExitActive {
+    opacity: 0;
+    transform: translateX(-100%);
+    transition: opacity 250ms ease-in-out, transform 250ms ease-in-out;
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    1% {
+        opacity: .1;
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

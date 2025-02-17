@@ -1,0 +1,141 @@
+@import "@/scss/variables.module.scss";
+
+.dice {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+
+    &_bet_container {
+        display: flex;
+        padding: 0px 18px;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        align-self: stretch;
+    }
+
+    &_number {
+        color: #FFF;
+        text-align: center;
+        font-size: 48px;
+        font-style: normal;
+        font-weight: 700;
+        line-height: 24px;
+        height: 24px;
+        opacity: 0;
+        transition: opacity 1s ease-in-out;
+
+        &.fadeIn {
+            animation: fadeIn 1s forwards;
+            opacity: 1;
+        }
+
+        &.fadeOut {
+            animation: fadeOut .3s forwards;
+            opacity: 0;
+        }
+    }
+
+    &_lottie {
+        margin-top: -75px;
+        margin-bottom: -25px;
+    }
+
+    &_tip {
+        display: flex;
+        width: 100%;
+        justify-content: center;
+        color: $mid-white;
+        text-align: center;
+        font-size: 18px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: 24px;
+
+        p {
+            width: fit-content;
+            flex: 1 0 0;
+        }
+    }
+
+    h3 {
+        width: 100%;
+    }
+
+    &_amount {
+        width: 100%;
+    }
+}
+
+.slider {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+    max-width: 600px;
+    --value: 50%;
+
+    &_value {
+        color: #ACB5FF;
+        font-size: 24px;
+        font-style: normal;
+        font-weight: 600;
+        line-height: 24px;
+        margin-left: 10px;
+    }
+
+    &::-webkit-slider-runnable-track {
+        background: #0B0B0B;
+        height: 0.5rem;
+    }
+
+    &::-moz-range-track {
+        background: #0B0B0B;
+        height: 0.5rem;
+    }
+
+    &::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        margin-top: -8px;
+        background-color: #FFF;
+        width: 24px;
+        height: 24px;
+        border-radius: 24px;
+    }
+
+    &::-moz-range-progress {
+        background-color: #ACB5FF;
+    }
+
+    &::-webkit-slider-runnable-track {
+        background: linear-gradient(to right, #ACB5FF var(--value), #0B0B0B var(--value));
+        border-radius: 24px;
+    }
+
+    &::-moz-range-track {
+        background: linear-gradient(to right, #ACB5FF, #0B0B0B);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}

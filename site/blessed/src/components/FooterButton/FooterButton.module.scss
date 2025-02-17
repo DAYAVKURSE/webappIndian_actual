@@ -1,0 +1,22 @@
+@import '@/scss/variables.module.scss';
+
+.button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    gap: 5px;
+    font-size: 14px;
+    font-weight: 600;
+    color: $low-white;
+
+    &__icon {
+        width: 24px;
+        height: 24px;
+    }
+}
+
+.active {
+    filter: brightness(0) saturate(100%) invert(80%) sepia(31%) saturate(618%) hue-rotate(339deg) brightness(106%) contrast(101%);
+}

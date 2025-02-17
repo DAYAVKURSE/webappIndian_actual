@@ -1,0 +1,157 @@
+@import "@/scss/variables.module.scss";
+
+.trading {
+    display: flex;
+    flex-direction: column;
+    padding: 16px 16px;
+    height: 100%;
+    min-height: 590px;
+    gap: 8px;
+
+    @media screen and (max-height: 685px) {
+        gap: 8px;
+        padding: 8px 16px 0 16px;
+    }
+
+    &_button {
+        display: flex;
+        padding: 7px 12px;
+        justify-content: center;
+        align-items: baseline;
+        gap: 5px;
+        flex: 1 0 0;
+        border-radius: 44px;
+        background: #0B0B0B;
+        color: #BCBCBC;
+        text-align: center;
+        font-size: 18px;
+        font-style: normal;
+        font-weight: 500;
+        line-height: 24px;
+        border: none;
+
+        &_container {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            align-self: stretch;
+            color: #BCBCBC;
+            text-align: center;
+            font-size: 18px;
+            font-style: normal;
+            font-weight: 500;
+            line-height: 24px;
+        }
+
+        p {
+            font-weight: 400;
+            font-size: 16px;
+        }
+    }
+
+    &_balance {
+        color: #EDFF8C;
+        font-size: 32px;
+        font-style: normal;
+        font-weight: 700;
+        line-height: 24px;
+    }
+
+    &_text {
+        color: $low-white;
+        font-size: 14px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: 24px;
+    }
+    
+    &__chart {
+        height: 50%;
+        margin-bottom: 10px;
+    }
+
+    &__bet {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        align-self: stretch;
+        border-radius: 46px;
+        background: $low-black;
+        gap: 2px;
+
+        &_button {
+            display: flex;
+            padding: 12px 0px;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            flex: 1 0 0;
+            align-self: stretch;
+            outline: none;
+            border: none;
+            appearance: none;
+            user-select: none;
+            -webkit-user-drag: none;
+
+            color: $low-black;
+            text-align: center;
+            font-size: 16px;
+            font-style: normal;
+            font-weight: 800;
+            line-height: 24px; /* 150% */
+
+            img {
+                filter: brightness(0) saturate(100%) invert(0%) sepia(0%) saturate(9%) hue-rotate(287deg) brightness(104%) contrast(100%);
+            }
+
+            &:first-child {
+                border-radius: 46px 0 0 46px;
+                background: #D22C32;
+            }
+
+            &:last-child {
+                border-radius: 0 46px 46px 0;
+                background: #26CC57;
+            }
+        }
+    }
+
+    &__timer {
+        display: flex;
+        width: 100%;
+        padding: 12px 24px;
+        justify-content: space-between;
+        align-items: center;
+
+        color: $biege;
+        text-align: center;
+        font-size: 18px;
+        font-style: normal;
+        font-weight: 700;
+        line-height: 24px; /* 133.333% */
+        user-select: none;
+        border-radius: 46px;
+        background: $low-black;
+
+        &_button {
+            height: 24px;
+            -webkit-user-drag: none;
+            filter: brightness(0) saturate(100%) invert(88%) sepia(21%) saturate(279%) hue-rotate(330deg) brightness(107%) contrast(90%);
+
+            &_container {
+                display: flex;
+                width: 100%;
+                cursor: pointer;
+                user-select: none;
+
+                &:first-child {
+                    justify-content: flex-start;
+                }
+
+                &:last-child {
+                    justify-content: flex-end;
+                }
+            }
+        }
+    }
+}
