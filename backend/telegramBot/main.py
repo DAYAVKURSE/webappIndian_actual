@@ -2,14 +2,13 @@ import logging
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
 from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo, BotCommand
-from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
-from aiohttp import web
 from envLoader import load_env
 import ssl
 from collections import OrderedDict
 import time
 from typing import Dict, Tuple, Any, Optional
 from threading import Lock
+import asyncio
 
 # Configuration
 REQUIRE_CHANNEL_SUB = False  # Set this to False to make channel subscription optional
@@ -21,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 # Load environment variables
 token, webhook_host, webhook_port = load_env()
-webapp_url = "https://bitrave.co/"
+webapp_url = f"https://{webhook_host}/"
 webhook_url = f"https://{webhook_host}:{webhook_port}"
 
 # Initialize bot and dispatcher
@@ -161,27 +160,21 @@ async def set_commands(bot: Bot):
     await bot.set_my_commands(commands)
     logger.info("Bot commands have been set")
 
-async def on_startup(app: web.Application):
-    await bot.set_webhook(f"{webhook_url}/webhook")
-    await set_commands(bot)
-    logger.info("Bot started and webhook set")
-
-def main():
-    # Create SSL context
+async def main():
+    # Create SSL context for webapp (if needed)
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
     context.load_cert_chain('./ssl/certificate.crt', './ssl/private.key')
 
-    # Set up the application
-    app = web.Application()
-    SimpleRequestHandler(dispatcher=dp, bot=bot).register(app, path="/webhook")
-    setup_application(app, dp, bot=bot)
-
-    # Set up startup handler
-    app.on_startup.append(on_startup)
-
-    logger.info(f"Starting the bot... Channel subscription requirement: {'ON' if REQUIRE_CHANNEL_SUB else 'OFF'}")
-    # Start the web application
-    web.run_app(app, host="0.0.0.0", port=webhook_port, ssl_context=context)
+    # Delete webhook to make sure we're not using it
+    await bot.delete_webhook(drop_pending_updates=True)
+    
+    # Set commands
+    await set_commands(bot)
+    
+    logger.info(f"Starting the bot in long polling mode... Channel subscription requirement: {'ON' if REQUIRE_CHANNEL_SUB else 'OFF'}")
+    
+    # Start long polling
+    await dp.start_polling(bot)
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

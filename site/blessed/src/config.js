@@ -1,1 +1,1 @@
-export const API_BASE_URL = 'bitrave.co:8443/api';
+export const API_BASE_URL = '185.221.155.130:8443/api';

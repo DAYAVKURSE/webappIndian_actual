@@ -18,3 +18,4 @@ volumes:
 networks:
   db-network:
     name: db-network
+    external: true

@@ -1,17 +1,9 @@
-FROM golang:1.20-alpine AS builder
-
-RUN go env -w GOCACHE=/go-cache
-RUN go env -w GOMODCACHE=/gomod-cache
+FROM golang:1.20-alpine
 
 WORKDIR /build
 COPY ["go.sum", "go.mod", "./"]
-RUN --mount=type=cache,target=/gomod-cache go mod download
+RUN go mod download
 COPY . .
-RUN --mount=type=cache,target=/gomod-cache --mount=type=cache,target=/go-cache go build -o migrate pkg/migrations/migrate.go
-
-FROM alpine
-
-WORKDIR /app
-COPY --from=builder /build/migrate .
+RUN go build -o migrate pkg/migrations/migrate.go
 
 CMD ["./migrate"]

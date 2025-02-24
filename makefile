@@ -1,7 +1,7 @@
 .PHONY: postgres api api-test api-start-with-test tgbot site migrate clear
 
 postgres:
-	docker compose -f /srv/backend/postgres/compose.yml up -d
+	docker compose -f backend/postgres/compose.yml up -d
 
 api:
 	cd backend/api && docker compose -f compose.yml up -d api redis --build
@@ -24,6 +24,7 @@ tgbot:
 
 site:
 	cd site && docker compose -f compose.yml up --build -d
+
 migrate:
 	cd backend/api && \
 	docker build -f Dockerfile.migrate -t api-migrate . && \
