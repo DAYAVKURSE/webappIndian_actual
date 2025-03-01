@@ -4,6 +4,8 @@
     padding: 0px 18px;
     gap: 16px;
     overflow-x: hidden;
+    background-color: #0B1728;
+    min-height: 100vh;
 
     &_title {
         color: #FFF;
@@ -41,9 +43,12 @@
         position: relative;
         width: 100%;
         height: 200px;
-        background-color: #000000;
-        border-bottom: 1px dashed #494949;
-        border-left: 1px dashed #494949;
+        background-color: #0B1728;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
 
     &_wins {
@@ -218,7 +223,6 @@
     }
 }
 
-
 .svg {
     position: absolute;
     top: 0;
@@ -290,24 +294,172 @@
     border-radius: 50%;
 }
 
+// Баланс
+.balance {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20px;
+    
+    .balanceIcon {
+        background-color: #3B82F6;
+        color: white;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 8px;
+    }
+    
+    .balanceValue {
+        color: white;
+        font-size: 24px;
+        font-weight: bold;
+    }
+}
 
+// Звезда и мультипликатор
+.starContainer {
+    margin-bottom: 40px;
+    position: relative;
+    animation: floatStar 2s infinite alternate ease-in-out;
+    
+    .star {
+        width: 64px;
+        height: 64px;
+        filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+    }
+}
+
+.multiplier {
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+// Секция управления ставкой
+.betSection {
+    padding: 16px;
+    
+    .coefficientLabel {
+        color: #8B9CB9;
+        font-size: 18px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .betControls {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .betAmount {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: #13243D;
+        padding: 12px 16px;
+        border-radius: 8px;
+        color: white;
+        font-size: 18px;
+        font-weight: 500;
+        
+        .betAmountButtons {
+            display: flex;
+            gap: 8px;
+            
+            .betButton {
+                width: 30px;
+                height: 30px;
+                border-radius: 4px;
+                background-color: #1E3254;
+                color: white;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                
+                &:hover {
+                    background-color: #2C4370;
+                }
+            }
+        }
+    }
+    
+    .quickButtons {
+        display: flex;
+        gap: 10px;
+        
+        .quickButton {
+            flex: 1;
+            padding: 10px;
+            background-color: #13243D;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            
+            &:hover {
+                background-color: #1E3254;
+            }
+        }
+    }
+    
+    .mainButton {
+        background-color: #3B82F6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 16px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.3s;
+        
+        &:hover {
+            background-color: #2563EB;
+        }
+        
+        &:disabled {
+            background-color: #6B7280;
+            cursor: not-allowed;
+        }
+    }
+}
+
+// Анимация полёта звезды
+@keyframes floatStar {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(-10px);
+    }
+}
+
+// Анимации для оверлея
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
 
 @keyframes fadeOut {
     from {
         opacity: 1;
     }
-
     to {
         opacity: 0;
-    }
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
     }
 }

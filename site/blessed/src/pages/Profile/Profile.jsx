@@ -11,8 +11,8 @@ export const Profile = () => {
     const userId = window.Telegram.WebApp.initDataUnsafe.user.id;
 
     const copyLink = () => {
-        const link = document.getElementById('link');
-        navigator.clipboard.writeText(link.placeholder);
+        const link = `https://t.me/BiTRave_bot?start=${userId}`;
+        navigator.clipboard.writeText(link);
     }
 
     useEffect(() => {
@@ -30,73 +30,51 @@ export const Profile = () => {
         });
     }, []);
 
-    const formatBalance = (balance) => {
-        let balanceStr = Math.trunc(balance).toString();
-
-        const balanceParts = balanceStr.replace(/\B(?=(\d{3})+(?!\d))/g, ".").split(".");
-
-        const main = balanceParts.shift();
-        const fraction = balanceParts.join('.');
-
-        return { main, fraction };
-    };
-
-    const { main, fraction } = formatBalance(BalanceRupee || 0);
-
     return (
         <div className={styles.profile}>
-            <p className={styles.profile_username}>{userName}</p>
-            <div className={styles.profile__balance_container}>
-                <p className={styles.profile__balance_desc}>Your balance</p>
-                <p className={styles.trading_balance}>
-                    <span className={styles.profile__balance}>₹ {main}</span>
-                    {fraction && (
-                        <span className={styles.profile__balance} style={{fontSize: "26px"}}>
-                            .{fraction}
-                        </span>
-                    )}
+            <h1 className={styles.title}>Account</h1>
+            <p className={styles.username}>Name {userName}</p>
+            
+            <div className={styles.referralSection}>
+                <h2 className={styles.referHeader}>Refer a friend and earn 20%</h2>
+                
+                <p className={styles.referDescription}>
+                    Share your link with friends, family, or on social media. 
+                    When someone signs up and makes a deposit using your link, 
+                    you'll get 20% of their deposit
                 </p>
+                
+                <div className={styles.linkContainer}>
+                    <input 
+                        type="text" 
+                        className={styles.linkInput} 
+                        value={`https://t.me/BiTRave_bot?start=${userId}`} 
+                        readOnly 
+                    />
+                    <button className={styles.copyButton} onClick={copyLink}>
+                        <img src="/24=content_copy.svg" alt="Copy" />
+                    </button>
+                </div>
             </div>
-            <div className={styles.profile_container}>
-                <div className={styles.profile_container}>
-                    <Button label="Refer a Friend and Earn 20%" fill color="green" style={{ justifyContent: "left" }} />
-                    <p className={styles.profile_block}>Share your link with friends, family, or on social media. When someone signs up and makes a deposit using your link, you&apos;ll get 20% of their deposit.</p>
-                    <div className={styles.profile__buttons}>
-                        <Input id="link" placeholder={`https://t.me/BiTRave_bot?start=${userId}`} disabled />
-                        <Button
-                            icon="24=content_copy.svg"
-                            circle
-                            filter
-                            color="beige"
-                            toastText="Copied!"
-                            toastType="success"
-                            onClick={() => copyLink()}
-                        />
-                    </div>
+            
+            <div className={styles.referralsContainer}>
+                <h2 className={styles.referralsTitle}>Your referrals</h2>
+                <p className={styles.totalEarnedLabel}>Total earned</p>
+                
+                <div className={styles.totalEarned}>
+                    <div className={styles.rupeeIcon}>₹</div>
+                    <span className={styles.earnedAmount}>{totalEarned}</span>
                 </div>
-                <div className={styles.profile__referrals}>
-                    <h3 className={styles.profile__referrals_title}>Your referrals</h3>
-                    <div className={styles.profile_block}>
-                        <p className={styles.profile__referrals__details_title}>Total earned:</p>
-                        <div className={styles.profile__referrals__details}>
-                            <p className={`${styles.profile__referrals__details_detail} ${styles.profile__referrals__details_green}`}>
-                                <img src="/24=rupee.svg" alt="" />
-                                <p className={styles.profile__referrals__details_text}>{totalEarned}</p>
-                            </p>
-                        </div>
-                    </div>
-                    <div className={styles.profile__list}>
-                        {referrals.length > 0 ? (
-                            <ol className={styles.profile__users}>
-                                {referrals.map((user, index) => (
-                                    <li key={index} className={styles.profile__user}>{user.ReferredNickname}</li>
-                                ))}
-                            </ol>
-                        ) : (
-                            <p className={styles.profile__empty}>No referrals yet</p>
-                        )}
-                    </div>
-                </div>
+                
+                {referrals.length > 0 ? (
+                    <ol className={styles.referralsList}>
+                        {referrals.map((user, index) => (
+                            <li key={index} className={styles.referralItem}>{user.ReferredNickname}</li>
+                        ))}
+                    </ol>
+                ) : (
+                    <p className={styles.noReferrals}>No referrals yet</p>
+                )}
             </div>
         </div>
     );
