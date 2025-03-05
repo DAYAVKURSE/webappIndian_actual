@@ -343,78 +343,16 @@
 
 // Секция управления ставкой
 .betSection {
-    padding: 16px;
-    
-    .coefficientLabel {
-        color: #8B9CB9;
-        font-size: 18px;
-        text-align: center;
-        margin-bottom: 20px;
-    }
-    
-    .betControls {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-    }
-    
-    .betAmount {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: #13243D;
-        padding: 12px 16px;
-        border-radius: 8px;
-        color: white;
-        font-size: 18px;
-        font-weight: 500;
-        
-        .betAmountButtons {
-            display: flex;
-            gap: 8px;
-            
-            .betButton {
-                width: 30px;
-                height: 30px;
-                border-radius: 4px;
-                background-color: #1E3254;
-                color: white;
-                border: none;
-                font-size: 20px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                
-                &:hover {
-                    background-color: #2C4370;
-                }
-            }
-        }
-    }
-    
-    .quickButtons {
-        display: flex;
-        gap: 10px;
-        
-        .quickButton {
-            flex: 1;
-            padding: 10px;
-            background-color: #13243D;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            
-            &:hover {
-                background-color: #1E3254;
-            }
-        }
-    }
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 0 16px 16px;
     
     .mainButton {
-        background-color: #3B82F6;
+        background-color: #3b82f6;
         color: white;
         border: none;
         border-radius: 8px;
@@ -422,16 +360,67 @@
         font-size: 18px;
         font-weight: 600;
         cursor: pointer;
-        transition: background-color 0.3s;
+        transition: all 0.3s;
+        height: 56px;
         
         &:hover {
-            background-color: #2563EB;
+            background-color: #2563eb;
         }
         
         &:disabled {
-            background-color: #6B7280;
+            background-color: #6b7280;
             cursor: not-allowed;
         }
+        
+        &.activeButton {
+            background-color: #edff8c;
+            color: #000000;
+            animation: glow 1.5s infinite alternate;
+        }
+    }
+}
+
+.activeBet {
+    position: absolute;
+    bottom: 10px;
+    color: #EDFF8C;
+    background-color: rgba(11, 23, 40, 0.7);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.8;
+    }
+}
+
+.autoCashoutBtn {
+    background-color: #1D293A;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &.active {
+        background-color: #EDFF8C;
+        color: #000000;
+    }
+    
+    &:hover {
+        opacity: 0.8;
     }
 }
 
@@ -461,5 +450,63 @@
     }
     to {
         opacity: 0;
+    }
+}
+
+@keyframes glow {
+    from {
+        box-shadow: 0 0 5px rgba(237, 255, 140, 0.5);
+    }
+    to {
+        box-shadow: 0 0 15px rgba(237, 255, 140, 0.8);
+    }
+}
+
+.coefficientContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.coefficientLabel {
+    color: #FFF;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.coefficientInput {
+    display: flex;
+    align-items: center;
+    background-color: #13243D;
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 40px;
+    
+    .autoInput {
+        width: 100%;
+        background: transparent;
+        border: none;
+        color: white;
+        font-size: 16px;
+        padding: 8px 0;
+        
+        &:focus {
+            outline: none;
+        }
+        
+        &::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+    }
+    
+    .inputLabel {
+        color: #EDFF8C;
+        font-weight: 600;
+        font-size: 16px;
+        margin-left: 4px;
     }
 }

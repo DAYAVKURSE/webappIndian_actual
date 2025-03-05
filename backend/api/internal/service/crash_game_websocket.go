@@ -177,10 +177,15 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
     crashPointReached := false
     startTime := time.Now()
 
-    // Получаем соединение только для владельца игры
-    conn, exists := ws.connections[currentGame.UserID]
-    if !exists {
-        ws.mu.Unlock()
+    // Собираем все активные соединения для массовой рассылки
+    connections := make(map[int64]*websocket.Conn)
+    for userId, conn := range ws.connections {
+        connections[userId] = conn
+    }
+    ws.mu.Unlock()
+
+    // Если нет активных соединений, выходим
+    if len(connections) == 0 {
         return
     }
 
@@ -195,34 +200,87 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
             "elapsed":    time.Since(startTime).Seconds(),
         }
 
-        if !crashPointReached {
-            err := conn.WriteJSON(multiplierInfo)
-            if err != nil {
-                logger.Error("Failed to send multiplier: %v", err)
-                conn.Close()
-                delete(ws.connections, currentGame.UserID)
-                break
-            }
-        }
-
-        // Проверяем автовыход только для ставок этого пользователя
-        if bet, ok := ws.bets[currentGame.UserID]; ok {
-            if bet.CashOutMultiplier != 0 &&
-                bet.Status == "active" &&
-                currentMultiplier >= bet.CashOutMultiplier {
-                if err := crashGameCashout(nil, bet, currentMultiplier); err != nil {
-                    logger.Error("Unable to auto cashout for user %d: %v", currentGame.UserID, err)
+        // Рассылаем обновления множителя всем подключенным пользователям
+        ws.mu.Lock()
+        for userId, conn := range connections {
+            if !crashPointReached {
+                err := conn.WriteJSON(multiplierInfo)
+                if err != nil {
+                    logger.Error("Failed to send multiplier to user %d: %v", userId, err)
+                    conn.Close()
+                    delete(connections, userId)
+                    delete(ws.connections, userId)
                     continue
                 }
-                ws.ProcessCashout(currentGame.UserID, currentMultiplier, true)
+            }
+
+            // Проверяем автовыход для каждого пользователя с активной ставкой
+            if bet, ok := ws.bets[userId]; ok {
+                if bet.CashOutMultiplier != 0 &&
+                    bet.Status == "active" &&
+                    currentMultiplier >= bet.CashOutMultiplier {
+                    if err := crashGameCashout(nil, bet, currentMultiplier); err != nil {
+                        logger.Error("Unable to auto cashout for user %d: %v", userId, err)
+                        continue
+                    }
+                    ws.ProcessCashout(userId, currentMultiplier, true)
+                }
             }
         }
+        ws.mu.Unlock()
 
         if currentMultiplier >= currentGame.CrashPointMultiplier && !crashPointReached {
             crashPointReached = true
-            ws.mu.Unlock()
-            ws.SendCrashPointToUser(currentGame.UserID, currentGame.CrashPointMultiplier)
+            ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
             break
+        }
+    }
+}
+
+// Отправляет сообщение о крахе игры всем пользователям
+func (ws *CrashGameWebsocketService) BroadcastGameCrash(crashPoint float64) {
+    ws.mu.Lock()
+    defer ws.mu.Unlock()
+
+    crashInfo := gin.H{
+        "type":        "game_crash",
+        "crash_point": crashPoint,
+    }
+
+    for userId, conn := range ws.connections {
+        err := conn.WriteJSON(crashInfo)
+        if err != nil {
+            logger.Error("Failed to send crash point to user %d: %v", userId, err)
+            conn.Close()
+            delete(ws.connections, userId)
+            continue
+        }
+
+        // Обновляем статус ставки если она активна
+        if bet, ok := ws.bets[userId]; ok && bet.Status == "active" {
+            bet.Status = "lost"
+            if err := db.DB.Save(&bet).Error; err != nil {
+                logger.Error("Failed to update lost bet for user %d: %v", userId, err)
+            }
+        }
+    }
+}
+
+// Отправляет сообщение о начале новой игры всем пользователям
+func (ws *CrashGameWebsocketService) BroadcastGameStarted() {
+    ws.mu.Lock()
+    defer ws.mu.Unlock()
+
+    gameStartedInfo := gin.H{
+        "type": "game_started",
+    }
+
+    for userId, conn := range ws.connections {
+        err := conn.WriteJSON(gameStartedInfo)
+        if err != nil {
+            logger.Error("Failed to send game started to user %d: %v", userId, err)
+            conn.Close()
+            delete(ws.connections, userId)
         }
     }
 }
@@ -234,20 +292,52 @@ func (ws *CrashGameWebsocketService) ProcessCashout(userId int64, multiplier flo
         return
     }
 
-    // Отправляем результат только пользователю
-    if conn, ok := ws.connections[userId]; ok {
-        cashoutInfo := gin.H{
-            "type":       "cashout_result",
-            "multiplier": bet.CashOutMultiplier,
-            "win_amount": bet.WinAmount,
-            "is_auto":    isAuto,
-        }
+    // Получаем информацию о пользователе
+    var user models.User
+    if err := db.DB.First(&user, userId).Error; err != nil {
+        logger.Error("Failed to get user info for cashout: %v", err)
+        return
+    }
 
+    // Создаем сообщение о кэшауте
+    cashoutInfo := gin.H{
+        "type":               "cashout_result",
+        "cashout_multiplier": multiplier,
+        "win_amount":         bet.WinAmount,
+        "is_auto":            isAuto,
+        "userId":             userId,
+        "username":           user.Nickname,
+    }
+
+    // Отправляем пользователю, который сделал кэшаут
+    ws.mu.Lock()
+    defer ws.mu.Unlock()
+
+    if conn, ok := ws.connections[userId]; ok {
         err := conn.WriteJSON(cashoutInfo)
         if err != nil {
-            logger.Error("Failed to send cashout result: %v", err)
+            logger.Error("Failed to send cashout result to user %d: %v", userId, err)
             conn.Close()
             delete(ws.connections, userId)
+        }
+    }
+
+    // Отправляем всем остальным пользователям уведомление о кэшауте
+    for otherUserId, conn := range ws.connections {
+        if otherUserId != userId {
+            otherUserInfo := gin.H{
+                "type":               "other_cashout",
+                "username":           user.Nickname,
+                "cashout_multiplier": multiplier,
+                "win_amount":         bet.WinAmount,
+            }
+            
+            err := conn.WriteJSON(otherUserInfo)
+            if err != nil {
+                logger.Error("Failed to send cashout notification to user %d: %v", otherUserId, err)
+                conn.Close()
+                delete(ws.connections, otherUserId)
+            }
         }
     }
 }
