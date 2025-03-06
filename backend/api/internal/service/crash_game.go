@@ -91,6 +91,9 @@ func StartCrashGame() {
 			continue
 		}
 
+		// Оповещаем всех пользователей о начале игры
+		CrashGameWS.BroadcastGameStarted()
+
 		// Start the multiplier growth and handle cashouts
 		CrashGameWS.SendMultiplierToUser(currentCrashGame)
 
