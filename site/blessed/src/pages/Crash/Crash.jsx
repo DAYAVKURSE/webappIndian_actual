@@ -31,6 +31,7 @@ export const Crash = () => {
     const [isStarExploding, setIsStarExploding] = useState(false);
     const trailTimerRef = useRef(null);
     const smallParticleTimerRef = useRef(null);
+    const sparksTimerRef = useRef(null);
     
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);
@@ -85,6 +86,15 @@ export const Crash = () => {
         smallParticleTimerRef.current = setInterval(() => {
             createSmallParticles();
         }, 200);
+        
+        // Запускаем создание искр, летящих снизу
+        if (sparksTimerRef.current) {
+            clearInterval(sparksTimerRef.current);
+        }
+        
+        sparksTimerRef.current = setInterval(() => {
+            createSparksEffect();
+        }, 150);
         
         // Добавляем начальное свечение
         setTimeout(() => {
@@ -288,6 +298,51 @@ export const Crash = () => {
         }
     };
 
+    // Создаем искры, летящие снизу звезды
+    const createSparksEffect = () => {
+        if (!starContainerRef.current || !isStarFlying) return;
+        
+        // Создаем несколько искр
+        const sparkCount = 8 + Math.floor(Math.random() * 5); // 8-12 искр за раз
+        const sparkTypes = ['gold', 'bright', 'orange'];
+        
+        for (let i = 0; i < sparkCount; i++) {
+            const spark = document.createElement('div');
+            
+            // Выбираем случайный тип искры
+            const typeIndex = Math.floor(Math.random() * sparkTypes.length);
+            const sparkType = sparkTypes[typeIndex];
+            
+            spark.className = `${styles.sparkParticle} ${styles[sparkType]} ${styles.active}`;
+            
+            // Позиционируем искру внизу экрана в области звезды
+            const containerWidth = starContainerRef.current.offsetWidth;
+            const centerX = containerWidth / 2;
+            const startX = centerX - 25 + Math.random() * 50; // небольшой разброс по центру
+            
+            // Генерируем случайный угол в верхнем конусе (направление вверх с разбросом)
+            const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 1.5;
+            const distance = 30 + Math.random() * 100;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+            
+            spark.style.setProperty('--x', `${x}px`);
+            spark.style.setProperty('--y', `${y}px`);
+            
+            spark.style.left = `${startX}px`;
+            spark.style.bottom = `${Math.random() * 20}px`; // случайная высота от нижнего края
+            
+            starContainerRef.current.appendChild(spark);
+            
+            // Удаляем искру после окончания анимации
+            setTimeout(() => {
+                if (starContainerRef.current && spark.parentNode === starContainerRef.current) {
+                    starContainerRef.current.removeChild(spark);
+                }
+            }, 1200);
+        }
+    };
+
     // Setting up dimensions and WebSocket connection
     useEffect(() => {
         const updateDimensions = () => {
@@ -358,6 +413,22 @@ export const Crash = () => {
                         multiplierTimerRef.current = null;
                     }
                     setStartMultiplierTime(null);
+                    
+                    // Останавливаем таймеры создания следа и маленьких частиц
+                    if (trailTimerRef.current) {
+                        clearInterval(trailTimerRef.current);
+                        trailTimerRef.current = null;
+                    }
+                    
+                    if (smallParticleTimerRef.current) {
+                        clearInterval(smallParticleTimerRef.current);
+                        smallParticleTimerRef.current = null;
+                    }
+                    
+                    if (sparksTimerRef.current) {
+                        clearInterval(sparksTimerRef.current);
+                        sparksTimerRef.current = null;
+                    }
                     
                     // Взрываем звезду при окончании игры
                     setIsStarFlying(false);
@@ -472,7 +543,7 @@ export const Crash = () => {
                         
                         // Очищаем предыдущие эффекты
                         const oldElements = starContainerRef.current.querySelectorAll(
-                            `.${styles.starTrail}, .${styles.smallParticle}, .${styles.glowEffect}`
+                            `.${styles.starTrail}, .${styles.smallParticle}, .${styles.glowEffect}, .${styles.sparkParticle}`
                         );
                         oldElements.forEach(el => {
                             if (el.parentNode === starContainerRef.current) {
@@ -514,6 +585,9 @@ export const Crash = () => {
             }
             if (smallParticleTimerRef.current) {
                 clearInterval(smallParticleTimerRef.current);
+            }
+            if (sparksTimerRef.current) {
+                clearInterval(sparksTimerRef.current);
             }
             if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
                 ws.close();
@@ -656,6 +730,7 @@ export const Crash = () => {
                 
                 {/* Star animation */}
                 <div className={styles.starContainer} ref={starContainerRef}>
+                    <div className={styles.sparkTrail}></div>
                     <img 
                         src="/star.svg" 
                         alt="Star" 
