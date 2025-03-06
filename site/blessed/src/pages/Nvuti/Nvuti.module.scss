@@ -7,7 +7,7 @@
     align-items: center;
     gap: 24px;
     align-self: stretch;
-    background-color: #0A1118;
+    background-color: #081018;
     min-height: 100vh;
 
     &_balance {
@@ -16,7 +16,7 @@
         justify-content: center;
         gap: 8px;
         margin-top: 16px;
-        background-color: rgba(0, 0, 0, 0.2);
+        background-color: rgba(0, 0, 0, 0.3);
         padding: 6px 12px;
         border-radius: 24px;
 
@@ -26,7 +26,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #007BFF;
+            background-color: #0070FF;
             border-radius: 50%;
             font-size: 14px;
             color: #fff;
@@ -42,7 +42,7 @@
     &_number {
         color: #FFF;
         text-align: center;
-        font-size: 120px;
+        font-size: 140px;
         font-style: normal;
         font-weight: 300;
         margin: 20px 0;
@@ -68,15 +68,17 @@
         width: 100%;
         gap: 10px;
         margin-top: 16px;
+        height: 50px;
     }
 
     &_bet_input {
         flex: 1;
         display: flex;
         align-items: center;
-        background-color: rgba(255, 255, 255, 0.05);
+        background-color: rgba(255, 255, 255, 0.07);
         border-radius: 8px;
         padding: 10px 16px;
+        height: 100%;
 
         &_value {
             flex: 1;
@@ -113,6 +115,10 @@
         padding: 0 32px;
         font-size: 18px;
         font-weight: 500;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     &_multiplier {
@@ -120,10 +126,11 @@
         width: 100%;
         gap: 16px;
         margin: 4px 0;
+        height: 46px;
 
         button {
             flex: 1;
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: rgba(255, 255, 255, 0.07);
             border: none;
             border-radius: 8px;
             padding: 10px;
@@ -181,46 +188,38 @@
         -webkit-appearance: none;
         appearance: none;
         margin-top: -10px;
-        background-color: #fff;
-        border: 4px solid #333;
+        opacity: 0;
         width: 24px;
         height: 24px;
-        border-radius: 24px;
         z-index: 2;
         position: relative;
     }
 
     &::-webkit-slider-runnable-track {
         background: linear-gradient(to right, #ff0000 0%, #0bff06 100%);
-        border-radius: 4px;
+        border-radius: 0;
     }
 
     &_thumb_icon {
         position: absolute;
-        width: 24px;
+        width: 30px;
         height: 24px;
-        background-color: #ccc;
+        background-color: #7a7a7a;
         border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
-        top: 2px;
+        top: -10px;
         transform: translateX(-50%);
         left: var(--value);
         z-index: 3;
 
-        &::before,
-        &::after {
-            content: "";
+        span {
             display: block;
             width: 2px;
             height: 10px;
             background-color: #333;
-            margin: 0 2px;
-        }
-
-        &::after {
-            margin-left: 2px;
+            margin: 0 1px;
         }
     }
 }

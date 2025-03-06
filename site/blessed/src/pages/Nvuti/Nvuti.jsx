@@ -8,16 +8,13 @@ import useStore from "@/store";
 export const Nvuti = () => {
 	const { increaseBalanceRupee, decreaseBalanceRupee, BalanceRupee } = useStore();
 	const [bet, setBet] = useState(100);
-	const [percent, setPercent] = useState(50);
+	const [percent, setPercent] = useState(65);
 	const [number, setNumber] = useState(null);
 
 	const calculateRange = () => {
-		const maxValue = 999999;
-		const boundary = Math.round((percent / 100) * maxValue);
-		
 		return {
-			less: `0 - ${boundary.toLocaleString()}`,
-			more: `${boundary.toLocaleString()} - ${maxValue.toLocaleString()}`,
+			less: "0 - 500 000",
+			more: "500 000 - 999 999",
 		};
 	};
 
@@ -149,7 +146,7 @@ export const Nvuti = () => {
 			
 			<div className={styles.nvuti_multiplier}>
 				<button onClick={handleHalfBet}>/2</button>
-				<button onClick={handleDoubleBet}>x2</button>
+				<button onClick={handleDoubleBet}>×2</button>
 			</div>
 			
 			<h3>Percent</h3>
@@ -169,6 +166,8 @@ export const Nvuti = () => {
 					className={styles.slider_thumb_icon} 
 					style={{ left: `${percent}%` }}
 				>
+					<span></span>
+					<span></span>
 					<span></span>
 				</div>
 			</div>
