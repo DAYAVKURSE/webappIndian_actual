@@ -21,6 +21,8 @@ export const Crash = () => {
     const [isCrashed, setIsCrashed] = useState(false);
     const [isAutoEnabled, setIsAutoEnabled] = useState(false);
     const [gameActive, setGameActive] = useState(false);
+    const [startingFlash, setStartingFlash] = useState(false);
+    const [crashParticles, setCrashParticles] = useState([]);
     
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);
@@ -137,6 +139,29 @@ export const Crash = () => {
                     setCollapsed(true);
                     setXValue(parseFloat(data.crash_point).toFixed(2));
                     
+                    // Генерируем частицы взрыва
+                    const explosionParticles = [];
+                    const particleCount = 20 + Math.floor(data.crash_point * 5);
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        const angle = Math.random() * 360;
+                        const distance = 30 + Math.random() * 120;
+                        const size = 2 + Math.random() * 4;
+                        const type = Math.random() > 0.6 ? 'gold' : Math.random() > 0.5 ? 'orange' : 'bright';
+                        const delay = Math.random() * 0.3;
+                        
+                        explosionParticles.push({
+                            id: i,
+                            angle,
+                            distance,
+                            size,
+                            type,
+                            delay
+                        });
+                    }
+                    
+                    setCrashParticles(explosionParticles);
+                    
                     setTimeout(() => {
                         if (bet > 0) {
                             // If the player had an active bet, show a loss message
@@ -144,6 +169,7 @@ export const Crash = () => {
                             setBet(0);
                         }
                         setXValue(1.2);
+                        setCrashParticles([]);
                     }, 3000);
                 }
 
@@ -211,6 +237,15 @@ export const Crash = () => {
             }
         };
     }, [increaseBalanceRupee, bet, autoOutputCoefficient, isAutoEnabled]);
+
+    // Обработка начала новой игры
+    useEffect(() => {
+        if (gameActive && startMultiplierTime) {
+            // Добавляем эффект вспышки при старте игры
+            setStartingFlash(true);
+            setTimeout(() => setStartingFlash(false), 600);
+        }
+    }, [gameActive, startMultiplierTime]);
 
     // Handling bet
     const handleBet = async () => {
@@ -347,8 +382,123 @@ export const Crash = () => {
                 </div>
                 
                 {/* Star animation */}
-                <div className={styles.starContainer}>
-                    <img src="/star.svg" alt="Star" className={styles.star} />
+                <div className={`${styles.starContainer} ${gameActive || isCrashed ? styles.active : ''}`}>
+                    {startingFlash && (
+                        <div className={styles.explosionFlash} style={{ left: '50%', top: '50%' }} />
+                    )}
+                    <img 
+                        src="/star.svg" 
+                        alt="Star" 
+                        className={`${styles.star} ${gameActive ? styles.flying : ''} ${isCrashed ? styles.exploding : ''} ${startingFlash ? styles.rocketStart : ''}`} 
+                        style={gameActive ? {
+                            filter: `drop-shadow(0 0 ${Math.min(40, 10 + xValue * 3)}px rgba(255, 215, 0, ${Math.min(1, 0.6 + xValue * 0.05)}))`
+                        } : {}}
+                    />
+                    
+                    {/* Огненный след за звездой при активной игре */}
+                    {gameActive && !isCrashed && (
+                        <div className={styles.sparkTrail} />
+                    )}
+                    
+                    {/* Частицы взрыва */}
+                    {isCrashed && crashParticles.map(particle => {
+                        const radians = particle.angle * (Math.PI / 180);
+                        const x = Math.cos(radians) * particle.distance;
+                        const y = Math.sin(radians) * particle.distance;
+                        
+                        return (
+                            <div
+                                key={`crash-${particle.id}`}
+                                className={`${styles.smallParticle} ${styles.active} ${styles[particle.type + 'Particle']}`}
+                                style={{
+                                    left: `calc(50% + ${x}px)`,
+                                    top: `calc(50% - ${y}px)`,
+                                    width: `${particle.size}px`,
+                                    height: `${particle.size}px`,
+                                    '--x': `${x * 1.5}px`,
+                                    '--y': `${-y * 1.5}px`,
+                                    animationDelay: `${particle.delay}s`
+                                }}
+                            />
+                        );
+                    })}
+                    
+                    {/* Основные частицы */}
+                    {gameActive && !isCrashed && Array(12).fill().map((_, index) => {
+                        const angle = (index * 30) * (Math.PI / 180);
+                        const offsetX = Math.cos(angle) * 30;
+                        const offsetY = Math.sin(angle) * 30;
+                        
+                        return (
+                            <div 
+                                key={index} 
+                                className={`${styles.starParticle} ${gameActive ? styles.active : ''} ${index % 3 === 0 ? styles.type1 : index % 3 === 1 ? styles.type2 : styles.type3}`} 
+                                style={{ 
+                                    left: `calc(50% + ${offsetX}px)`, 
+                                    top: `calc(50% - ${offsetY}px)`,
+                                    '--x-end': `${offsetX * (2 + Math.min(2, xValue / 2))}px`,
+                                    '--y-end': `${offsetY * (2 + Math.min(2, xValue / 2))}px`,
+                                    animationDelay: `${index * 0.1}s`
+                                }}
+                            />
+                        );
+                    })}
+                    
+                    {/* Дополнительные искры при высоком мультипликаторе */}
+                    {gameActive && !isCrashed && xValue > 1.5 && Array(8).fill().map((_, index) => {
+                        const angle = ((index * 45) + 20) * (Math.PI / 180);
+                        const offsetX = Math.cos(angle) * 20;
+                        const offsetY = Math.sin(angle) * 20;
+                        
+                        return (
+                            <div 
+                                key={`spark-${index}`} 
+                                className={`${styles.starParticle} ${styles.activeFast} ${index % 2 === 0 ? styles.gold : styles.bright}`} 
+                                style={{ 
+                                    left: `calc(50% + ${offsetX}px)`, 
+                                    top: `calc(50% - ${offsetY}px)`,
+                                    '--x-end': `${offsetX * (3 + Math.min(3, xValue / 1.5))}px`,
+                                    '--y-end': `${offsetY * (3 + Math.min(3, xValue / 1.5))}px`,
+                                    animationDelay: `${index * 0.05 + 0.2}s`
+                                }}
+                            />
+                        );
+                    })}
+                    
+                    {/* Более интенсивные эффекты при очень высоком мультипликаторе */}
+                    {gameActive && !isCrashed && xValue > 3 && Array(6).fill().map((_, index) => {
+                        const angle = ((index * 60) + 10) * (Math.PI / 180);
+                        const offsetX = Math.cos(angle) * 25;
+                        const offsetY = Math.sin(angle) * 25;
+                        
+                        return (
+                            <div 
+                                key={`intense-${index}`} 
+                                className={`${styles.starParticle} ${styles.activeFast} ${styles.orange}`} 
+                                style={{ 
+                                    left: `calc(50% + ${offsetX}px)`, 
+                                    top: `calc(50% - ${offsetY}px)`,
+                                    '--x-end': `${offsetX * (4 + Math.min(5, xValue / 2))}px`,
+                                    '--y-end': `${offsetY * (4 + Math.min(5, xValue / 2))}px`,
+                                    animationDelay: `${index * 0.03}s`,
+                                    transform: `scale(${Math.min(1.5, 1 + (xValue - 3) / 10)})`
+                                }}
+                            />
+                        );
+                    })}
+                    
+                    {gameActive && !isCrashed && (
+                        <div 
+                            className={`${styles.glowEffect} ${gameActive ? styles.active : ''}`} 
+                            style={{ 
+                                left: '50%', 
+                                top: '50%',
+                                width: `${60 + Math.min(40, xValue * 10)}px`,
+                                height: `${60 + Math.min(40, xValue * 10)}px`,
+                                opacity: Math.min(0.7, 0.3 + xValue * 0.05)
+                            }} 
+                        />
+                    )}
                 </div>
                 
                 {/* Multiplier display */}
