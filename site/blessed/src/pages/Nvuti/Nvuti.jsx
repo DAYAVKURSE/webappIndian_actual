@@ -8,7 +8,7 @@ import useStore from "@/store";
 export const Nvuti = () => {
 	const { increaseBalanceRupee, decreaseBalanceRupee, BalanceRupee } = useStore();
 	const [bet, setBet] = useState(100);
-	const [percent, setPercent] = useState(50);
+	const [percent, setPercent] = useState(65);
 	const [number, setNumber] = useState(null);
 	const sliderRef = useRef(null);
 	const trackRef = useRef(null);
@@ -16,13 +16,20 @@ export const Nvuti = () => {
 
 	const calculateRange = () => {
 		const maxValue = 999999;
-		const lessRange = Math.round((percent / 100) * maxValue);
 		
-		const moreStart = maxValue - lessRange;
+		// Расчет границы между диапазонами
+		const boundary = Math.floor((percent / 100) * maxValue);
+		
+		// Диапазон для красной кнопки (Less)
+		const lessRange = `0 - ${boundary.toLocaleString('ru-RU').replace(',', ' ')}`;
+		
+		// Диапазон для зеленой кнопки (More)
+		const moreStart = boundary + 1;
+		const moreRange = `${moreStart.toLocaleString('ru-RU').replace(',', ' ')} - ${maxValue.toLocaleString('ru-RU').replace(',', ' ')}`;
 		
 		return {
-			less: `0 - ${lessRange.toLocaleString('ru-RU').replace(',', ' ')}`,
-			more: `${moreStart.toLocaleString('ru-RU').replace(',', ' ')} - ${maxValue.toLocaleString('ru-RU').replace(',', ' ')}`,
+			less: lessRange,
+			more: moreRange,
 		};
 	};
 
