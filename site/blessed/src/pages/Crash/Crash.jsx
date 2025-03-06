@@ -69,23 +69,43 @@ export const Crash = () => {
         setIsStarFlying(true);
         setIsStarExploding(false);
         
-        // Запускаем создание следа звезды с увеличенной частотой
+        // Сначала создаем эффект мощного запуска
+        if (starContainerRef.current && starRef.current) {
+            // Дополнительный класс для начальной анимации взлета
+            starRef.current.classList.add(styles.rocketStart);
+            
+            // Создаем начальный "взрыв" искр при запуске
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    createSparksEffect();
+                }, i * 100);
+            }
+            
+            // Через секунду удаляем класс начальной анимации
+            setTimeout(() => {
+                if (starRef.current) {
+                    starRef.current.classList.remove(styles.rocketStart);
+                }
+            }, 1000);
+        }
+        
+        // Запускаем создание следа звезды 
         if (trailTimerRef.current) {
             clearInterval(trailTimerRef.current);
         }
         
         trailTimerRef.current = setInterval(() => {
             createStarTrail();
-        }, 50);
+        }, 40); // Увеличиваем частоту следа для большей плотности
         
-        // Запускаем создание маленьких частиц с увеличенной частотой
+        // Запускаем создание маленьких частиц
         if (smallParticleTimerRef.current) {
             clearInterval(smallParticleTimerRef.current);
         }
         
         smallParticleTimerRef.current = setInterval(() => {
             createSmallParticles();
-        }, 200);
+        }, 180);
         
         // Запускаем создание искр, летящих снизу
         if (sparksTimerRef.current) {
@@ -94,7 +114,7 @@ export const Crash = () => {
         
         sparksTimerRef.current = setInterval(() => {
             createSparksEffect();
-        }, 150);
+        }, 120); // Увеличиваем частоту появления искр
         
         // Добавляем начальное свечение
         setTimeout(() => {
@@ -265,10 +285,29 @@ export const Crash = () => {
             smallParticleTimerRef.current = null;
         }
         
-        // Создаем новые частицы
-        const particleCount = 30;
-        const particleTypes = ['type1', 'type2', 'type3'];
+        // Создаем больше частиц для более эффектного взрыва
+        const particleCount = 50; // Увеличиваем количество частиц
+        const particleTypes = ['type1', 'type2', 'type3', 'gold', 'bright', 'orange']; // Добавляем типы частиц
         
+        // Получаем позицию звезды
+        const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
+        const starCenterY = starRect.top + starRect.height / 2 - containerRect.top;
+        
+        // Создаем вспышку в центре взрыва
+        const flash = document.createElement('div');
+        flash.className = styles.explosionFlash;
+        flash.style.left = `${starCenterX}px`;
+        flash.style.top = `${starCenterY}px`;
+        starContainerRef.current.appendChild(flash);
+        
+        // Удаляем вспышку через некоторое время
+        setTimeout(() => {
+            if (starContainerRef.current && flash.parentNode === starContainerRef.current) {
+                starContainerRef.current.removeChild(flash);
+            }
+        }, 400);
+        
+        // Создаем частицы в разных направлениях
         for (let i = 0; i < particleCount; i++) {
             const particle = document.createElement('div');
             
@@ -276,11 +315,23 @@ export const Crash = () => {
             const typeIndex = Math.floor(Math.random() * particleTypes.length);
             const particleType = particleTypes[typeIndex];
             
-            particle.className = `${styles.starParticle} ${styles[particleType]} ${styles.active}`;
+            // Добавляем разные типы частиц для более богатого эффекта
+            const isFastParticle = Math.random() > 0.5; // 50% частиц будут быстрыми
+            
+            if (isFastParticle) {
+                particle.className = `${styles.starParticle} ${styles[particleType]} ${styles.activeFast}`;
+            } else {
+                particle.className = `${styles.starParticle} ${styles[particleType]} ${styles.active}`;
+            }
             
             // Случайное направление для каждой частицы
             const angle = Math.random() * Math.PI * 2;
-            const distance = 50 + Math.random() * 150;
+            const distance = 80 + Math.random() * 200; // Увеличиваем дистанцию разлета
+            
+            // Разная скорость для частиц
+            const speed = 0.5 + Math.random() * 1.5;
+            particle.style.setProperty('--speed', speed);
+            
             const x = Math.cos(angle) * distance;
             const y = Math.sin(angle) * distance;
             
@@ -288,13 +339,22 @@ export const Crash = () => {
             particle.style.setProperty('--y', `${y}px`);
             
             // Позиционируем частицу на звезде
-            const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
-            const starCenterY = starRect.top + starRect.height / 2 - containerRect.top;
-            
             particle.style.left = `${starCenterX}px`;
             particle.style.top = `${starCenterY}px`;
             
+            // Добавляем вращение некоторым частицам
+            if (Math.random() > 0.5) {
+                particle.style.animation = `${styles.rotate} ${1 + Math.random() * 2}s linear infinite`;
+            }
+            
             starContainerRef.current.appendChild(particle);
+            
+            // Удаляем частицы через разное время
+            setTimeout(() => {
+                if (starContainerRef.current && particle.parentNode === starContainerRef.current) {
+                    starContainerRef.current.removeChild(particle);
+                }
+            }, 1000 + Math.random() * 1000);
         }
     };
 
@@ -302,8 +362,8 @@ export const Crash = () => {
     const createSparksEffect = () => {
         if (!starContainerRef.current || !isStarFlying) return;
         
-        // Создаем несколько искр
-        const sparkCount = 8 + Math.floor(Math.random() * 5); // 8-12 искр за раз
+        // Создаем больше искр для эффекта ракеты
+        const sparkCount = 12 + Math.floor(Math.random() * 8); // 12-20 искр за раз
         const sparkTypes = ['gold', 'bright', 'orange'];
         
         for (let i = 0; i < sparkCount; i++) {
@@ -315,14 +375,18 @@ export const Crash = () => {
             
             spark.className = `${styles.sparkParticle} ${styles[sparkType]} ${styles.active}`;
             
-            // Позиционируем искру внизу экрана в области звезды
-            const containerWidth = starContainerRef.current.offsetWidth;
-            const centerX = containerWidth / 2;
-            const startX = centerX - 25 + Math.random() * 50; // небольшой разброс по центру
+            // Получаем позицию звезды
+            const starRect = starRef.current.getBoundingClientRect();
+            const containerRect = starContainerRef.current.getBoundingClientRect();
+            const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
+            const starBottomY = starRect.bottom - containerRect.top;
             
-            // Генерируем случайный угол в верхнем конусе (направление вверх с разбросом)
-            const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 1.5;
-            const distance = 30 + Math.random() * 100;
+            // Позиционируем искру внизу звезды
+            const startX = starCenterX - 15 + Math.random() * 30; // разброс вокруг центра звезды
+            
+            // Генерируем случайный угол в нижнем конусе (направление вниз с разбросом)
+            const angle = Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; // Угол вниз с разбросом
+            const distance = 50 + Math.random() * 100;
             const x = Math.cos(angle) * distance;
             const y = Math.sin(angle) * distance;
             
@@ -330,7 +394,7 @@ export const Crash = () => {
             spark.style.setProperty('--y', `${y}px`);
             
             spark.style.left = `${startX}px`;
-            spark.style.bottom = `${Math.random() * 20}px`; // случайная высота от нижнего края
+            spark.style.top = `${starBottomY - 10}px`; // Начало чуть ниже звезды
             
             starContainerRef.current.appendChild(spark);
             
@@ -339,7 +403,7 @@ export const Crash = () => {
                 if (starContainerRef.current && spark.parentNode === starContainerRef.current) {
                     starContainerRef.current.removeChild(spark);
                 }
-            }, 1200);
+            }, 1000);
         }
     };
 
