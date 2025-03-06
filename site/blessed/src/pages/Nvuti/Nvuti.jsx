@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import styles from "./Nvuti.module.scss";
 import { ActionButtons } from "@/components";
 import { rollDice } from "@/requests";
@@ -10,11 +10,17 @@ export const Nvuti = () => {
 	const [bet, setBet] = useState(100);
 	const [percent, setPercent] = useState(65);
 	const [number, setNumber] = useState(null);
+	const sliderRef = useRef(null);
+	const trackRef = useRef(null);
+	const thumbRef = useRef(null);
 
 	const calculateRange = () => {
+		const maxValue = 999999;
+		const boundary = Math.floor((percent / 100) * maxValue);
+		
 		return {
-			less: "0 - 500 000",
-			more: "500 000 - 999 999",
+			less: `0 - ${boundary.toLocaleString('ru-RU').replace(',', ' ')}`,
+			more: `${boundary.toLocaleString('ru-RU').replace(',', ' ')} - 999 999`,
 		};
 	};
 
@@ -22,13 +28,21 @@ export const Nvuti = () => {
 		let newValue = parseInt(value, 10);
 
 		if (isNaN(newValue)) {
-			setPercent(5);
+			newValue = 5;
 		} else if (newValue < 5) {
-			setPercent(5);
+			newValue = 5;
 		} else if (newValue > 95) {
-			setPercent(95);
-		} else {
-			setPercent(newValue);
+			newValue = 95;
+		}
+		
+		setPercent(newValue);
+		updateSliderPosition(newValue);
+	};
+
+	const updateSliderPosition = (value) => {
+		if (sliderRef.current && trackRef.current && thumbRef.current) {
+			trackRef.current.style.setProperty('--value', value);
+			thumbRef.current.style.left = `${value}%`;
 		}
 	};
 
@@ -96,10 +110,7 @@ export const Nvuti = () => {
 	const { less, more } = calculateRange();
 
 	useEffect(() => {
-		const slider = document.querySelector('#slider');
-		if (slider) {
-			slider.style.setProperty('--value', `${percent}`);
-		}
+		updateSliderPosition(percent);
 	}, [percent]);
 
 	return (
@@ -167,6 +178,7 @@ export const Nvuti = () => {
 			<div className={styles.slider_container}>
 				<p className={styles.slider_value}>{percent}%</p>
 				<input
+					ref={sliderRef}
 					type="range"
 					min="5"
 					max="95"
@@ -175,11 +187,12 @@ export const Nvuti = () => {
 					className={styles.slider}
 					id="slider"
 				/>
-				<div className={styles.slider_track}>
+				<div className={styles.slider_track} ref={trackRef}>
 					<div className={styles.slider_track_red}></div>
 					<div className={styles.slider_track_green}></div>
 				</div>
 				<div 
+					ref={thumbRef}
 					className={styles.slider_thumb_icon} 
 					style={{ left: `${percent}%` }}
 				>

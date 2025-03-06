@@ -11,106 +11,6 @@
     min-height: 100vh;
     position: relative;
     
-    &_header {
-        position: absolute;
-        width: 100%;
-        height: 50px;
-        left: 0px;
-        top: 0px;
-        background: #15171E;
-        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.25);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 10px;
-        z-index: 10;
-
-        &_button {
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: rgba(0, 0, 0, 0.3);
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-
-            img {
-                width: 20px;
-                height: 20px;
-                filter: invert(1);
-            }
-        }
-
-        &_balance {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            background: #15171E;
-            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.25);
-            border-radius: 10px;
-            padding: 6px 12px;
-        }
-    }
-
-    &_balance_icon {
-        width: 25px;
-        height: 25px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: #6EBEFF;
-        border-radius: 50%;
-        font-size: 20px;
-        font-weight: 400;
-        color: #000;
-    }
-
-    &_balance_value {
-        font-family: 'Jost', sans-serif;
-        font-style: normal;
-        font-weight: 500;
-        font-size: 24px;
-        line-height: 100%;
-        color: #6EBEFF;
-    }
-
-    &_main_balance {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 67px;
-        height: 43px;
-        background: #15171E;
-        box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.25);
-        border-radius: 10px;
-        margin-top: 60px;
-
-        &_icon {
-            width: 25px;
-            height: 25px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #6EBEFF;
-            border-radius: 50%;
-            font-size: 20px;
-            color: #000;
-            font-weight: 400;
-        }
-
-        &_value {
-            font-family: 'Jost', sans-serif;
-            font-style: normal;
-            font-weight: 500;
-            font-size: 24px;
-            line-height: 100%;
-            color: #6EBEFF;
-        }
-    }
-
     &_number {
         color: #C7C7C7;
         text-align: center;
@@ -120,7 +20,7 @@
         font-size: 96px;
         line-height: 100%;
         letter-spacing: -0.03em;
-        margin: 30px 0;
+        margin: 60px 0 30px;
     }
 
     &_tip {
@@ -259,7 +159,8 @@
     cursor: pointer;
     width: 100%;
     height: 6px;
-    --value: 65%;
+    z-index: 4;
+    position: relative;
 
     &_container {
         position: relative;
@@ -289,11 +190,13 @@
     &::-webkit-slider-runnable-track {
         height: 6px;
         border-radius: 0;
+        background: transparent;
     }
 
     &::-moz-range-track {
         height: 6px;
         border-radius: 0;
+        background: transparent;
     }
 
     &::-webkit-slider-thumb {
@@ -303,7 +206,7 @@
         opacity: 0;
         width: 30px;
         height: 30px;
-        z-index: 2;
+        z-index: 5;
         position: relative;
     }
 
@@ -314,6 +217,19 @@
         top: calc(50% + 10px);
         left: 0;
         z-index: 1;
+        --value: 65;
+        
+        &::before {
+            content: "";
+            position: absolute;
+            width: 2px;
+            height: 6px;
+            background: #fff;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 3;
+        }
 
         &_red {
             position: absolute;
@@ -343,7 +259,7 @@
         justify-content: center;
         top: calc(50% - 5px);
         transform: translateX(-50%);
-        left: var(--value);
+        left: 65%;
         z-index: 3;
 
         span {
