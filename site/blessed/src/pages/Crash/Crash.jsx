@@ -23,7 +23,6 @@ export const Crash = () => {
     const [gameActive, setGameActive] = useState(false);
     const [startingFlash, setStartingFlash] = useState(false);
     const [crashParticles, setCrashParticles] = useState([]);
-    const [isExploding, setIsExploding] = useState(false);
     
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);
@@ -54,185 +53,187 @@ export const Crash = () => {
             clearInterval(multiplierTimerRef.current);
         }
 
+        // Set initial value
+        setXValue(initialMultiplier);
+        
+        const updateInterval = 100; // ms
+        const growthFactor = 0.03; // how fast the multiplier grows
+        
         multiplierTimerRef.current = setInterval(() => {
             const elapsedSeconds = (Date.now() - startTime) / 1000;
-            
-            // Using a simplified growth model: multiplier = e^(0.1 * time)
-            const currentMultiplier = initialMultiplier * Math.pow(Math.E, 0.1 * elapsedSeconds);
-            
-            // Format to 2 decimal places
-            setXValue(currentMultiplier.toFixed(2));
-        }, 100); // Update every 100ms for smooth animation
+            // Formula for calculating multiplier: e^(elapsedSeconds * growthFactor)
+            const newMultiplier = Math.exp(elapsedSeconds * growthFactor);
+            setXValue(parseFloat(newMultiplier.toFixed(2)));
+        }, updateInterval);
     };
 
-    // Connecting to WebSocket
+    // Setting up dimensions and WebSocket connection
     useEffect(() => {
-        const connectWebSocket = () => {
-            const ws = new WebSocket(`${API_BASE_URL.replace('http', 'ws')}/ws/crash?initData=${encodeURIComponent(initData)}`);
-            wsRef.current = ws;
-
-            ws.onopen = () => {
-                console.log('WebSocket connection established');
-            };
-
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-                toast.error('Authorization error. Please restart the application.');
-            };
-
-            ws.onmessage = (event) => {
-                try {
-                    const data = JSON.parse(event.data);
-                    console.log('WebSocket data received:', data);
-                    
-                    if (data.type === "multiplier_update") {
-                        // Updating game state
-                        setIsBettingClosed(true);
-                        setIsCrashed(false);
-                        setGameActive(true);
-                        setCollapsed(false);
-                        setIsExploding(false); // Сбрасываем состояние взрыва при новых обновлениях
-                        
-                        // If this is the first multiplier update, start simulation
-                        if (!startMultiplierTime) {
-                            setStartMultiplierTime(Date.now());
-                            simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
-                        }
-                        
-                        // Automatic cashout when reaching the specified multiplier
-                        if (isAutoEnabled && bet > 0 && parseFloat(data.multiplier) >= autoOutputCoefficient && autoOutputCoefficient > 0) {
-                            handleCashout();
-                            toast.success(`Auto cashout at ${data.multiplier}x`);
-                        }
-                    }
-
-                    if (data.type === "game_crash" && !isExploding) { // Проверяем, не запущена ли уже анимация взрыва
-                        // Stop multiplier growth simulation
-                        if (multiplierTimerRef.current) {
-                            clearInterval(multiplierTimerRef.current);
-                            multiplierTimerRef.current = null;
-                        }
-                        setStartMultiplierTime(null);
-                        
-                        // Запускаем анимацию взрыва
-                        setIsExploding(true);
-                        
-                        // Генерируем частицы взрыва - умеренное количество, не слишком яркие
-                        const explosionParticles = [];
-                        const crashPoint = parseFloat(data.crash_point);
-                        const particleCount = 15 + Math.floor(crashPoint * 3);
-                        
-                        for (let i = 0; i < particleCount; i++) {
-                            const angle = Math.random() * 360;
-                            const distance = 30 + Math.random() * 100;
-                            const size = 1.5 + Math.random() * 3;
-                            const type = Math.random() > 0.7 ? 'gold' : Math.random() > 0.5 ? 'orange' : 'bright';
-                            const delay = Math.random() * 0.2;
-                            
-                            explosionParticles.push({
-                                id: i,
-                                angle,
-                                distance,
-                                size,
-                                type,
-                                delay
-                            });
-                        }
-                        
-                        setCrashParticles(explosionParticles);
-                        
-                        // Показываем сообщение о крахе с небольшой задержкой
-                        setTimeout(() => {
-                            setIsCrashed(true);
-                            setGameActive(false);
-                            setOverlayText(`Crashed at ${crashPoint.toFixed(2)}x`);
-                            setCollapsed(true);
-                            setXValue(crashPoint.toFixed(2));
-                        }, 200);
-                        
-                        // Очищаем состояние анимации взрыва через некоторое время
-                        setTimeout(() => {
-                            if (bet > 0) {
-                                // If the player had an active bet, show a loss message
-                                toast.error(`Game crashed at ${crashPoint.toFixed(2)}x! You lost ₹${bet}.`);
-                                setBet(0);
-                            }
-                            setXValue(1.2);
-                            setCrashParticles([]);
-                            setIsExploding(false);
-                        }, 2000);
-                    }
-
-                    if (data.type === "timer_tick") {
-                        setCollapsed(true);
-                        if (data.remaining_time > 10) {
-                            setIsBettingClosed(true);
-                            setGameActive(false);
-                        } else {
-                            setIsBettingClosed(false);
-                            setIsCrashed(false);
-                            setGameActive(false);
-                        }
-
-                        if (data.remaining_time <= 10) {
-                            setOverlayText(`Game starts in ${data.remaining_time} seconds`);
-                        }
-                    }
-
-                    if (data.type === "cashout_result") {
-                        // Don't reset bet here to show the player they won
-                        toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${data.cashout_multiplier}x)`);
-                        
-                        // Delay resetting the bet to give the user time to see the result
-                        setTimeout(() => {
-                            setBet(0);
-                            increaseBalanceRupee(data.win_amount);
-                        }, 2000);
-                    }
-
-                    // Processing another player's cashout message
-                    if (data.type === "other_cashout") {
-                        toast.success(`${data.username} won ₹${data.win_amount.toFixed(0)} at ${data.cashout_multiplier}x!`);
-                    }
-
-                    // Processing another player's bet message
-                    if (data.type === "new_bet") {
-                        toast.success(`${data.username} bet ₹${data.amount.toFixed(0)}`);
-                    }
-                    
-                    // Displaying active game start
-                    if (data.type === "game_started") {
-                        toast.success('Game started!');
-                        setIsBettingClosed(true);
-                        setIsCrashed(false);
-                        setGameActive(true);
-                        setCollapsed(false);
-                        
-                        // Start multiplier growth simulation with initial value of 1.0
-                        setStartMultiplierTime(Date.now());
-                        simulateMultiplierGrowth(Date.now(), 1.0);
-                    }
-                } catch (error) {
-                    console.error('Error processing WebSocket message:', error);
-                }
-            };
-
-            ws.onclose = () => {
-                console.log('WebSocket connection closed');
-                // Reconnect after a short delay
-                setTimeout(connectWebSocket, 3000);
-            };
+        const updateDimensions = () => {
+            if (crashRef.current) {
+                setDimensions({
+                    width: crashRef.current.offsetWidth,
+                    height: crashRef.current.offsetHeight,
+                });
+            }
         };
 
-        connectWebSocket();
+        updateDimensions();
+        window.addEventListener('resize', updateDimensions);
 
-        // Cleanup on component unmount
-        return () => {
-            if (wsRef.current) {
-                wsRef.current.close();
+        // Checking for initData before creating WebSocket connection
+        if (!initData) {
+            toast.error('Authorization error. Please restart the application.');
+            return;
+        }
+
+        const encoded_init_data = encodeURIComponent(initData);
+        const ws = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+            console.log('WebSocket connection established');
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            toast.error('Connection error. Please reload the page.');
+        };
+
+        ws.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('WebSocket data received:', data);
+                
+                if (data.type === "multiplier_update") {
+                    // Updating game state
+                    setIsBettingClosed(true);
+                    setIsCrashed(false);
+                    setGameActive(true);
+                    setCollapsed(false);
+                    
+                    // If this is the first multiplier update, start simulation
+                    if (!startMultiplierTime) {
+                        setStartMultiplierTime(Date.now());
+                        simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
+                    }
+                    
+                    // Automatic cashout when reaching the specified multiplier
+                    if (isAutoEnabled && bet > 0 && parseFloat(data.multiplier) >= autoOutputCoefficient && autoOutputCoefficient > 0) {
+                        handleCashout();
+                        toast.success(`Auto cashout at ${data.multiplier}x`);
+                    }
+                }
+
+                if (data.type === "game_crash") {
+                    // Stop multiplier growth simulation
+                    if (multiplierTimerRef.current) {
+                        clearInterval(multiplierTimerRef.current);
+                        multiplierTimerRef.current = null;
+                    }
+                    setStartMultiplierTime(null);
+                    
+                    setIsCrashed(true);
+                    setGameActive(false);
+                    setOverlayText(`Crashed at ${data.crash_point.toFixed(2)}x`);
+                    setCollapsed(true);
+                    setXValue(parseFloat(data.crash_point).toFixed(2));
+                    
+                    // Генерируем частицы взрыва
+                    const explosionParticles = [];
+                    const particleCount = 20 + Math.floor(data.crash_point * 5);
+                    
+                    for (let i = 0; i < particleCount; i++) {
+                        const angle = Math.random() * 360;
+                        const distance = 30 + Math.random() * 120;
+                        const size = 2 + Math.random() * 4;
+                        const type = Math.random() > 0.6 ? 'gold' : Math.random() > 0.5 ? 'orange' : 'bright';
+                        const delay = Math.random() * 0.3;
+                        
+                        explosionParticles.push({
+                            id: i,
+                            angle,
+                            distance,
+                            size,
+                            type,
+                            delay
+                        });
+                    }
+                    
+                    setCrashParticles(explosionParticles);
+                    
+                    setTimeout(() => {
+                        if (bet > 0) {
+                            // If the player had an active bet, show a loss message
+                            toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
+                            setBet(0);
+                        }
+                        setXValue(1.2);
+                        setCrashParticles([]);
+                    }, 3000);
+                }
+
+                if (data.type === "timer_tick") {
+                    setCollapsed(true);
+                    if (data.remaining_time > 10) {
+                        setIsBettingClosed(true);
+                        setGameActive(false);
+                    } else {
+                        setIsBettingClosed(false);
+                        setIsCrashed(false);
+                        setGameActive(false);
+                    }
+
+                    if (data.remaining_time <= 10) {
+                        setOverlayText(`Game starts in ${data.remaining_time} seconds`);
+                    }
+                }
+
+                if (data.type === "cashout_result") {
+                    // Don't reset bet here to show the player they won
+                    toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${data.cashout_multiplier}x)`);
+                    
+                    // Delay resetting the bet to give the user time to see the result
+                    setTimeout(() => {
+                        setBet(0);
+                        increaseBalanceRupee(data.win_amount);
+                    }, 2000);
+                }
+
+                // Processing another player's cashout message
+                if (data.type === "other_cashout") {
+                    toast.success(`${data.username} won ₹${data.win_amount.toFixed(0)} at ${data.cashout_multiplier}x!`);
+                }
+
+                // Processing another player's bet message
+                if (data.type === "new_bet") {
+                    toast.success(`${data.username} bet ₹${data.amount.toFixed(0)}`);
+                }
+                
+                // Displaying active game start
+                if (data.type === "game_started") {
+                    toast.success('Game started!');
+                    setIsBettingClosed(true);
+                    setIsCrashed(false);
+                    setGameActive(true);
+                    setCollapsed(false);
+                    
+                    // Start multiplier growth simulation with initial value of 1.0
+                    setStartMultiplierTime(Date.now());
+                    simulateMultiplierGrowth(Date.now(), 1.0);
+                }
+            } catch (error) {
+                console.error('Error processing WebSocket message:', error);
             }
+        };
+
+        return () => {
+            window.removeEventListener('resize', updateDimensions);
             if (multiplierTimerRef.current) {
                 clearInterval(multiplierTimerRef.current);
+            }
+            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                ws.close();
             }
         };
     }, [increaseBalanceRupee, bet, autoOutputCoefficient, isAutoEnabled]);
@@ -248,94 +249,117 @@ export const Crash = () => {
 
     // Handling bet
     const handleBet = async () => {
-        if (loading || isBettingClosed) return;
-        
+        if (!initData) {
+            toast.error('Authorization error. Please restart the application.');
+            return;
+        }
+
         if (betAmount <= 0) {
             toast.error('Bet amount must be greater than 0');
             return;
         }
-        
+
         if (betAmount > BalanceRupee) {
-            toast.error('Insufficient balance');
+            toast.error('Insufficient funds');
             return;
         }
-        
-        setLoading(true);
-        
+
         try {
-            const response = await crashPlace(betAmount);
+            setLoading(true);
+            const response = await crashPlace(betAmount, autoOutputCoefficient);
             
-            if (response && response.id) {
-                // Bet placed successfully
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Server response to bet:', data);
                 setBet(betAmount);
                 decreaseBalanceRupee(betAmount);
                 toast.success('Bet placed! Waiting for game to start');
+                
+                // Animation for feedback
+                setCollapsed(true);
+                setOverlayText('Your bet has been accepted! Waiting for game...');
+                setTimeout(() => {
+                    setCollapsed(false);
+                }, 2000);
             } else {
-                toast.error('Failed to place bet. Please try again.');
+                const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
+                console.error('Bet error:', errorData);
+                toast.error(errorData.error || 'Error placing bet');
             }
-        } catch (error) {
-            console.error('Error placing bet:', error);
-            toast.error('Error placing bet. Please try again.');
+        } catch (err) {
+            console.error('Exception during bet:', err.message);
+            toast.error('Failed to place bet');
         } finally {
             setLoading(false);
         }
-    };
-    
+    }
+
     // Handling cashout
     const handleCashout = async () => {
-        if (loading || !gameActive || isCrashed) return;
-        
-        setLoading(true);
-        
+        if (!initData) {
+            toast.error('Authorization error. Please restart the application.');
+            return;
+        }
+
+        if (bet <= 0) {
+            toast.error('No active bet');
+            return;
+        }
+
+        if (isCrashed) {
+            toast.error('Game already finished');
+            return;
+        }
+
         try {
+            setLoading(true);
             const response = await crashCashout();
             
-            if (!response.success) {
-                toast.error('Failed to cash out. Please try again.');
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Server response to cashout:', data);
+                // Don't reset bet here as it will happen when cashout_result is received via WebSocket
+                toast.success(`Cashout request sent at multiplier ${xValue}x`);
+            } else {
+                const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
+                console.error('Cashout error:', errorData);
+                toast.error(errorData.error || 'Error cashing out');
             }
-        } catch (error) {
-            console.error('Error cashing out:', error);
-            toast.error('Authorization error. Please restart the application.');
+        } catch (err) {
+            console.error('Exception during cashout:', err.message);
+            toast.error('Failed to cash out');
         } finally {
             setLoading(false);
         }
-    };
+    }
 
-    // Handling window resize
-    useEffect(() => {
-        const updateDimensions = () => {
-            if (crashRef.current) {
-                const { width, height } = crashRef.current.getBoundingClientRect();
-                setDimensions({ width, height });
-            }
-        };
-        
-        window.addEventListener('resize', updateDimensions);
-        updateDimensions();
-        
-        return () => window.removeEventListener('resize', updateDimensions);
-    }, []);
-
-    // Toggle auto cashout
+    // Toggling auto-cashout
     const toggleAutoCashout = () => {
         setIsAutoEnabled(!isAutoEnabled);
+        if (!isAutoEnabled) {
+            toast.success(`Auto-cashout enabled at ${autoOutputCoefficient}x`);
+        } else {
+            toast.success("Auto-cashout disabled");
+        }
     };
-    
-    // Handle coefficient input change
+
+    // Changing auto-cashout coefficient
     const handleCoefficientChange = (e) => {
         const value = parseFloat(e.target.value);
-        setAutoOutputCoefficient(isNaN(value) ? 0 : value);
+        if (!isNaN(value) && value >= 1) {
+            setAutoOutputCoefficient(value);
+        }
     };
-    
-    // Handling bet amount change
+
+    // Changing bet amount
     const handleAmountChange = (delta) => {
         setBetAmount(prevAmount => {
             const newAmount = prevAmount + delta;
             return newAmount > 0 ? newAmount : prevAmount;
         });
     };
-    
-    // Handling bet amount multiplication
+
+    // Doubling or halving bet amount
     const handleMultiplyAmount = (factor) => {
         setBetAmount(prevAmount => {
             const newAmount = Math.round(prevAmount * factor);
@@ -358,26 +382,26 @@ export const Crash = () => {
                 </div>
                 
                 {/* Star animation */}
-                <div className={`${styles.starContainer} ${gameActive || isExploding ? styles.active : ''}`}>
+                <div className={`${styles.starContainer} ${gameActive || isCrashed ? styles.active : ''}`}>
                     {startingFlash && (
                         <div className={styles.explosionFlash} style={{ left: '50%', top: '50%' }} />
                     )}
                     <img 
                         src="/star.svg" 
                         alt="Star" 
-                        className={`${styles.star} ${gameActive && !isExploding ? styles.flying : ''} ${isExploding ? styles.exploding : ''} ${startingFlash ? styles.rocketStart : ''}`} 
-                        style={gameActive && !isExploding ? {
+                        className={`${styles.star} ${gameActive ? styles.flying : ''} ${isCrashed ? styles.exploding : ''} ${startingFlash ? styles.rocketStart : ''}`} 
+                        style={gameActive ? {
                             filter: `drop-shadow(0 0 ${Math.min(40, 10 + xValue * 3)}px rgba(255, 215, 0, ${Math.min(1, 0.6 + xValue * 0.05)}))`
                         } : {}}
                     />
                     
                     {/* Огненный след за звездой при активной игре */}
-                    {gameActive && !isExploding && (
+                    {gameActive && !isCrashed && (
                         <div className={styles.sparkTrail} />
                     )}
                     
                     {/* Частицы взрыва */}
-                    {isExploding && crashParticles.map(particle => {
+                    {isCrashed && crashParticles.map(particle => {
                         const radians = particle.angle * (Math.PI / 180);
                         const x = Math.cos(radians) * particle.distance;
                         const y = Math.sin(radians) * particle.distance;
@@ -393,15 +417,14 @@ export const Crash = () => {
                                     height: `${particle.size}px`,
                                     '--x': `${x * 1.5}px`,
                                     '--y': `${-y * 1.5}px`,
-                                    animationDelay: `${particle.delay}s`,
-                                    opacity: '0.8' // снижаем яркость
+                                    animationDelay: `${particle.delay}s`
                                 }}
                             />
                         );
                     })}
                     
                     {/* Основные частицы */}
-                    {gameActive && !isExploding && Array(12).fill().map((_, index) => {
+                    {gameActive && !isCrashed && Array(12).fill().map((_, index) => {
                         const angle = (index * 30) * (Math.PI / 180);
                         const offsetX = Math.cos(angle) * 30;
                         const offsetY = Math.sin(angle) * 30;
@@ -422,7 +445,7 @@ export const Crash = () => {
                     })}
                     
                     {/* Дополнительные искры при высоком мультипликаторе */}
-                    {gameActive && !isExploding && xValue > 1.5 && Array(8).fill().map((_, index) => {
+                    {gameActive && !isCrashed && xValue > 1.5 && Array(8).fill().map((_, index) => {
                         const angle = ((index * 45) + 20) * (Math.PI / 180);
                         const offsetX = Math.cos(angle) * 20;
                         const offsetY = Math.sin(angle) * 20;
@@ -443,7 +466,7 @@ export const Crash = () => {
                     })}
                     
                     {/* Более интенсивные эффекты при очень высоком мультипликаторе */}
-                    {gameActive && !isExploding && xValue > 3 && Array(6).fill().map((_, index) => {
+                    {gameActive && !isCrashed && xValue > 3 && Array(6).fill().map((_, index) => {
                         const angle = ((index * 60) + 10) * (Math.PI / 180);
                         const offsetX = Math.cos(angle) * 25;
                         const offsetY = Math.sin(angle) * 25;
@@ -464,7 +487,7 @@ export const Crash = () => {
                         );
                     })}
                     
-                    {gameActive && !isExploding && (
+                    {gameActive && !isCrashed && (
                         <div 
                             className={`${styles.glowEffect} ${gameActive ? styles.active : ''}`} 
                             style={{ 
@@ -550,4 +573,4 @@ export const Crash = () => {
             </div>
         </div>
     );
-}; 
+};
