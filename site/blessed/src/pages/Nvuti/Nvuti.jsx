@@ -157,8 +157,11 @@ export const Nvuti = () => {
 			
 			<h3>Percent</h3>
 			
+			<div className={styles.percent_value_container}>
+				<p className={styles.percent_value}>{percent}%</p>
+			</div>
+			
 			<div className={styles.slider_container}>
-				<p className={styles.slider_value}>{percent}%</p>
 				<input
 					ref={sliderRef}
 					type="range"
