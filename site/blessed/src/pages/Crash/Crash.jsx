@@ -65,6 +65,8 @@ export const Crash = () => {
         // Set initial value
         setXValue(initialMultiplier);
         
+        // Временно отключаем анимацию звезды
+        /*
         // Запускаем анимацию звезды при начале роста коэффициента
         setIsStarFlying(true);
         setIsStarExploding(false);
@@ -130,22 +132,28 @@ export const Crash = () => {
                 }
             }
         }, 100);
+        */
         
-        const updateInterval = 100; // ms
+        // Расчет роста коэффициента
+        const startTimeMs = startTime || Date.now();
         const growthFactor = 0.03; // how fast the multiplier grows
         
+        // Начинаем увеличивать коэффициент с течением времени
         multiplierTimerRef.current = setInterval(() => {
-            const elapsedSeconds = (Date.now() - startTime) / 1000;
+            const currentTime = Date.now();
+            const elapsedSeconds = (currentTime - startTimeMs) / 1000;
+            
             // Formula for calculating multiplier: e^(elapsedSeconds * growthFactor)
             const newMultiplier = Math.exp(elapsedSeconds * growthFactor);
             
-            // Создаем дополнительные частицы при высоких значениях коэффициента
+            // Randomly create glow effects as the multiplier increases
             if (newMultiplier > 2 && Math.random() > 0.7) {
-                createSmallParticles();
+                // Временно отключаем анимацию: createGlowEffect(getRandomX(), getRandomY());
             }
             
+            // Update UI with new multiplier value
             setXValue(parseFloat(newMultiplier.toFixed(2)));
-        }, updateInterval);
+        }, 100);
     };
 
     // Создаем след за звездой
@@ -478,6 +486,8 @@ export const Crash = () => {
                     }
                     setStartMultiplierTime(null);
                     
+                    // Временно отключаем анимацию звезды
+                    /*
                     // Останавливаем таймеры создания следа и маленьких частиц
                     if (trailTimerRef.current) {
                         clearInterval(trailTimerRef.current);
@@ -539,6 +549,7 @@ export const Crash = () => {
                         }
                         setIsStarExploding(false);
                     }, 800);
+                    */
                     
                     setIsCrashed(true);
                     setGameActive(false);
@@ -793,6 +804,7 @@ export const Crash = () => {
                 </div>
                 
                 {/* Star animation */}
+                {/* Временно отключаем отображение звезды
                 <div className={styles.starContainer} ref={starContainerRef}>
                     <div className={styles.sparkTrail}></div>
                     <img 
@@ -802,10 +814,11 @@ export const Crash = () => {
                         ref={starRef}
                     />
                 </div>
+                */}
                 
                 {/* Multiplier display */}
                 <div className={styles.multiplier}>
-                    {xValue} x
+                    {typeof xValue === 'number' ? xValue.toFixed(2) : xValue} x
                 </div>
                 
                 {bet > 0 && !isCrashed && <div className={styles.activeBet}>
