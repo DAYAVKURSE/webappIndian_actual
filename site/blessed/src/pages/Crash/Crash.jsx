@@ -23,6 +23,13 @@ export const Crash = () => {
     const [isAutoEnabled, setIsAutoEnabled] = useState(false);
     const [gameActive, setGameActive] = useState(false);
     
+    // Refs для анимации звезды
+    const starRef = useRef(null);
+    const starContainerRef = useRef(null);
+    const particlesRef = useRef([]);
+    const [isStarFlying, setIsStarFlying] = useState(false);
+    const [isStarExploding, setIsStarExploding] = useState(false);
+    
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);
     const [startMultiplierTime, setStartMultiplierTime] = useState(null);
@@ -55,6 +62,10 @@ export const Crash = () => {
         // Set initial value
         setXValue(initialMultiplier);
         
+        // Запускаем анимацию звезды при начале роста коэффициента
+        setIsStarFlying(true);
+        setIsStarExploding(false);
+        
         const updateInterval = 100; // ms
         const growthFactor = 0.03; // how fast the multiplier grows
         
@@ -64,6 +75,41 @@ export const Crash = () => {
             const newMultiplier = Math.exp(elapsedSeconds * growthFactor);
             setXValue(parseFloat(newMultiplier.toFixed(2)));
         }, updateInterval);
+    };
+
+    // Функция для создания частиц при взрыве звезды
+    const createExplosionParticles = () => {
+        if (!starContainerRef.current) return;
+        
+        // Очищаем предыдущие частицы
+        while (starContainerRef.current.querySelector(`.${styles.starParticle}`)) {
+            starContainerRef.current.removeChild(
+                starContainerRef.current.querySelector(`.${styles.starParticle}`)
+            );
+        }
+        
+        // Создаем новые частицы
+        const particleCount = 20;
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = `${styles.starParticle} ${styles.active}`;
+            
+            // Случайное направление для каждой частицы
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 50 + Math.random() * 100;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+            
+            particle.style.setProperty('--x', `${x}px`);
+            particle.style.setProperty('--y', `${y}px`);
+            
+            // Позиционируем частицу в центре звезды
+            particle.style.left = '50%';
+            particle.style.top = '50%';
+            particle.style.transform = 'translate(-50%, -50%)';
+            
+            starContainerRef.current.appendChild(particle);
+        }
     };
 
     // Setting up dimensions and WebSocket connection
@@ -111,6 +157,11 @@ export const Crash = () => {
                     setGameActive(true);
                     setCollapsed(false);
                     
+                    // Активируем контейнер звезды
+                    if (starContainerRef.current) {
+                        starContainerRef.current.classList.add(styles.active);
+                    }
+                    
                     // If this is the first multiplier update, start simulation
                     if (!startMultiplierTime) {
                         setStartMultiplierTime(Date.now());
@@ -131,6 +182,19 @@ export const Crash = () => {
                         multiplierTimerRef.current = null;
                     }
                     setStartMultiplierTime(null);
+                    
+                    // Взрываем звезду при окончании игры
+                    setIsStarFlying(false);
+                    setIsStarExploding(true);
+                    createExplosionParticles();
+                    
+                    // Через некоторое время скрываем контейнер звезды
+                    setTimeout(() => {
+                        if (starContainerRef.current) {
+                            starContainerRef.current.classList.remove(styles.active);
+                        }
+                        setIsStarExploding(false);
+                    }, 800);
                     
                     setIsCrashed(true);
                     setGameActive(false);
@@ -347,8 +411,13 @@ export const Crash = () => {
                 </div>
                 
                 {/* Star animation */}
-                <div className={styles.starContainer}>
-                    <img src="/star.svg" alt="Star" className={styles.star} />
+                <div className={styles.starContainer} ref={starContainerRef}>
+                    <img 
+                        src="/star.svg" 
+                        alt="Star" 
+                        className={`${styles.star} ${isStarFlying ? styles.flying : ''} ${isStarExploding ? styles.exploding : ''}`} 
+                        ref={starRef}
+                    />
                 </div>
                 
                 {/* Multiplier display */}
