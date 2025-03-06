@@ -412,20 +412,23 @@ export const Crash = () => {
 
                     {/* Кнопки ставки и вывода */}
                     <div className={styles.betButtons}>
-                        <button 
-                            className={styles.betButton} 
-                            onClick={handleBet}
-                            disabled={betAmount <= 0 || betAmount > BalanceRupee || isCrashed === null || bet > 0 || gameActive}
-                        >
-                            BET
-                        </button>
-                        <button 
-                            className={styles.cashoutButton} 
-                            onClick={handleCashout}
-                            disabled={!gameActive || bet <= 0}
-                        >
-                            CASHOUT
-                        </button>
+                        {bet > 0 ? (
+                            <button 
+                                className={`${styles.mainButton} ${(gameActive && !isCrashed) ? styles.activeButton : ''}`} 
+                                onClick={handleCashout} 
+                                disabled={!gameActive || isCrashed}
+                            >
+                                Cash Out
+                            </button>
+                        ) : (
+                            <button 
+                                className={styles.mainButton} 
+                                onClick={handleBet} 
+                                disabled={isBettingClosed || betAmount <= 0 || betAmount > BalanceRupee}
+                            >
+                                Bet
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
