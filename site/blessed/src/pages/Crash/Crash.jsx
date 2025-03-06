@@ -53,18 +53,15 @@ export const Crash = () => {
             clearInterval(multiplierTimerRef.current);
         }
 
-        // Set initial value
-        setXValue(initialMultiplier);
-        
-        const updateInterval = 100; // ms
-        const growthFactor = 0.03; // how fast the multiplier grows
-        
         multiplierTimerRef.current = setInterval(() => {
             const elapsedSeconds = (Date.now() - startTime) / 1000;
-            // Formula for calculating multiplier: e^(elapsedSeconds * growthFactor)
-            const newMultiplier = Math.exp(elapsedSeconds * growthFactor);
-            setXValue(parseFloat(newMultiplier.toFixed(2)));
-        }, updateInterval);
+            
+            // Using a simplified growth model: multiplier = e^(0.1 * time)
+            const currentMultiplier = initialMultiplier * Math.pow(Math.E, 0.1 * elapsedSeconds);
+            
+            // Format to 2 decimal places
+            setXValue(parseFloat(currentMultiplier).toFixed(2));
+        }, 100); // Update every 100ms for smooth animation
     };
 
     // Setting up dimensions and WebSocket connection
@@ -125,7 +122,7 @@ export const Crash = () => {
                     }
                 }
 
-                if (data.type === "game_crash") {
+                if (data.type === "game_crash" && !isCrashed) {
                     // Stop multiplier growth simulation
                     if (multiplierTimerRef.current) {
                         clearInterval(multiplierTimerRef.current);
@@ -133,44 +130,23 @@ export const Crash = () => {
                     }
                     setStartMultiplierTime(null);
                     
+                    // Отображаем сообщение о крахе сразу, без эффекта взрыва
                     setIsCrashed(true);
                     setGameActive(false);
-                    setOverlayText(`Crashed at ${data.crash_point.toFixed(2)}x`);
+                    const crashPoint = parseFloat(data.crash_point).toFixed(2);
+                    setOverlayText(`Crashed at ${crashPoint}x`);
                     setCollapsed(true);
-                    setXValue(parseFloat(data.crash_point).toFixed(2));
+                    setXValue(crashPoint);
                     
-                    // Генерируем частицы взрыва
-                    const explosionParticles = [];
-                    const particleCount = 20 + Math.floor(data.crash_point * 5);
-                    
-                    for (let i = 0; i < particleCount; i++) {
-                        const angle = Math.random() * 360;
-                        const distance = 30 + Math.random() * 120;
-                        const size = 2 + Math.random() * 4;
-                        const type = Math.random() > 0.6 ? 'gold' : Math.random() > 0.5 ? 'orange' : 'bright';
-                        const delay = Math.random() * 0.3;
-                        
-                        explosionParticles.push({
-                            id: i,
-                            angle,
-                            distance,
-                            size,
-                            type,
-                            delay
-                        });
-                    }
-                    
-                    setCrashParticles(explosionParticles);
-                    
+                    // Очищаем состояние с небольшой задержкой
                     setTimeout(() => {
                         if (bet > 0) {
                             // If the player had an active bet, show a loss message
-                            toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
+                            toast.error(`Game crashed at ${crashPoint}x! You lost ₹${bet}.`);
                             setBet(0);
                         }
-                        setXValue(1.2);
-                        setCrashParticles([]);
-                    }, 3000);
+                        setXValue("1.20"); // Всегда показываем 2 знака после запятой
+                    }, 2000);
                 }
 
                 if (data.type === "timer_tick") {
@@ -191,7 +167,7 @@ export const Crash = () => {
 
                 if (data.type === "cashout_result") {
                     // Don't reset bet here to show the player they won
-                    toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${data.cashout_multiplier}x)`);
+                    toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${parseFloat(data.cashout_multiplier).toFixed(2)}x)`);
                     
                     // Delay resetting the bet to give the user time to see the result
                     setTimeout(() => {
@@ -202,7 +178,7 @@ export const Crash = () => {
 
                 // Processing another player's cashout message
                 if (data.type === "other_cashout") {
-                    toast.success(`${data.username} won ₹${data.win_amount.toFixed(0)} at ${data.cashout_multiplier}x!`);
+                    toast.success(`${data.username} won ₹${data.win_amount.toFixed(0)} at ${parseFloat(data.cashout_multiplier).toFixed(2)}x!`);
                 }
 
                 // Processing another player's bet message
@@ -381,50 +357,27 @@ export const Crash = () => {
                     <p>{overlayText}</p>
                 </div>
                 
-                {/* Star animation */}
-                <div className={`${styles.starContainer} ${gameActive || isCrashed ? styles.active : ''}`}>
+                {/* Star animation - только анимация полета, без взрыва */}
+                <div className={`${styles.starContainer} ${gameActive ? styles.active : ''}`}>
                     {startingFlash && (
                         <div className={styles.explosionFlash} style={{ left: '50%', top: '50%' }} />
                     )}
                     <img 
                         src="/star.svg" 
                         alt="Star" 
-                        className={`${styles.star} ${gameActive ? styles.flying : ''} ${isCrashed ? styles.exploding : ''} ${startingFlash ? styles.rocketStart : ''}`} 
+                        className={`${styles.star} ${gameActive ? styles.flying : ''} ${startingFlash ? styles.rocketStart : ''}`} 
                         style={gameActive ? {
-                            filter: `drop-shadow(0 0 ${Math.min(40, 10 + xValue * 3)}px rgba(255, 215, 0, ${Math.min(1, 0.6 + xValue * 0.05)}))`
+                            filter: `drop-shadow(0 0 ${Math.min(40, 10 + parseFloat(xValue) * 3)}px rgba(255, 215, 0, ${Math.min(1, 0.6 + parseFloat(xValue) * 0.05)}))`
                         } : {}}
                     />
                     
                     {/* Огненный след за звездой при активной игре */}
-                    {gameActive && !isCrashed && (
+                    {gameActive && (
                         <div className={styles.sparkTrail} />
                     )}
                     
-                    {/* Частицы взрыва */}
-                    {isCrashed && crashParticles.map(particle => {
-                        const radians = particle.angle * (Math.PI / 180);
-                        const x = Math.cos(radians) * particle.distance;
-                        const y = Math.sin(radians) * particle.distance;
-                        
-                        return (
-                            <div
-                                key={`crash-${particle.id}`}
-                                className={`${styles.smallParticle} ${styles.active} ${styles[particle.type + 'Particle']}`}
-                                style={{
-                                    left: `calc(50% + ${x}px)`,
-                                    top: `calc(50% - ${y}px)`,
-                                    width: `${particle.size}px`,
-                                    height: `${particle.size}px`,
-                                    '--x': `${x * 1.5}px`,
-                                    '--y': `${-y * 1.5}px`,
-                                    animationDelay: `${particle.delay}s`
-                                }}
-                            />
-                        );
-                    })}
-                    
                     {/* Основные частицы */}
-                    {gameActive && !isCrashed && Array(12).fill().map((_, index) => {
+                    {gameActive && Array(12).fill().map((_, index) => {
                         const angle = (index * 30) * (Math.PI / 180);
                         const offsetX = Math.cos(angle) * 30;
                         const offsetY = Math.sin(angle) * 30;
@@ -436,8 +389,8 @@ export const Crash = () => {
                                 style={{ 
                                     left: `calc(50% + ${offsetX}px)`, 
                                     top: `calc(50% - ${offsetY}px)`,
-                                    '--x-end': `${offsetX * (2 + Math.min(2, xValue / 2))}px`,
-                                    '--y-end': `${offsetY * (2 + Math.min(2, xValue / 2))}px`,
+                                    '--x-end': `${offsetX * (2 + Math.min(2, parseFloat(xValue) / 2))}px`,
+                                    '--y-end': `${offsetY * (2 + Math.min(2, parseFloat(xValue) / 2))}px`,
                                     animationDelay: `${index * 0.1}s`
                                 }}
                             />
@@ -445,7 +398,7 @@ export const Crash = () => {
                     })}
                     
                     {/* Дополнительные искры при высоком мультипликаторе */}
-                    {gameActive && !isCrashed && xValue > 1.5 && Array(8).fill().map((_, index) => {
+                    {gameActive && parseFloat(xValue) > 1.5 && Array(8).fill().map((_, index) => {
                         const angle = ((index * 45) + 20) * (Math.PI / 180);
                         const offsetX = Math.cos(angle) * 20;
                         const offsetY = Math.sin(angle) * 20;
@@ -457,8 +410,8 @@ export const Crash = () => {
                                 style={{ 
                                     left: `calc(50% + ${offsetX}px)`, 
                                     top: `calc(50% - ${offsetY}px)`,
-                                    '--x-end': `${offsetX * (3 + Math.min(3, xValue / 1.5))}px`,
-                                    '--y-end': `${offsetY * (3 + Math.min(3, xValue / 1.5))}px`,
+                                    '--x-end': `${offsetX * (3 + Math.min(3, parseFloat(xValue) / 1.5))}px`,
+                                    '--y-end': `${offsetY * (3 + Math.min(3, parseFloat(xValue) / 1.5))}px`,
                                     animationDelay: `${index * 0.05 + 0.2}s`
                                 }}
                             />
@@ -466,7 +419,7 @@ export const Crash = () => {
                     })}
                     
                     {/* Более интенсивные эффекты при очень высоком мультипликаторе */}
-                    {gameActive && !isCrashed && xValue > 3 && Array(6).fill().map((_, index) => {
+                    {gameActive && parseFloat(xValue) > 3 && Array(6).fill().map((_, index) => {
                         const angle = ((index * 60) + 10) * (Math.PI / 180);
                         const offsetX = Math.cos(angle) * 25;
                         const offsetY = Math.sin(angle) * 25;
@@ -478,24 +431,24 @@ export const Crash = () => {
                                 style={{ 
                                     left: `calc(50% + ${offsetX}px)`, 
                                     top: `calc(50% - ${offsetY}px)`,
-                                    '--x-end': `${offsetX * (4 + Math.min(5, xValue / 2))}px`,
-                                    '--y-end': `${offsetY * (4 + Math.min(5, xValue / 2))}px`,
+                                    '--x-end': `${offsetX * (4 + Math.min(5, parseFloat(xValue) / 2))}px`,
+                                    '--y-end': `${offsetY * (4 + Math.min(5, parseFloat(xValue) / 2))}px`,
                                     animationDelay: `${index * 0.03}s`,
-                                    transform: `scale(${Math.min(1.5, 1 + (xValue - 3) / 10)})`
+                                    transform: `scale(${Math.min(1.5, 1 + (parseFloat(xValue) - 3) / 10)})`
                                 }}
                             />
                         );
                     })}
                     
-                    {gameActive && !isCrashed && (
+                    {gameActive && (
                         <div 
                             className={`${styles.glowEffect} ${gameActive ? styles.active : ''}`} 
                             style={{ 
                                 left: '50%', 
                                 top: '50%',
-                                width: `${60 + Math.min(40, xValue * 10)}px`,
-                                height: `${60 + Math.min(40, xValue * 10)}px`,
-                                opacity: Math.min(0.7, 0.3 + xValue * 0.05)
+                                width: `${60 + Math.min(40, parseFloat(xValue) * 10)}px`,
+                                height: `${60 + Math.min(40, parseFloat(xValue) * 10)}px`,
+                                opacity: Math.min(0.7, 0.3 + parseFloat(xValue) * 0.05)
                             }} 
                         />
                     )}
