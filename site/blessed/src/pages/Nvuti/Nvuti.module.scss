@@ -2,84 +2,145 @@
 
 .nvuti {
     display: flex;
-    padding: 0px 18px;
+    padding: 0px 16px;
     flex-direction: column;
     align-items: center;
-    gap: 18px;
+    gap: 24px;
     align-self: stretch;
+    background-color: #0A1118;
+    min-height: 100vh;
 
-    @media (max-height: 725px) {
-        gap: 12px;
-        padding: 0px 14px;
-    }
-
-    @media (max-height: 640px) {
+    &_balance {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         gap: 8px;
-        padding: 0px 10px;
+        margin-top: 16px;
+        background-color: rgba(0, 0, 0, 0.2);
+        padding: 6px 12px;
+        border-radius: 24px;
+
+        &_icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #007BFF;
+            border-radius: 50%;
+            font-size: 14px;
+            color: #fff;
+        }
+
+        &_value {
+            color: #FFF;
+            font-size: 18px;
+            font-weight: 500;
+        }
     }
 
     &_number {
         color: #FFF;
         text-align: center;
-        font-size: 72px;
+        font-size: 120px;
         font-style: normal;
-        font-weight: 700;
-        padding: 36px 0;
-
-        @media (max-height: 725px) {
-            font-size: 50px;
-            padding: 6px 0;
-        }
-
-        @media (max-height: 640px) {
-            font-size: 40px;
-            padding: 4px 0;
-        }
-
-        @media (max-width: 350px) {
-            font-size: 36px;
-        }
+        font-weight: 300;
+        margin: 20px 0;
     }
 
     &_tip {
         display: flex;
         width: 100%;
-        justify-content: center;
-        color: $mid-white;
+        justify-content: space-between;
+        color: #FFF;
         text-align: center;
-        font-size: 18px;
-        font-style: normal;
+        font-size: 14px;
         font-weight: 400;
-        line-height: 24px;
-
-        @media (max-height: 640px) {
-            font-size: 14px;
-            line-height: 20px;
-        }
-
-        @media (max-width: 350px) {
-            font-size: 12px;
-            line-height: 16px;
-        }
+        margin-top: -10px;
 
         p {
-            width: fit-content;
-            flex: 1 0 0;
+            padding: 0 10px;
+        }
+    }
+
+    &_bet_section {
+        display: flex;
+        width: 100%;
+        gap: 10px;
+        margin-top: 16px;
+    }
+
+    &_bet_input {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 8px;
+        padding: 10px 16px;
+
+        &_value {
+            flex: 1;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        &_buttons {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            button {
+                background: none;
+                border: none;
+                color: #fff;
+                font-size: 20px;
+                width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            }
+        }
+    }
+
+    &_bet_button {
+        background-color: #0D6EFD;
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 0 32px;
+        font-size: 18px;
+        font-weight: 500;
+    }
+
+    &_multiplier {
+        display: flex;
+        width: 100%;
+        gap: 16px;
+        margin: 4px 0;
+
+        button {
+            flex: 1;
+            background-color: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 8px;
+            padding: 10px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 500;
         }
     }
 
     h3 {
         width: 100%;
-        margin: 0;
+        margin: 10px 0 5px;
         padding: 0;
-
-        @media (max-height: 640px) {
-            font-size: 14px;
-        }
-    }
-
-    &_amount {
-        width: 100%;
+        color: #fff;
+        font-size: 16px;
+        font-weight: 500;
+        text-align: center;
     }
 }
 
@@ -89,59 +150,77 @@
     background: transparent;
     cursor: pointer;
     width: 100%;
-    max-width: 600px;
-    --value: 50%;
+    height: 4px;
+    --value: 65%;
 
-    @media (max-height: 640px) {
-        margin: 0;
-        height: 20px;
+    &_container {
+        position: relative;
+        width: 100%;
+        margin-top: 8px;
     }
 
     &_value {
-        color: #ACB5FF;
-        font-size: 24px;
-        font-style: normal;
+        color: #009BFF;
+        font-size: 20px;
         font-weight: 600;
-        line-height: 24px;
-        margin-left: 10px;
-
-        @media (max-height: 640px) {
-            font-size: 18px;
-            line-height: 18px;
-            margin: 0;
-        }
+        text-align: center;
+        margin-bottom: 12px;
     }
 
     &::-webkit-slider-runnable-track {
-        background: #0B0B0B;
-        height: 0.5rem;
+        height: 4px;
+        border-radius: 2px;
     }
 
     &::-moz-range-track {
-        background: #0B0B0B;
-        height: 0.5rem;
+        height: 4px;
+        border-radius: 2px;
     }
 
     &::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
-        margin-top: -8px;
-        background-color: #FFF;
+        margin-top: -10px;
+        background-color: #fff;
+        border: 4px solid #333;
         width: 24px;
         height: 24px;
         border-radius: 24px;
-    }
-
-    &::-moz-range-progress {
-        background-color: #ACB5FF;
+        z-index: 2;
+        position: relative;
     }
 
     &::-webkit-slider-runnable-track {
-        background: linear-gradient(to right, #ACB5FF var(--value), #0B0B0B var(--value));
-        border-radius: 24px;
+        background: linear-gradient(to right, #ff0000 0%, #0bff06 100%);
+        border-radius: 4px;
     }
 
-    &::-moz-range-track {
-        background: linear-gradient(to right, #ACB5FF, #0B0B0B);
+    &_thumb_icon {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        background-color: #ccc;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        top: 2px;
+        transform: translateX(-50%);
+        left: var(--value);
+        z-index: 3;
+
+        &::before,
+        &::after {
+            content: "";
+            display: block;
+            width: 2px;
+            height: 10px;
+            background-color: #333;
+            margin: 0 2px;
+        }
+
+        &::after {
+            margin-left: 2px;
+        }
     }
 }

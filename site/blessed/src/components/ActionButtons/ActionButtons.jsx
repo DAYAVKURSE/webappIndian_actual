@@ -5,10 +5,8 @@ export const ActionButtons = ({ onclick1, src1, label1, color1, onclick2, src2, 
         <div className={styles.actionbuttons}>
             <button className={styles.actionbuttons_button} onClick={onclick1} style={{backgroundColor: color1}}>
                 <img src={src1} alt={label1} />
-                {label1}
             </button>
             <button className={styles.actionbuttons_button} onClick={onclick2} style={{backgroundColor: color2}}>
-                {label2}
                 <img src={src2} alt={label2} />
             </button>
         </div>
