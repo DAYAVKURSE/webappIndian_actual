@@ -68,23 +68,38 @@ export const Crash = () => {
         setIsStarFlying(true);
         setIsStarExploding(false);
         
-        // Запускаем создание следа звезды
+        // Запускаем создание следа звезды с увеличенной частотой
         if (trailTimerRef.current) {
             clearInterval(trailTimerRef.current);
         }
         
         trailTimerRef.current = setInterval(() => {
             createStarTrail();
-        }, 100);
+        }, 50);
         
-        // Запускаем создание маленьких частиц
+        // Запускаем создание маленьких частиц с увеличенной частотой
         if (smallParticleTimerRef.current) {
             clearInterval(smallParticleTimerRef.current);
         }
         
         smallParticleTimerRef.current = setInterval(() => {
             createSmallParticles();
-        }, 300);
+        }, 200);
+        
+        // Добавляем начальное свечение
+        setTimeout(() => {
+            if (starContainerRef.current && starRef.current) {
+                const starRect = starRef.current.getBoundingClientRect();
+                const containerRect = starContainerRef.current.getBoundingClientRect();
+                
+                if (starRect && containerRect) {
+                    const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
+                    const starCenterY = starRect.top + starRect.height / 2 - containerRect.top;
+                    
+                    createGlowEffect(starCenterX, starCenterY);
+                }
+            }
+        }, 100);
         
         const updateInterval = 100; // ms
         const growthFactor = 0.03; // how fast the multiplier grows
@@ -93,6 +108,12 @@ export const Crash = () => {
             const elapsedSeconds = (Date.now() - startTime) / 1000;
             // Formula for calculating multiplier: e^(elapsedSeconds * growthFactor)
             const newMultiplier = Math.exp(elapsedSeconds * growthFactor);
+            
+            // Создаем дополнительные частицы при высоких значениях коэффициента
+            if (newMultiplier > 2 && Math.random() > 0.7) {
+                createSmallParticles();
+            }
+            
             setXValue(parseFloat(newMultiplier.toFixed(2)));
         }, updateInterval);
     };
@@ -106,13 +127,21 @@ export const Crash = () => {
         
         // Создаем след
         const trail = document.createElement('div');
-        trail.className = `${styles.starTrail} ${styles.active}`;
         
-        // Позиционируем след по центру звезды
+        // Случайно выбираем тип следа
+        const trailTypes = ['goldTrail', 'redTrail', 'whiteTrail'];
+        const randomTrailType = trailTypes[Math.floor(Math.random() * trailTypes.length)];
+        
+        trail.className = `${styles.starTrail} ${styles[randomTrailType]} ${styles.active}`;
+        
+        // Позиционируем след по центру звезды с небольшим смещением для красоты
         const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
         const starBottomY = starRect.bottom - containerRect.top;
         
-        trail.style.left = `${starCenterX - 1}px`; // 1px - половина ширины следа
+        // Добавляем случайное смещение для разнообразия
+        const xOffset = (Math.random() - 0.5) * 10;
+        
+        trail.style.left = `${starCenterX + xOffset}px`;
         trail.style.top = `${starBottomY}px`;
         
         starContainerRef.current.appendChild(trail);
@@ -123,6 +152,31 @@ export const Crash = () => {
                 starContainerRef.current.removeChild(trail);
             }
         }, 1000);
+        
+        // С некоторой вероятностью создаем эффект свечения вокруг звезды
+        if (Math.random() > 0.7) {
+            createGlowEffect(starCenterX, starRect.top + starRect.height / 2 - containerRect.top);
+        }
+    };
+    
+    // Создаем эффект свечения вокруг звезды
+    const createGlowEffect = (x, y) => {
+        if (!starContainerRef.current) return;
+        
+        const glow = document.createElement('div');
+        glow.className = `${styles.glowEffect} ${styles.active}`;
+        
+        glow.style.left = `${x}px`;
+        glow.style.top = `${y}px`;
+        
+        starContainerRef.current.appendChild(glow);
+        
+        // Удаляем эффект свечения после окончания анимации
+        setTimeout(() => {
+            if (starContainerRef.current && glow.parentNode === starContainerRef.current) {
+                starContainerRef.current.removeChild(glow);
+            }
+        }, 1500);
     };
     
     // Создаем маленькие частицы при полете звезды
@@ -132,16 +186,22 @@ export const Crash = () => {
         const starRect = starRef.current.getBoundingClientRect();
         const containerRect = starContainerRef.current.getBoundingClientRect();
         
-        // Создаем 2-3 маленькие частицы
-        const particleCount = 2 + Math.floor(Math.random() * 2);
+        // Создаем 3-5 маленьких частиц
+        const particleCount = 3 + Math.floor(Math.random() * 3);
+        const particleTypes = ['goldParticle', 'redParticle', 'whiteParticle'];
         
         for (let i = 0; i < particleCount; i++) {
             const particle = document.createElement('div');
-            particle.className = `${styles.smallParticle} ${styles.active}`;
+            
+            // Выбираем случайный тип частицы
+            const typeIndex = Math.floor(Math.random() * particleTypes.length);
+            const particleType = particleTypes[typeIndex];
+            
+            particle.className = `${styles.smallParticle} ${styles[particleType]} ${styles.active}`;
             
             // Случайное направление для каждой частицы
             const angle = Math.random() * Math.PI * 2;
-            const distance = 10 + Math.random() * 20;
+            const distance = 15 + Math.random() * 30;
             const x = Math.cos(angle) * distance;
             const y = Math.sin(angle) * distance;
             
@@ -152,8 +212,12 @@ export const Crash = () => {
             const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
             const starCenterY = starRect.top + starRect.height / 2 - containerRect.top;
             
-            particle.style.left = `${starCenterX}px`;
-            particle.style.top = `${starCenterY}px`;
+            // Добавляем небольшое смещение для разнообразия
+            const offsetX = (Math.random() - 0.5) * 6;
+            const offsetY = (Math.random() - 0.5) * 6;
+            
+            particle.style.left = `${starCenterX + offsetX}px`;
+            particle.style.top = `${starCenterY + offsetY}px`;
             
             starContainerRef.current.appendChild(particle);
             
@@ -402,9 +466,38 @@ export const Crash = () => {
                     setGameActive(true);
                     setCollapsed(false);
                     
+                    // Активируем контейнер звезды
+                    if (starContainerRef.current) {
+                        starContainerRef.current.classList.add(styles.active);
+                        
+                        // Очищаем предыдущие эффекты
+                        const oldElements = starContainerRef.current.querySelectorAll(
+                            `.${styles.starTrail}, .${styles.smallParticle}, .${styles.glowEffect}`
+                        );
+                        oldElements.forEach(el => {
+                            if (el.parentNode === starContainerRef.current) {
+                                starContainerRef.current.removeChild(el);
+                            }
+                        });
+                    }
+                    
                     // Start multiplier growth simulation with initial value of 1.0
                     setStartMultiplierTime(Date.now());
                     simulateMultiplierGrowth(Date.now(), 1.0);
+                    
+                    // Добавляем мгновенный эффект частиц для начала игры
+                    setTimeout(() => {
+                        createSmallParticles();
+                        if (starRef.current && starContainerRef.current) {
+                            const starRect = starRef.current.getBoundingClientRect();
+                            const containerRect = starContainerRef.current.getBoundingClientRect();
+                            if (starRect && containerRect) {
+                                const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
+                                const starCenterY = starRect.top + starRect.height / 2 - containerRect.top;
+                                createGlowEffect(starCenterX, starCenterY);
+                            }
+                        }
+                    }, 50);
                 }
             } catch (error) {
                 console.error('Error processing WebSocket message:', error);
