@@ -4,8 +4,11 @@
     min-width: 47px;
     min-height: 47px;
     padding: 12px 24px;
-    border-radius: 48px;
-    background-color: $low-black;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
+    background: #10202e;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
+    background: #10202e;
     font-size: 16px;
     color: #fff;
     width: 100%;
@@ -13,6 +16,11 @@
     outline: none !important;
     appearance: none !important;
     border: none !important;
+    &::placeholder {
+        font-weight: 400;
+        font-size: 14px;
+        color: #3c698e;
+    }
 
     &__container {
         min-width: 48px;
@@ -20,13 +28,13 @@
         width: 100%;
         display: inline-block;
         padding: 1px;
-        border-radius: 50px;
+        border-radius: 5px;
+        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
+        background: #10202e;
+        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
+        background: #10202e;
+        outline: none;
         border: none;
-        background-color: $low-black;
-        background: linear-gradient(-65deg, #FFFFFF2D 0%, #FFFFFF26 41%, #FFFFFF26 57%, #FFFFFF46 100%);
 
-        &:focus-within {
-            background: linear-gradient(-65deg, #ffffff42 0%, #ffffff36 41%, #ffffff36 57%, #ffffff54 100%);
-        }
     }
 }

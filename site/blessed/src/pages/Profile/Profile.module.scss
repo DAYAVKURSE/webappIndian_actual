@@ -4,13 +4,11 @@
     display: flex;
     flex-direction: column;
     padding: 0 18px;
-    background-color: #0B1728;
     color: white;
     min-height: 100vh;
 }
 
 .title {
-    color: #3B82F6;
     font-size: 28px;
     font-weight: 600;
     margin-top: 30px;
@@ -52,7 +50,7 @@
     display: flex;
     align-items: center;
     margin-bottom: 30px;
-    border: 1px solid #213552;
+    gap:10px;
     border-radius: 8px;
     overflow: hidden;
 }
@@ -64,17 +62,24 @@
     border: none;
     padding: 12px 15px;
     font-size: 14px;
+    border: 1px solid #646464;
+    border-radius: 10px;
+    width: 100%;
+    background: #15171e;
+    height: 50px;
     outline: none;
 }
 
 .copyButton {
-    background-color: #3B82F6;
-    width: 40px;
-    height: 40px;
+    border: 1px solid #6ebeff;
+    border-radius: 10px;
+    width: 50px;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
+    background: #15171e;
+    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border: none;
     cursor: pointer;
     
     img {
@@ -85,24 +90,33 @@
 }
 
 .referralsContainer {
-    background-color: #0C1D33;
+    border: 1px solid #6ebeff;
+    border-radius: 20px;
+    width: 100%;
+    height: 214px;
+    background: #15171e;
     border-radius: 20px;
     padding: 20px;
     display: flex;
+    align-items: center;
+    justify-content: space-between;
     flex-direction: column;
+    margin-bottom: 30px;
 }
 
 .referralsTitle {
-    color: white;
+    font-weight: 400;
     font-size: 18px;
-    font-weight: 500;
-    margin-bottom: 20px;
+    letter-spacing: -0.03em;
+    color: #fff;
     text-align: center;
 }
 
 .totalEarnedLabel {
-    color: #7B9CD5;
+    font-weight: 400;
     font-size: 14px;
+    text-align: center;
+    color: #bdbdbd;
     margin-bottom: 5px;
 }
 
@@ -110,11 +124,19 @@
     display: flex;
     align-items: center;
     margin-bottom: 20px;
+    border: 1px solid #d2d2d2;
+    border-radius: 10px;
+    width: 160px;
+    height: 43px;
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
+    background: #15171e;
+    display: flex;
+    justify-content: center;
 }
 
 .rupeeIcon {
-    background-color: #3B82F6;
-    color: white;
+    background-color: #6ebeff;
+    color: #000;
     width: 24px;
     height: 24px;
     border-radius: 50%;
@@ -153,4 +175,32 @@
             border-bottom: none;
         }
     }
+}
+
+.title {
+    font-weight: 500;
+font-size: 36px;
+letter-spacing: -0.03em;
+color: #6ebeff;
+}
+
+.username {
+    font-weight: 500;
+font-size: 24px;
+letter-spacing: -0.03em;
+color: #6ebeff;
+}
+
+.referHeader {
+    font-weight: 400;
+    font-size: 18px;
+    letter-spacing: -0.03em;
+    color: #fff;
+}
+
+.referDescription {
+    font-weight: 400;
+    font-size: 14px;
+    text-align: center;
+    color: #d2d2d2;
 }

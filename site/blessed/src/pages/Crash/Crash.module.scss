@@ -346,10 +346,52 @@
     padding: 16px;
     
     .coefficientLabel {
-        color: #8B9CB9;
-        font-size: 18px;
-        text-align: center;
-        margin-bottom: 20px;
+        color: #FFF;
+        font-size: 16px;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .coefficientContainer {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    
+    .coefficientInput {
+        display: flex;
+        align-items: center;
+        background-color: #13243D;
+        border-radius: 8px;
+        padding: 0 12px;
+        height: 40px;
+        
+        .autoInput {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 16px;
+            padding: 8px 0;
+            
+            &:focus {
+                outline: none;
+            }
+            
+            &::placeholder {
+                color: rgba(255, 255, 255, 0.5);
+            }
+        }
+        
+        .inputLabel {
+            color: #EDFF8C;
+            font-weight: 600;
+            font-size: 16px;
+            margin-left: 4px;
+        }
     }
     
     .betControls {
@@ -422,7 +464,7 @@
         font-size: 18px;
         font-weight: 600;
         cursor: pointer;
-        transition: background-color 0.3s;
+        transition: all 0.3s;
         
         &:hover {
             background-color: #2563EB;
@@ -432,6 +474,56 @@
             background-color: #6B7280;
             cursor: not-allowed;
         }
+        
+        &.activeButton {
+            background-color: #EDFF8C;
+            color: #000000;
+            animation: glow 1.5s infinite alternate;
+        }
+    }
+}
+
+.activeBet {
+    position: absolute;
+    bottom: 10px;
+    color: #EDFF8C;
+    background-color: rgba(11, 23, 40, 0.7);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0.8;
+    }
+}
+
+.autoCashoutBtn {
+    background-color: #1D293A;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 16px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    
+    &.active {
+        background-color: #EDFF8C;
+        color: #000000;
+    }
+    
+    &:hover {
+        opacity: 0.8;
     }
 }
 
@@ -461,5 +553,14 @@
     }
     to {
         opacity: 0;
+    }
+}
+
+@keyframes glow {
+    from {
+        box-shadow: 0 0 5px rgba(237, 255, 140, 0.5);
+    }
+    to {
+        box-shadow: 0 0 15px rgba(237, 255, 140, 0.8);
     }
 }

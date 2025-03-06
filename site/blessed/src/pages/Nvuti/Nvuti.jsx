@@ -5,7 +5,7 @@ import { toast } from "react-hot-toast";
 import useStore from "@/store";
 
 export const Nvuti = () => {
-	const { increaseBalanceRupee, decreaseBalanceRupee, BalanceRupee } = useStore();
+	const { increaseBalanceRupee, decreaseBalanceRupee } = useStore();
 	const [bet, setBet] = useState(100);
 	const [percent, setPercent] = useState(50);
 	const [number, setNumber] = useState(null);

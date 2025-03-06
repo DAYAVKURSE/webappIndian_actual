@@ -13,11 +13,14 @@ export const Trading = () => {
     const [time, setTime] = useState(10);
     const [outcome, setOutcome] = useState({ latestBets: [] });
     const [chartReady, setChartReady] = useState(false);
+    const [currentPrice, setCurrentPrice] = useState(null);
+    const [priceChange, setPriceChange] = useState(0);
 
-    const lineSeriesRef = useRef(null);
+    const candleSeriesRef = useRef(null);
     const chartRef = useRef(null);
     const [markers, setMarkers] = useState([]);
     const wsLatestRef = useRef(null);
+    const lastPriceRef = useRef(null);
 
     const initData = useRef(window.Telegram.WebApp.initData);
 
@@ -51,15 +54,7 @@ export const Trading = () => {
 
     // Установка и обработка WebSocket соединений
     const setupWebSockets = useCallback(() => {
-        if (!chartRef.current || !lineSeriesRef.current) return;
-
-        const areaSeries = chartRef.current.addAreaSeries({
-            lastValueVisible: false,
-            crosshairMarkerVisible: false,
-            lineColor: 'transparent',
-            topColor: 'rgba(63, 127, 251, 1)',
-            bottomColor: 'rgba(63, 127, 251, 0.1)',
-        });
+        if (!chartRef.current || !candleSeriesRef.current) return;
 
         const encoded_init_data = encodeURIComponent(initData.current);
         const ws_url_initial = `wss://${API_BASE_URL}/ws/kline?init_data=${encoded_init_data}`;
@@ -73,10 +68,13 @@ export const Trading = () => {
                 if (Array.isArray(data) && data.length > 0) {
                     const last100Data = data.slice(-100).map(item => ({
                         time: item.openTime / 1000,
-                        value: item.close,
+                        open: item.open,
+                        high: item.high,
+                        low: item.low,
+                        close: item.close,
                     }));
-                    lineSeriesRef.current.setData(last100Data);
-                    areaSeries.setData(last100Data);
+                    
+                    candleSeriesRef.current.setData(last100Data);
                     setChartReady(true);
                 }
             } catch (error) {
@@ -102,22 +100,30 @@ export const Trading = () => {
                     const data = JSON.parse(event.data);
                     if (data && typeof data === 'object') {
                         const time = data.openTime / 1000;
-                        const value = data.close;
                         
-                        if (time && value && lineSeriesRef.current && chartReady) {
-                            lineSeriesRef.current.update({
+                        if (time && candleSeriesRef.current && chartReady) {
+                            // Обновляем свечной график
+                            candleSeriesRef.current.update({
                                 time,
-                                value,
+                                open: data.open,
+                                high: data.high,
+                                low: data.low,
+                                close: data.close
                             });
-                            areaSeries.update({
-                                time,
-                                value,
-                            });
+                            
+                            // Обновляем текущую цену и изменение
+                            setCurrentPrice(data.close);
+                            if (lastPriceRef.current !== null) {
+                                const change = (data.close - lastPriceRef.current) / lastPriceRef.current * 100;
+                                setPriceChange(change);
+                            }
+                            lastPriceRef.current = data.close;
 
+                            // Обновляем маркеры ставок
                             setMarkers((prevMarkers) =>
                                 prevMarkers.map((marker) =>
                                     marker.time === time && marker.value === null
-                                        ? { ...marker, value }
+                                        ? { ...marker, value: data.close }
                                         : marker
                                 )
                             );
@@ -154,6 +160,7 @@ export const Trading = () => {
             layout: {
                 background: { color: '#000000' },
                 textColor: '#3F7FFB',
+                fontSize: 12,
             },
             grid: {
                 vertLines: { color: 'rgba(63, 127, 251, 0.1)' },
@@ -161,17 +168,70 @@ export const Trading = () => {
             },
             rightPriceScale: {
                 borderColor: 'rgba(63, 127, 251, 0.2)',
+                scaleMargins: {
+                    top: 0.1,
+                    bottom: 0.1,
+                },
+                visible: true,
             },
             timeScale: {
                 borderColor: 'rgba(63, 127, 251, 0.2)',
-                visible: false,
+                visible: true,
+                timeVisible: true,
+                secondsVisible: false,
+                tickMarkFormatter: (time) => {
+                    const date = new Date(time * 1000);
+                    const hours = date.getHours().toString().padStart(2, '0');
+                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                    return `${hours}:${minutes}`;
+                },
+            },
+            crosshair: {
+                mode: 1,
+                vertLine: {
+                    color: 'rgba(63, 127, 251, 0.5)',
+                    width: 1,
+                    style: 1,
+                    visible: true,
+                    labelVisible: true,
+                },
+                horzLine: {
+                    color: 'rgba(63, 127, 251, 0.5)',
+                    width: 1,
+                    style: 1,
+                    visible: true,
+                    labelVisible: true,
+                },
+            },
+            localization: {
+                timeFormatter: (time) => {
+                    const date = new Date(time * 1000);
+                    const hours = date.getHours().toString().padStart(2, '0');
+                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                    const seconds = date.getSeconds().toString().padStart(2, '0');
+                    return `${hours}:${minutes}:${seconds}`;
+                },
             },
         });
 
-        const lineSeries = chart.addLineSeries();
-        lineSeriesRef.current = lineSeries;
+        // Создаем свечной график вместо линейного
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: 'rgba(0, 150, 136, 0.8)',
+            downColor: 'rgba(255, 82, 82, 0.8)',
+            borderVisible: false,
+            wickUpColor: 'rgba(0, 150, 136, 0.8)',
+            wickDownColor: 'rgba(255, 82, 82, 0.8)',
+            priceFormat: {
+                type: 'price',
+                precision: 2,
+                minMove: 0.01,
+            },
+        });
+        
+        candleSeriesRef.current = candleSeries;
         chartRef.current = chart;
 
+        // Скрываем водяной знак
         const watermark_Ebaniy = document.getElementById('tv-attr-logo');
         if (watermark_Ebaniy) {
             watermark_Ebaniy.style.display = 'none';
@@ -250,13 +310,13 @@ export const Trading = () => {
                         shape: shape,
                         text: `₹ ${bet}`,
                         value: null,
-                    }
+                    },
                 ];
 
                 // Обновить маркеры на графике
-                if (lineSeriesRef.current) {
+                if (candleSeriesRef.current) {
                     const allMarkers = [...markers, ...newMarkers];
-                    lineSeriesRef.current.setMarkers(allMarkers);
+                    candleSeriesRef.current.setMarkers(allMarkers);
                     setMarkers(allMarkers);
                 }
 
@@ -299,58 +359,87 @@ export const Trading = () => {
                 }, (time * 1000) + 1000); // Добавляем 1 секунду для завершения обработки на сервере
             }
         } catch (error) {
-            toast.error('Ошибка при размещении ставки');
             console.error('Ошибка при размещении ставки:', error);
+            toast.error('Не удалось разместить ставку');
         }
     };
 
-
+    // Форматирование баланса для отображения
     const formatBalance = (balance) => {
-        let balanceStr = Math.trunc(balance).toString();
-
-        const balanceParts = balanceStr.replace(/\B(?=(\d{3})+(?!\d))/g, ".").split(".");
-
-        const main = balanceParts.shift();
-        const fraction = balanceParts.join('.');
-
-        return { main, fraction };
+        if (balance === undefined || balance === null) return { main: '0', suppl: '00' };
+        
+        const balanceStr = balance.toFixed(2);
+        const [main, suppl] = balanceStr.split('.');
+        
+        return { main, suppl: suppl || '00' };
     };
 
-    const { main, fraction } = formatBalance(BalanceRupee || 0);
+    // Форматирование цены для отображения
+    const formatPrice = (price) => {
+        if (price === null || price === undefined) return "Loading...";
+        return price.toFixed(2);
+    };
 
+    // Форматирование изменения цены
+    const formatPriceChange = (change) => {
+        if (change === null || change === undefined) return "";
+        const sign = change >= 0 ? "+" : "";
+        return `${sign}${change.toFixed(2)}%`;
+    };
+
+    const { main, suppl } = formatBalance(BalanceRupee);
+    
     return (
         <div className={styles.trading}>
-            {/* <h3 className={styles.trading_balance}>₹ {Math.trunc(BalanceRupee)}</h3> */}
-            <h3 className={styles.trading_balance}>
-                <span className={styles.main}>₹ {main}</span>
-                {fraction && (
-                    <span className={styles.clicker__balance__value_fraction} style={{ fontSize: "26px" }}>
-                        .{fraction}
-                    </span>
-                )}
-            </h3>
+            <h1 className={styles.title}>Trading</h1>
             <p className={styles.trading_text}>Your balance</p>
-            <div id="chart" className={styles.trading__chart} />
-            <ActionButtons
-                onclick1={() => handleBet("down")} src1="/24=arrow_circle_down.svg" label1="Down" color1="#D22C32"
-                onclick2={() => handleBet("up")} src2="/24=arrow_circle_up.svg" label2="Up" color2="#26CC57"
-            />
+            <h3 className={styles.trading_balance}>
+                ₹ {BalanceRupee ? BalanceRupee.toFixed(0) : 0}
+            </h3>
+            
+            <div className={styles.chartWrap}>
+                <div id="chart" className={styles.chart} />
+            </div>
+            
+            <div className={styles.trading__bet}>
+                <button className={styles.trading__bet_button} onClick={() => handleBet("down")}>
+                    <img src="/24=arrow_circle_down.svg" alt="Down" />
+                </button>
+                <button className={styles.trading__bet_button} onClick={() => handleBet("up")}>
+                    <img src="/24=arrow_circle_up.svg" alt="Up" />
+                </button>
+            </div>
+
             <div className={styles.trading__timer}>
-                <div className={styles.trading__timer_button_container} onClick={() => setTime((prevTime) => Math.max(prevTime - 60, 10))}>
-                    <img src="/24=remove.svg" alt="" className={styles.trading__timer_button} />
-                </div>
-                <p className={styles.trading__timer_text}>{formatTime(time)}</p>
-                <div className={styles.trading__timer_button_container} onClick={() => setTime((prevTime) => Math.min(prevTime + 60, 3540))}>
-                    <img src="/24=add.svg" alt="" className={styles.trading__timer_button} />
-                </div>
+                <button className={styles.minusBtn} onClick={() => setTime((prevTime) => Math.max(prevTime - 10, 10))}>
+                    −
+                </button>
+                <p className={styles.trading__timer_text}>00:10</p>
+                <button className={styles.plusBtn} onClick={() => setTime((prevTime) => Math.min(prevTime + 10, 3540))}>
+                    +
+                </button>
             </div>
+            
             <div className={styles.trading_button_container}>
-                <button className={styles.trading_button} onClick={() => setTime(() => 10)}>10 <p>sec</p></button>
-                <button className={styles.trading_button} onClick={() => setTime(() => 30)}>30 <p>sec</p></button>
-                <button className={styles.trading_button} onClick={() => setTime(() => 60)}>1 <p>min</p></button>
-                <button className={styles.trading_button} onClick={() => setTime(() => 300)}>5 <p>min</p></button>
+                <button className={styles.trading_button} onClick={() => setTime(() => 10)}>10 <span>sec</span></button>
+                <button className={styles.trading_button} onClick={() => setTime(() => 30)}>30 <span>sec</span></button>
+                <button className={styles.trading_button} onClick={() => setTime(() => 60)}>1 <span>min</span></button>
+                <button className={styles.trading_button} onClick={() => setTime(() => 300)}>5 <span>min</span></button>
             </div>
-            <Amount bet={bet} setBet={setBet} />
+            
+            <div className={styles.betAmount}>
+                <div className={styles.amountDisplay}>
+                    <span>100 ₹</span>
+                    <div className={styles.amountControls}>
+                        <button onClick={() => setBet(prev => Math.max(prev - 10, 10))}>−</button>
+                        <button onClick={() => setBet(prev => prev + 10)}>+</button>
+                    </div>
+                </div>
+                <div className={styles.amountButtons}>
+                    <button onClick={() => setBet(prev => Math.floor(prev / 2))}>/ 2</button>
+                    <button onClick={() => setBet(prev => prev * 2)}>× 2</button>
+                </div>
+            </div>
         </div>
     );
 };

@@ -7,6 +7,7 @@
     animation: fadeIn .2s ease-in-out forwards;
     width: 100%;
     z-index: 99;
+    background: #15171E;
 
     &__buttons {
         display: flex;
@@ -20,7 +21,7 @@
 
     &__spacer {
         width: 100%;
-        min-height: 80px;
+        min-height: 72px;
     }
 }
 
@@ -33,4 +34,51 @@
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+.logo {
+    width: 90px;
+    height: 40px;   
+}
+
+.balance {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+
+    & .title {
+        font-weight: 500;
+        font-size: 12px;
+        line-height: 100%;
+        color: #9b9a99;
+    }
+
+    & .coin {
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 100%;
+        color: #e7e7e7;
+    }
+
+    & .count {
+        font-weight: 500;
+        font-size: 14px;
+        line-height: 100%;
+        color: #e7e7e7;
+    }
+}
+.deposit {
+    border-radius: 38px;
+    width: 80px;
+    height: 25px;
+    background-image: url('./button.png');
+    background-position: center;
+    background-size: 100% 100%;
+    font-weight: 500;
+    font-size: 12px;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
 }
