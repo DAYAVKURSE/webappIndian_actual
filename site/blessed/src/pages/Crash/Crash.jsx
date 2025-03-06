@@ -53,24 +53,15 @@ export const Crash = () => {
             clearInterval(multiplierTimerRef.current);
         }
 
-        // Храним последнее значение для сравнения, чтобы избежать лишних ререндеров
-        let lastValue = "";
-        
         multiplierTimerRef.current = setInterval(() => {
             const elapsedSeconds = (Date.now() - startTime) / 1000;
             
             // Using a simplified growth model: multiplier = e^(0.1 * time)
             const currentMultiplier = initialMultiplier * Math.pow(Math.E, 0.1 * elapsedSeconds);
             
-            // Форматируем до 2 знаков после запятой
-            const formattedValue = parseFloat(currentMultiplier).toFixed(2);
-            
-            // Обновляем только если значение изменилось, чтобы избежать мерцания
-            if (formattedValue !== lastValue) {
-                lastValue = formattedValue;
-                setXValue(formattedValue);
-            }
-        }, 50); // Обновление каждые 50мс - достаточно для плавности, но не вызывает дерганье
+            // Format to 2 decimal places
+            setXValue(parseFloat(currentMultiplier).toFixed(2));
+        }, 16); // Update ~60 times per second for smooth updates
     };
 
     // Setting up dimensions and WebSocket connection
@@ -218,50 +209,50 @@ export const Crash = () => {
 
     // Handling bet
     const handleBet = async () => {
-        try {
-            // Проверяем, что ставки открыты и сумма ставки валидна
-            if (isBettingClosed) {
-                toast.error("Betting is closed for this round");
-                return;
-            }
-
-            // Проверим валидность суммы ставки
-            if (!betAmount || betAmount <= 0) {
-                toast.error("Please enter a valid bet amount");
-                return;
-            }
-
-            if (betAmount > BalanceRupee) {
-                toast.error("Insufficient balance");
-                return;
-            }
-
-            // Отправляем ставку через WebSocket
-            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-                wsRef.current.send(JSON.stringify({
-                    type: "place_bet",
-                    amount: parseInt(betAmount)
-                }));
-                
-                setBet(parseInt(betAmount));
-                decreaseBalanceRupee(parseInt(betAmount));
-                toast.success(`Bet placed: ₹${betAmount}`);
-            } else {
-                toast.error("WebSocket connection not available");
-                // Попытка переподключения
-                setTimeout(() => {
-                    if (wsRef.current) {
-                        wsRef.current.close();
-                    }
-                    const newSocket = new WebSocket(API_BASE_URL + "/ws/crashgame/live?init_data=" + encodeURIComponent(initData));
-                    wsRef.current = newSocket;
-                }, 500);
-            }
-        } catch (error) {
-            console.error('Error placing bet:', error);
-            toast.error("Error placing bet. Please try again.");
+        if (!initData) {
+            toast.error('Authorization error. Please restart the application.');
+            return;
         }
-    };
+
+        if (betAmount <= 0) {
+            toast.error('Bet amount must be greater than 0');
+            return;
+        }
+
+        if (betAmount > BalanceRupee) {
+            toast.error('Insufficient funds');
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const response = await crashPlace(betAmount, autoOutputCoefficient);
+            
+            if (response.ok) {
+                const data = await response.json();
+                console.log('Server response to bet:', data);
+                setBet(betAmount);
+                decreaseBalanceRupee(betAmount);
+                toast.success('Bet placed! Waiting for game to start');
+                
+                // Animation for feedback
+                setCollapsed(true);
+                setOverlayText('Your bet has been accepted! Waiting for game...');
+                setTimeout(() => {
+                    setCollapsed(false);
+                }, 2000);
+            } else {
+                const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
+                console.error('Bet error:', errorData);
+                toast.error(errorData.error || 'Error placing bet');
+            }
+        } catch (err) {
+            console.error('Exception during bet:', err.message);
+            toast.error('Failed to place bet');
+        } finally {
+            setLoading(false);
+        }
+    }
 
     // Handling cashout
     const handleCashout = async () => {
@@ -410,26 +401,23 @@ export const Crash = () => {
                         <button className={styles.quickButton} onClick={() => handleMultiplyAmount(2)}>x2</button>
                     </div>
 
-                    {/* Кнопки ставки и вывода */}
-                    <div className={styles.betButtons}>
-                        {bet > 0 ? (
-                            <button 
-                                className={`${styles.mainButton} ${(gameActive && !isCrashed) ? styles.activeButton : ''}`} 
-                                onClick={handleCashout} 
-                                disabled={!gameActive || isCrashed}
-                            >
-                                Cash Out
-                            </button>
-                        ) : (
-                            <button 
-                                className={styles.mainButton} 
-                                onClick={handleBet} 
-                                disabled={isBettingClosed || betAmount <= 0 || betAmount > BalanceRupee}
-                            >
-                                Bet
-                            </button>
-                        )}
-                    </div>
+                    {bet > 0 ? (
+                        <button 
+                            className={`${styles.mainButton} ${(gameActive && !isCrashed) ? styles.activeButton : ''}`} 
+                            onClick={handleCashout} 
+                            disabled={!gameActive || loading || isCrashed}
+                        >
+                            {loading ? 'Loading...' : 'Cash Out'}
+                        </button>
+                    ) : (
+                        <button 
+                            className={styles.mainButton} 
+                            onClick={handleBet} 
+                            disabled={isBettingClosed || loading}
+                        >
+                            {loading ? 'Loading...' : 'Bet'}
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
