@@ -8,7 +8,7 @@ import useStore from "@/store";
 export const Nvuti = () => {
 	const { increaseBalanceRupee, decreaseBalanceRupee, BalanceRupee } = useStore();
 	const [bet, setBet] = useState(100);
-	const [percent, setPercent] = useState(65);
+	const [percent, setPercent] = useState(50);
 	const [number, setNumber] = useState(null);
 	const sliderRef = useRef(null);
 	const trackRef = useRef(null);
