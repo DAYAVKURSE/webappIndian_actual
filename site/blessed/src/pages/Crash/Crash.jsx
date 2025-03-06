@@ -357,19 +357,12 @@ export const Crash = () => {
                     <p>{overlayText}</p>
                 </div>
                 
-                {/* Star animation - только плавное движение вверх-вниз */}
-                <div className={`${styles.starContainer} ${gameActive ? styles.active : ''}`}>
-                    {startingFlash && (
-                        <div className={styles.explosionFlash} style={{ left: '50%', top: '50%' }} />
-                    )}
+                {/* Статичное изображение звезды */}
+                <div className={`${styles.starContainer}`}>
                     <img 
                         src="/star.svg" 
                         alt="Star" 
-                        className={`${styles.star} ${gameActive ? styles.flying : ''} ${startingFlash ? styles.rocketStart : ''}`} 
-                        style={gameActive ? {
-                            animation: 'floatStar 3s ease-in-out infinite',
-                            filter: `drop-shadow(0 0 5px rgba(255, 215, 0, 0.8))`
-                        } : {}}
+                        className={styles.star}
                     />
                 </div>
                 
