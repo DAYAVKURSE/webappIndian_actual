@@ -5,43 +5,50 @@
     justify-content: space-between;
     align-items: center;
     align-self: stretch;
-    border-radius: 46px;
-    background: $low-black;
-    gap: 2px;
+    gap: 12px;
 
     &_button {
         display: flex;
-        padding: 12px 0px;
+        padding: 12px 24px;
         justify-content: center;
         align-items: center;
         gap: 5px;
         flex: 1 0 0;
-        align-self: stretch;
         outline: none;
         border: none;
         appearance: none;
         user-select: none;
         -webkit-user-drag: none;
+        border-radius: 46px;
 
         color: $low-black;
         text-align: center;
         font-size: 16px;
         font-style: normal;
         font-weight: 800;
-        line-height: 24px; /* 150% */
+        line-height: 24px;
 
         img {
             filter: brightness(0) saturate(100%) invert(0%) sepia(0%) saturate(9%) hue-rotate(287deg) brightness(104%) contrast(100%);
         }
 
         &:first-child {
-            border-radius: 46px 0 0 46px;
-            background: #D22C32;
+            background: #FFC397;
+            box-shadow: 0px 4px 10px rgba(255, 195, 151, 0.3);
         }
 
         &:last-child {
-            border-radius: 0 46px 46px 0;
-            background: #26CC57;
+            background: #EDFF8C;
+            box-shadow: 0px 4px 10px rgba(237, 255, 140, 0.3);
+        }
+    }
+}
+
+@media (max-width: 450px) {
+    .actionbuttons {
+        &_button {
+            padding: 10px 16px;
+            font-size: 14px;
         }
     }
 }
