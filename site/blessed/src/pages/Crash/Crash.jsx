@@ -29,6 +29,8 @@ export const Crash = () => {
     const particlesRef = useRef([]);
     const [isStarFlying, setIsStarFlying] = useState(false);
     const [isStarExploding, setIsStarExploding] = useState(false);
+    const trailTimerRef = useRef(null);
+    const smallParticleTimerRef = useRef(null);
     
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);
@@ -66,6 +68,24 @@ export const Crash = () => {
         setIsStarFlying(true);
         setIsStarExploding(false);
         
+        // Запускаем создание следа звезды
+        if (trailTimerRef.current) {
+            clearInterval(trailTimerRef.current);
+        }
+        
+        trailTimerRef.current = setInterval(() => {
+            createStarTrail();
+        }, 100);
+        
+        // Запускаем создание маленьких частиц
+        if (smallParticleTimerRef.current) {
+            clearInterval(smallParticleTimerRef.current);
+        }
+        
+        smallParticleTimerRef.current = setInterval(() => {
+            createSmallParticles();
+        }, 300);
+        
         const updateInterval = 100; // ms
         const growthFactor = 0.03; // how fast the multiplier grows
         
@@ -77,9 +97,81 @@ export const Crash = () => {
         }, updateInterval);
     };
 
+    // Создаем след за звездой
+    const createStarTrail = () => {
+        if (!starContainerRef.current || !starRef.current || !isStarFlying) return;
+        
+        const starRect = starRef.current.getBoundingClientRect();
+        const containerRect = starContainerRef.current.getBoundingClientRect();
+        
+        // Создаем след
+        const trail = document.createElement('div');
+        trail.className = `${styles.starTrail} ${styles.active}`;
+        
+        // Позиционируем след по центру звезды
+        const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
+        const starBottomY = starRect.bottom - containerRect.top;
+        
+        trail.style.left = `${starCenterX - 1}px`; // 1px - половина ширины следа
+        trail.style.top = `${starBottomY}px`;
+        
+        starContainerRef.current.appendChild(trail);
+        
+        // Удаляем след после окончания анимации
+        setTimeout(() => {
+            if (starContainerRef.current && trail.parentNode === starContainerRef.current) {
+                starContainerRef.current.removeChild(trail);
+            }
+        }, 1000);
+    };
+    
+    // Создаем маленькие частицы при полете звезды
+    const createSmallParticles = () => {
+        if (!starContainerRef.current || !starRef.current || !isStarFlying) return;
+        
+        const starRect = starRef.current.getBoundingClientRect();
+        const containerRect = starContainerRef.current.getBoundingClientRect();
+        
+        // Создаем 2-3 маленькие частицы
+        const particleCount = 2 + Math.floor(Math.random() * 2);
+        
+        for (let i = 0; i < particleCount; i++) {
+            const particle = document.createElement('div');
+            particle.className = `${styles.smallParticle} ${styles.active}`;
+            
+            // Случайное направление для каждой частицы
+            const angle = Math.random() * Math.PI * 2;
+            const distance = 10 + Math.random() * 20;
+            const x = Math.cos(angle) * distance;
+            const y = Math.sin(angle) * distance;
+            
+            particle.style.setProperty('--x', `${x}px`);
+            particle.style.setProperty('--y', `${y}px`);
+            
+            // Позиционируем частицу на звезде
+            const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
+            const starCenterY = starRect.top + starRect.height / 2 - containerRect.top;
+            
+            particle.style.left = `${starCenterX}px`;
+            particle.style.top = `${starCenterY}px`;
+            
+            starContainerRef.current.appendChild(particle);
+            
+            // Удаляем частицу после окончания анимации
+            setTimeout(() => {
+                if (starContainerRef.current && particle.parentNode === starContainerRef.current) {
+                    starContainerRef.current.removeChild(particle);
+                }
+            }, 1500);
+        }
+    };
+
     // Функция для создания частиц при взрыве звезды
     const createExplosionParticles = () => {
-        if (!starContainerRef.current) return;
+        if (!starContainerRef.current || !starRef.current) return;
+        
+        const starRect = starRef.current.getBoundingClientRect();
+        const containerRect = starContainerRef.current.getBoundingClientRect();
         
         // Очищаем предыдущие частицы
         while (starContainerRef.current.querySelector(`.${styles.starParticle}`)) {
@@ -88,25 +180,45 @@ export const Crash = () => {
             );
         }
         
+        // Останавливаем таймеры создания следа и маленьких частиц
+        if (trailTimerRef.current) {
+            clearInterval(trailTimerRef.current);
+            trailTimerRef.current = null;
+        }
+        
+        if (smallParticleTimerRef.current) {
+            clearInterval(smallParticleTimerRef.current);
+            smallParticleTimerRef.current = null;
+        }
+        
         // Создаем новые частицы
-        const particleCount = 20;
+        const particleCount = 30;
+        const particleTypes = ['type1', 'type2', 'type3'];
+        
         for (let i = 0; i < particleCount; i++) {
             const particle = document.createElement('div');
-            particle.className = `${styles.starParticle} ${styles.active}`;
+            
+            // Выбираем случайный тип частицы
+            const typeIndex = Math.floor(Math.random() * particleTypes.length);
+            const particleType = particleTypes[typeIndex];
+            
+            particle.className = `${styles.starParticle} ${styles[particleType]} ${styles.active}`;
             
             // Случайное направление для каждой частицы
             const angle = Math.random() * Math.PI * 2;
-            const distance = 50 + Math.random() * 100;
+            const distance = 50 + Math.random() * 150;
             const x = Math.cos(angle) * distance;
             const y = Math.sin(angle) * distance;
             
             particle.style.setProperty('--x', `${x}px`);
             particle.style.setProperty('--y', `${y}px`);
             
-            // Позиционируем частицу в центре звезды
-            particle.style.left = '50%';
-            particle.style.top = '50%';
-            particle.style.transform = 'translate(-50%, -50%)';
+            // Позиционируем частицу на звезде
+            const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
+            const starCenterY = starRect.top + starRect.height / 2 - containerRect.top;
+            
+            particle.style.left = `${starCenterX}px`;
+            particle.style.top = `${starCenterY}px`;
             
             starContainerRef.current.appendChild(particle);
         }
@@ -186,7 +298,40 @@ export const Crash = () => {
                     // Взрываем звезду при окончании игры
                     setIsStarFlying(false);
                     setIsStarExploding(true);
+                    
+                    // Создаем эффект вспышки на экране
+                    const flash = document.createElement('div');
+                    flash.style.position = 'absolute';
+                    flash.style.top = '0';
+                    flash.style.left = '0';
+                    flash.style.width = '100%';
+                    flash.style.height = '100%';
+                    flash.style.backgroundColor = 'rgba(255, 215, 0, 0.3)';
+                    flash.style.zIndex = '4';
+                    flash.style.pointerEvents = 'none';
+                    flash.style.transition = 'opacity 0.5s ease-out';
+                    
+                    if (crashRef.current) {
+                        crashRef.current.appendChild(flash);
+                        
+                        // Удаляем вспышку через некоторое время
+                        setTimeout(() => {
+                            flash.style.opacity = '0';
+                            setTimeout(() => {
+                                if (crashRef.current && flash.parentNode === crashRef.current) {
+                                    crashRef.current.removeChild(flash);
+                                }
+                            }, 500);
+                        }, 100);
+                    }
+                    
+                    // Запускаем взрыв с разными группами частиц для более богатого эффекта
                     createExplosionParticles();
+                    
+                    // Через небольшую задержку создаем вторую волну частиц
+                    setTimeout(() => {
+                        createExplosionParticles();
+                    }, 150);
                     
                     // Через некоторое время скрываем контейнер звезды
                     setTimeout(() => {
@@ -270,6 +415,12 @@ export const Crash = () => {
             window.removeEventListener('resize', updateDimensions);
             if (multiplierTimerRef.current) {
                 clearInterval(multiplierTimerRef.current);
+            }
+            if (trailTimerRef.current) {
+                clearInterval(trailTimerRef.current);
+            }
+            if (smallParticleTimerRef.current) {
+                clearInterval(smallParticleTimerRef.current);
             }
             if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
                 ws.close();
