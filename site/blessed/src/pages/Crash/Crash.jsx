@@ -138,42 +138,22 @@ export const Crash = () => {
                     setCollapsed(true);
                     setXValue(crashPoint);
                     
-                    // Очищаем состояние с небольшой задержкой
-                    setTimeout(() => {
-                        if (bet > 0) {
-                            // If the player had an active bet, show a loss message
-                            toast.error(`Game crashed at ${crashPoint}x! You lost ₹${bet}.`);
-                            setBet(0);
-                        }
-                        setXValue("1.20"); // Всегда показываем 2 знака после запятой
-                    }, 2000);
-                }
-
-                if (data.type === "timer_tick") {
-                    setCollapsed(true);
-                    if (data.remaining_time > 10) {
-                        setIsBettingClosed(true);
-                        setGameActive(false);
-                    } else {
-                        setIsBettingClosed(false);
-                        setIsCrashed(false);
-                        setGameActive(false);
+                    // Очищаем состояние сразу
+                    if (bet > 0) {
+                        // If the player had an active bet, show a loss message
+                        toast.error(`Game crashed at ${crashPoint}x! You lost ₹${bet}.`);
+                        setBet(0);
                     }
-
-                    if (data.remaining_time <= 10) {
-                        setOverlayText(`Game starts in ${data.remaining_time} seconds`);
-                    }
+                    setXValue("1.20"); // Всегда показываем 2 знака после запятой
                 }
 
                 if (data.type === "cashout_result") {
                     // Don't reset bet here to show the player they won
                     toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${parseFloat(data.cashout_multiplier).toFixed(2)}x)`);
                     
-                    // Delay resetting the bet to give the user time to see the result
-                    setTimeout(() => {
-                        setBet(0);
-                        increaseBalanceRupee(data.win_amount);
-                    }, 2000);
+                    // Resetting the bet immediately
+                    setBet(0);
+                    increaseBalanceRupee(data.win_amount);
                 }
 
                 // Processing another player's cashout message
