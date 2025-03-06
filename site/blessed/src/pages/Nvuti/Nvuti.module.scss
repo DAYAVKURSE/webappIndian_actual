@@ -5,36 +5,90 @@
     padding: 0px 16px;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
+    gap: 16px;
     align-self: stretch;
-    background-color: #081018;
+    background-color: #111826;
     min-height: 100vh;
 
-    &_balance {
+    &_header {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        margin-top: 6px;
+
+        &_button {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+
+            img {
+                width: 20px;
+                height: 20px;
+                filter: invert(1);
+            }
+        }
+
+        &_balance {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 6px 12px;
+            border-radius: 24px;
+        }
+    }
+
+    &_balance_icon {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #DFF52A;
+        color: #000;
+        border-radius: 50%;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    &_balance_value {
+        color: #DFF52A;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    &_main_balance {
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 8px;
-        margin-top: 16px;
-        background-color: rgba(0, 0, 0, 0.3);
-        padding: 6px 12px;
-        border-radius: 24px;
+        margin-top: 10px;
 
         &_icon {
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             background-color: #0070FF;
             border-radius: 50%;
-            font-size: 14px;
+            font-size: 16px;
             color: #fff;
+            font-weight: bold;
         }
 
         &_value {
             color: #FFF;
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 500;
         }
     }
@@ -45,7 +99,7 @@
         font-size: 140px;
         font-style: normal;
         font-weight: 300;
-        margin: 20px 0;
+        margin: 10px 0 20px;
     }
 
     &_tip {
@@ -68,7 +122,7 @@
         width: 100%;
         gap: 10px;
         margin-top: 16px;
-        height: 50px;
+        height: 46px;
     }
 
     &_bet_input {
@@ -108,11 +162,11 @@
     }
 
     &_bet_button {
-        background-color: #0D6EFD;
+        background-color: #006CFF;
         color: #fff;
         border: none;
-        border-radius: 8px;
-        padding: 0 32px;
+        border-radius: 6px;
+        padding: 0 20px;
         font-size: 18px;
         font-weight: 500;
         height: 100%;
@@ -158,7 +212,7 @@
     cursor: pointer;
     width: 100%;
     height: 4px;
-    --value: 65%;
+    --value: 45%;
 
     &_container {
         position: relative;
@@ -167,7 +221,7 @@
     }
 
     &_value {
-        color: #009BFF;
+        color: #0089FF;
         font-size: 20px;
         font-weight: 600;
         text-align: center;
@@ -176,12 +230,13 @@
 
     &::-webkit-slider-runnable-track {
         height: 4px;
-        border-radius: 2px;
+        background: linear-gradient(to right, #E40000 0%, #00D100 100%);
+        border-radius: 0;
     }
 
     &::-moz-range-track {
         height: 4px;
-        border-radius: 2px;
+        border-radius: 0;
     }
 
     &::-webkit-slider-thumb {
@@ -195,16 +250,11 @@
         position: relative;
     }
 
-    &::-webkit-slider-runnable-track {
-        background: linear-gradient(to right, #ff0000 0%, #0bff06 100%);
-        border-radius: 0;
-    }
-
     &_thumb_icon {
         position: absolute;
         width: 30px;
         height: 24px;
-        background-color: #7a7a7a;
+        background-color: #888888;
         border-radius: 6px;
         display: flex;
         align-items: center;

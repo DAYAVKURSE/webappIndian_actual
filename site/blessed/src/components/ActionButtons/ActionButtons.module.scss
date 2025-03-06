@@ -10,7 +10,7 @@
 
     &_button {
         display: flex;
-        padding: 14px 0;
+        padding: 12px 0;
         justify-content: center;
         align-items: center;
         gap: 8px;
@@ -20,9 +20,9 @@
         appearance: none;
         user-select: none;
         -webkit-user-drag: none;
-        border-radius: 32px;
+        border-radius: 24px;
         position: relative;
-        height: 46px;
+        height: 42px;
 
         color: #fff;
         text-align: center;
@@ -32,8 +32,8 @@
         line-height: 24px;
 
         &:first-child {
-            background-color: #D32E26;
-            box-shadow: 0px 4px 8px rgba(211, 46, 38, 0.25);
+            background-color: #D11D1D;
+            box-shadow: 0px 4px 8px rgba(209, 29, 29, 0.25);
 
             img {
                 width: 12px;
@@ -43,8 +43,8 @@
         }
 
         &:last-child {
-            background-color: #17B322;
-            box-shadow: 0px 4px 8px rgba(23, 179, 34, 0.25);
+            background-color: #16B825;
+            box-shadow: 0px 4px 8px rgba(22, 184, 37, 0.25);
 
             img {
                 width: 12px;

@@ -8,7 +8,7 @@ import useStore from "@/store";
 export const Nvuti = () => {
 	const { increaseBalanceRupee, decreaseBalanceRupee, BalanceRupee } = useStore();
 	const [bet, setBet] = useState(100);
-	const [percent, setPercent] = useState(65);
+	const [percent, setPercent] = useState(45);
 	const [number, setNumber] = useState(null);
 
 	const calculateRange = () => {
@@ -104,9 +104,22 @@ export const Nvuti = () => {
 
 	return (
 		<div className={styles.nvuti}>
-			<div className={styles.nvuti_balance}>
-				<span className={styles.nvuti_balance_icon}>₹</span>
-				<span className={styles.nvuti_balance_value}>{BalanceRupee}</span>
+			<div className={styles.nvuti_header}>
+				<button className={styles.nvuti_header_button}>
+					<img src="/profile_icon.svg" alt="Profile" />
+				</button>
+				<div className={styles.nvuti_header_balance}>
+					<span className={styles.nvuti_balance_icon}>₹</span>
+					<span className={styles.nvuti_balance_value}>50552</span>
+				</div>
+				<button className={styles.nvuti_header_button}>
+					<img src="/menu_icon.svg" alt="Menu" />
+				</button>
+			</div>
+			
+			<div className={styles.nvuti_main_balance}>
+				<span className={styles.nvuti_main_balance_icon}>₹</span>
+				<span className={styles.nvuti_main_balance_value}>50552.333333333334</span>
 			</div>
 			
 			<p className={styles.nvuti_number}>
