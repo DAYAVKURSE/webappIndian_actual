@@ -1,13 +1,11 @@
 import { useState } from "react";
 import styles from "./Withdrawal.module.scss";
-import useStore from "@/store";
 import { createWithdrawal } from "@/requests";
-import { Input, Button } from "@/components";
+import { Input } from "@/components";
 import { toast } from "react-hot-toast";
 
 export const Withdrawal = () => {
     const [amount, setAmount] = useState(100);
-    const { BalanceRupee } = useStore();
     const [form, setForm] = useState({
         "amount": 0,
         "data": {
@@ -98,14 +96,12 @@ export const Withdrawal = () => {
             <div className={styles.withdrawal__withdrawal}>
                 <h1 className={styles.withdrawal__withdrawal_title}>Withdrawal</h1>
                 <div className={styles.withdrawal__withdrawal__balance}>
-                    <p className={styles.withdrawal__withdrawal__balance_text}>Your balance</p>
-                    <p className={styles.withdrawal__withdrawal__balance_value}>₹ {Math.trunc(BalanceRupee)}</p>
+                    <p className={styles.withdrawal__withdrawal__balance_text}>Available for withdrawal</p>
                 </div>
                 <div className={styles.withdrawal__amount}>
-                    <h3 className={styles.withdrawal__deposit_title}>Enter the amount</h3>
                     <div className={styles.withdrawal__amount__input}>
                         <div className={styles.withdrawal__amount__input_container}>
-                            <img src="/24=rupee.svg" alt="" />
+                            
                             <input
                                 type="text"
                                 placeholder="500"
@@ -113,14 +109,10 @@ export const Withdrawal = () => {
                                 onChange={handleAmountChange}
                             />
                         </div>
-                        <div className={styles.withdrawal__amount__input_container}>
-                            <button onClick={() => setAmount(amount + 100)}>+100</button>
-                            <button onClick={() => setAmount(amount + 500)}>+500</button>
-                        </div>
+                    
                     </div>
                 </div>
                 <div className={styles.withdrawal__form}>
-                    <h3 className={styles.withdrawal__deposit_title}>Account details</h3>
                     <Input
                         type="text"
                         placeholder="Account Name"
@@ -142,12 +134,13 @@ export const Withdrawal = () => {
                         value={form.data.bank_code}
                         onChange={handleFormChange}
                     />
-                    <Button
+                    {/* <Button
                         label={loading ? "Processing..." : "Withdrawal"}
-                        onClick={handleSubmit}
+                        
                         disabled={loading}
                         color="lightYellow"
-                    />
+                    /> */}
+                    <button  onClick={handleSubmit} className={styles.widthdraw}>{loading ? "Processing..." : "Withdrawal"}</button>
                 </div>
             </div>
         </div>

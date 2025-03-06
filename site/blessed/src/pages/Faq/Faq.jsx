@@ -5,7 +5,6 @@ export const Faq = () => {
     return (
         <div className={styles.faq}>
             <h2 className={styles.faq_title}>FAQ</h2>
-            <p className={styles.faq_description}>Quick answers to common questions</p>
             <Accordion 
                 title="1. What is this?" 
                 description="Welcome to your new favorite spot! It’s a casino-based platform where the thrill of winning real-world money is just a click away. Are you ready to get lucky?"

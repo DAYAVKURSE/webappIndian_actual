@@ -5,7 +5,6 @@ import { API_BASE_URL } from '@/config';
 const initData = window.Telegram?.WebApp?.initData || '';
 import toast from 'react-hot-toast';
 import useStore from '@/store';
-import BetControls from '@/components/BetControls';
 
 export const Crash = () => {
     const { BalanceRupee, increaseBalanceRupee, decreaseBalanceRupee } = useStore();
@@ -22,16 +21,6 @@ export const Crash = () => {
     const [isCrashed, setIsCrashed] = useState(false);
     const [isAutoEnabled, setIsAutoEnabled] = useState(false);
     const [gameActive, setGameActive] = useState(false);
-    
-    // Refs для анимации звезды
-    const starRef = useRef(null);
-    const starContainerRef = useRef(null);
-    const particlesRef = useRef([]);
-    const [isStarFlying, setIsStarFlying] = useState(false);
-    const [isStarExploding, setIsStarExploding] = useState(false);
-    const trailTimerRef = useRef(null);
-    const smallParticleTimerRef = useRef(null);
-    const sparksTimerRef = useRef(null);
     
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);
@@ -65,354 +54,15 @@ export const Crash = () => {
         // Set initial value
         setXValue(initialMultiplier);
         
-        // Временно отключаем анимацию звезды
-        /*
-        // Запускаем анимацию звезды при начале роста коэффициента
-        setIsStarFlying(true);
-        setIsStarExploding(false);
-        
-        // Сначала создаем эффект мощного запуска
-        if (starContainerRef.current && starRef.current) {
-            // Дополнительный класс для начальной анимации взлета
-            starRef.current.classList.add(styles.rocketStart);
-            
-            // Создаем начальный "взрыв" искр при запуске
-            for (let i = 0; i < 3; i++) {
-                setTimeout(() => {
-                    createSparksEffect();
-                }, i * 100);
-            }
-            
-            // Через секунду удаляем класс начальной анимации
-            setTimeout(() => {
-                if (starRef.current) {
-                    starRef.current.classList.remove(styles.rocketStart);
-                }
-            }, 1000);
-        }
-        
-        // Запускаем создание следа звезды 
-        if (trailTimerRef.current) {
-            clearInterval(trailTimerRef.current);
-        }
-        
-        trailTimerRef.current = setInterval(() => {
-            createStarTrail();
-        }, 40); // Увеличиваем частоту следа для большей плотности
-        
-        // Запускаем создание маленьких частиц
-        if (smallParticleTimerRef.current) {
-            clearInterval(smallParticleTimerRef.current);
-        }
-        
-        smallParticleTimerRef.current = setInterval(() => {
-            createSmallParticles();
-        }, 180);
-        
-        // Запускаем создание искр, летящих снизу
-        if (sparksTimerRef.current) {
-            clearInterval(sparksTimerRef.current);
-        }
-        
-        sparksTimerRef.current = setInterval(() => {
-            createSparksEffect();
-        }, 120); // Увеличиваем частоту появления искр
-        
-        // Добавляем начальное свечение
-        setTimeout(() => {
-            if (starContainerRef.current && starRef.current) {
-                const starRect = starRef.current.getBoundingClientRect();
-                const containerRect = starContainerRef.current.getBoundingClientRect();
-                
-                if (starRect && containerRect) {
-                    const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
-                    const starCenterY = starRect.top + starRect.height / 2 - containerRect.top;
-                    
-                    createGlowEffect(starCenterX, starCenterY);
-                }
-            }
-        }, 100);
-        */
-        
-        // Расчет роста коэффициента
-        const startTimeMs = startTime || Date.now();
+        const updateInterval = 100; // ms
         const growthFactor = 0.03; // how fast the multiplier grows
         
-        // Начинаем увеличивать коэффициент с течением времени
         multiplierTimerRef.current = setInterval(() => {
-            const currentTime = Date.now();
-            const elapsedSeconds = (currentTime - startTimeMs) / 1000;
-            
+            const elapsedSeconds = (Date.now() - startTime) / 1000;
             // Formula for calculating multiplier: e^(elapsedSeconds * growthFactor)
             const newMultiplier = Math.exp(elapsedSeconds * growthFactor);
-            
-            // Randomly create glow effects as the multiplier increases
-            if (newMultiplier > 2 && Math.random() > 0.7) {
-                // Временно отключаем анимацию: createGlowEffect(getRandomX(), getRandomY());
-            }
-            
-            // Update UI with new multiplier value
             setXValue(parseFloat(newMultiplier.toFixed(2)));
-        }, 100);
-    };
-
-    // Создаем след за звездой
-    const createStarTrail = () => {
-        if (!starContainerRef.current || !starRef.current || !isStarFlying) return;
-        
-        const starRect = starRef.current.getBoundingClientRect();
-        const containerRect = starContainerRef.current.getBoundingClientRect();
-        
-        // Создаем след
-        const trail = document.createElement('div');
-        
-        // Случайно выбираем тип следа
-        const trailTypes = ['goldTrail', 'redTrail', 'whiteTrail'];
-        const randomTrailType = trailTypes[Math.floor(Math.random() * trailTypes.length)];
-        
-        trail.className = `${styles.starTrail} ${styles[randomTrailType]} ${styles.active}`;
-        
-        // Позиционируем след по центру звезды с небольшим смещением для красоты
-        const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
-        const starBottomY = starRect.bottom - containerRect.top;
-        
-        // Добавляем случайное смещение для разнообразия
-        const xOffset = (Math.random() - 0.5) * 10;
-        
-        trail.style.left = `${starCenterX + xOffset}px`;
-        trail.style.top = `${starBottomY}px`;
-        
-        starContainerRef.current.appendChild(trail);
-        
-        // Удаляем след после окончания анимации
-        setTimeout(() => {
-            if (starContainerRef.current && trail.parentNode === starContainerRef.current) {
-                starContainerRef.current.removeChild(trail);
-            }
-        }, 1000);
-        
-        // С некоторой вероятностью создаем эффект свечения вокруг звезды
-        if (Math.random() > 0.7) {
-            createGlowEffect(starCenterX, starRect.top + starRect.height / 2 - containerRect.top);
-        }
-    };
-    
-    // Создаем эффект свечения вокруг звезды
-    const createGlowEffect = (x, y) => {
-        if (!starContainerRef.current) return;
-        
-        const glow = document.createElement('div');
-        glow.className = `${styles.glowEffect} ${styles.active}`;
-        
-        glow.style.left = `${x}px`;
-        glow.style.top = `${y}px`;
-        
-        starContainerRef.current.appendChild(glow);
-        
-        // Удаляем эффект свечения после окончания анимации
-        setTimeout(() => {
-            if (starContainerRef.current && glow.parentNode === starContainerRef.current) {
-                starContainerRef.current.removeChild(glow);
-            }
-        }, 1500);
-    };
-    
-    // Создаем маленькие частицы при полете звезды
-    const createSmallParticles = () => {
-        if (!starContainerRef.current || !starRef.current || !isStarFlying) return;
-        
-        const starRect = starRef.current.getBoundingClientRect();
-        const containerRect = starContainerRef.current.getBoundingClientRect();
-        
-        // Создаем 3-5 маленьких частиц
-        const particleCount = 3 + Math.floor(Math.random() * 3);
-        const particleTypes = ['goldParticle', 'redParticle', 'whiteParticle'];
-        
-        for (let i = 0; i < particleCount; i++) {
-            const particle = document.createElement('div');
-            
-            // Выбираем случайный тип частицы
-            const typeIndex = Math.floor(Math.random() * particleTypes.length);
-            const particleType = particleTypes[typeIndex];
-            
-            particle.className = `${styles.smallParticle} ${styles[particleType]} ${styles.active}`;
-            
-            // Случайное направление для каждой частицы
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 15 + Math.random() * 30;
-            const x = Math.cos(angle) * distance;
-            const y = Math.sin(angle) * distance;
-            
-            particle.style.setProperty('--x', `${x}px`);
-            particle.style.setProperty('--y', `${y}px`);
-            
-            // Позиционируем частицу на звезде
-            const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
-            const starCenterY = starRect.top + starRect.height / 2 - containerRect.top;
-            
-            // Добавляем небольшое смещение для разнообразия
-            const offsetX = (Math.random() - 0.5) * 6;
-            const offsetY = (Math.random() - 0.5) * 6;
-            
-            particle.style.left = `${starCenterX + offsetX}px`;
-            particle.style.top = `${starCenterY + offsetY}px`;
-            
-            starContainerRef.current.appendChild(particle);
-            
-            // Удаляем частицу после окончания анимации
-            setTimeout(() => {
-                if (starContainerRef.current && particle.parentNode === starContainerRef.current) {
-                    starContainerRef.current.removeChild(particle);
-                }
-            }, 1500);
-        }
-    };
-
-    // Функция для создания частиц при взрыве звезды
-    const createExplosionParticles = () => {
-        if (!starContainerRef.current || !starRef.current) return;
-        
-        const starRect = starRef.current.getBoundingClientRect();
-        const containerRect = starContainerRef.current.getBoundingClientRect();
-        
-        // Очищаем предыдущие частицы
-        while (starContainerRef.current.querySelector(`.${styles.starParticle}`)) {
-            starContainerRef.current.removeChild(
-                starContainerRef.current.querySelector(`.${styles.starParticle}`)
-            );
-        }
-        
-        // Останавливаем таймеры создания следа и маленьких частиц
-        if (trailTimerRef.current) {
-            clearInterval(trailTimerRef.current);
-            trailTimerRef.current = null;
-        }
-        
-        if (smallParticleTimerRef.current) {
-            clearInterval(smallParticleTimerRef.current);
-            smallParticleTimerRef.current = null;
-        }
-        
-        // Создаем больше частиц для более эффектного взрыва
-        const particleCount = 50; // Увеличиваем количество частиц
-        const particleTypes = ['type1', 'type2', 'type3', 'gold', 'bright', 'orange']; // Добавляем типы частиц
-        
-        // Получаем позицию звезды
-        const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
-        const starCenterY = starRect.top + starRect.height / 2 - containerRect.top;
-        
-        // Создаем вспышку в центре взрыва
-        const flash = document.createElement('div');
-        flash.className = styles.explosionFlash;
-        flash.style.left = `${starCenterX}px`;
-        flash.style.top = `${starCenterY}px`;
-        starContainerRef.current.appendChild(flash);
-        
-        // Удаляем вспышку через некоторое время
-        setTimeout(() => {
-            if (starContainerRef.current && flash.parentNode === starContainerRef.current) {
-                starContainerRef.current.removeChild(flash);
-            }
-        }, 400);
-        
-        // Создаем частицы в разных направлениях
-        for (let i = 0; i < particleCount; i++) {
-            const particle = document.createElement('div');
-            
-            // Выбираем случайный тип частицы
-            const typeIndex = Math.floor(Math.random() * particleTypes.length);
-            const particleType = particleTypes[typeIndex];
-            
-            // Добавляем разные типы частиц для более богатого эффекта
-            const isFastParticle = Math.random() > 0.5; // 50% частиц будут быстрыми
-            
-            if (isFastParticle) {
-                particle.className = `${styles.starParticle} ${styles[particleType]} ${styles.activeFast}`;
-            } else {
-                particle.className = `${styles.starParticle} ${styles[particleType]} ${styles.active}`;
-            }
-            
-            // Случайное направление для каждой частицы
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 80 + Math.random() * 200; // Увеличиваем дистанцию разлета
-            
-            // Разная скорость для частиц
-            const speed = 0.5 + Math.random() * 1.5;
-            particle.style.setProperty('--speed', speed);
-            
-            const x = Math.cos(angle) * distance;
-            const y = Math.sin(angle) * distance;
-            
-            particle.style.setProperty('--x', `${x}px`);
-            particle.style.setProperty('--y', `${y}px`);
-            
-            // Позиционируем частицу на звезде
-            particle.style.left = `${starCenterX}px`;
-            particle.style.top = `${starCenterY}px`;
-            
-            // Добавляем вращение некоторым частицам
-            if (Math.random() > 0.5) {
-                particle.style.animation = `${styles.rotate} ${1 + Math.random() * 2}s linear infinite`;
-            }
-            
-            starContainerRef.current.appendChild(particle);
-            
-            // Удаляем частицы через разное время
-            setTimeout(() => {
-                if (starContainerRef.current && particle.parentNode === starContainerRef.current) {
-                    starContainerRef.current.removeChild(particle);
-                }
-            }, 1000 + Math.random() * 1000);
-        }
-    };
-
-    // Создаем искры, летящие снизу звезды
-    const createSparksEffect = () => {
-        if (!starContainerRef.current || !isStarFlying) return;
-        
-        // Создаем больше искр для эффекта ракеты
-        const sparkCount = 12 + Math.floor(Math.random() * 8); // 12-20 искр за раз
-        const sparkTypes = ['gold', 'bright', 'orange'];
-        
-        for (let i = 0; i < sparkCount; i++) {
-            const spark = document.createElement('div');
-            
-            // Выбираем случайный тип искры
-            const typeIndex = Math.floor(Math.random() * sparkTypes.length);
-            const sparkType = sparkTypes[typeIndex];
-            
-            spark.className = `${styles.sparkParticle} ${styles[sparkType]} ${styles.active}`;
-            
-            // Получаем позицию звезды
-            const starRect = starRef.current.getBoundingClientRect();
-            const containerRect = starContainerRef.current.getBoundingClientRect();
-            const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
-            const starBottomY = starRect.bottom - containerRect.top;
-            
-            // Позиционируем искру внизу звезды
-            const startX = starCenterX - 15 + Math.random() * 30; // разброс вокруг центра звезды
-            
-            // Генерируем случайный угол в нижнем конусе (направление вниз с разбросом)
-            const angle = Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2; // Угол вниз с разбросом
-            const distance = 50 + Math.random() * 100;
-            const x = Math.cos(angle) * distance;
-            const y = Math.sin(angle) * distance;
-            
-            spark.style.setProperty('--x', `${x}px`);
-            spark.style.setProperty('--y', `${y}px`);
-            
-            spark.style.left = `${startX}px`;
-            spark.style.top = `${starBottomY - 10}px`; // Начало чуть ниже звезды
-            
-            starContainerRef.current.appendChild(spark);
-            
-            // Удаляем искру после окончания анимации
-            setTimeout(() => {
-                if (starContainerRef.current && spark.parentNode === starContainerRef.current) {
-                    starContainerRef.current.removeChild(spark);
-                }
-            }, 1000);
-        }
+        }, updateInterval);
     };
 
     // Setting up dimensions and WebSocket connection
@@ -460,11 +110,6 @@ export const Crash = () => {
                     setGameActive(true);
                     setCollapsed(false);
                     
-                    // Активируем контейнер звезды
-                    if (starContainerRef.current) {
-                        starContainerRef.current.classList.add(styles.active);
-                    }
-                    
                     // If this is the first multiplier update, start simulation
                     if (!startMultiplierTime) {
                         setStartMultiplierTime(Date.now());
@@ -485,71 +130,6 @@ export const Crash = () => {
                         multiplierTimerRef.current = null;
                     }
                     setStartMultiplierTime(null);
-                    
-                    // Временно отключаем анимацию звезды
-                    /*
-                    // Останавливаем таймеры создания следа и маленьких частиц
-                    if (trailTimerRef.current) {
-                        clearInterval(trailTimerRef.current);
-                        trailTimerRef.current = null;
-                    }
-                    
-                    if (smallParticleTimerRef.current) {
-                        clearInterval(smallParticleTimerRef.current);
-                        smallParticleTimerRef.current = null;
-                    }
-                    
-                    if (sparksTimerRef.current) {
-                        clearInterval(sparksTimerRef.current);
-                        sparksTimerRef.current = null;
-                    }
-                    
-                    // Взрываем звезду при окончании игры
-                    setIsStarFlying(false);
-                    setIsStarExploding(true);
-                    
-                    // Создаем эффект вспышки на экране
-                    const flash = document.createElement('div');
-                    flash.style.position = 'absolute';
-                    flash.style.top = '0';
-                    flash.style.left = '0';
-                    flash.style.width = '100%';
-                    flash.style.height = '100%';
-                    flash.style.backgroundColor = 'rgba(255, 215, 0, 0.3)';
-                    flash.style.zIndex = '4';
-                    flash.style.pointerEvents = 'none';
-                    flash.style.transition = 'opacity 0.5s ease-out';
-                    
-                    if (crashRef.current) {
-                        crashRef.current.appendChild(flash);
-                        
-                        // Удаляем вспышку через некоторое время
-                        setTimeout(() => {
-                            flash.style.opacity = '0';
-                            setTimeout(() => {
-                                if (crashRef.current && flash.parentNode === crashRef.current) {
-                                    crashRef.current.removeChild(flash);
-                                }
-                            }, 500);
-                        }, 100);
-                    }
-                    
-                    // Запускаем взрыв с разными группами частиц для более богатого эффекта
-                    createExplosionParticles();
-                    
-                    // Через небольшую задержку создаем вторую волну частиц
-                    setTimeout(() => {
-                        createExplosionParticles();
-                    }, 150);
-                    
-                    // Через некоторое время скрываем контейнер звезды
-                    setTimeout(() => {
-                        if (starContainerRef.current) {
-                            starContainerRef.current.classList.remove(styles.active);
-                        }
-                        setIsStarExploding(false);
-                    }, 800);
-                    */
                     
                     setIsCrashed(true);
                     setGameActive(false);
@@ -612,38 +192,9 @@ export const Crash = () => {
                     setGameActive(true);
                     setCollapsed(false);
                     
-                    // Активируем контейнер звезды
-                    if (starContainerRef.current) {
-                        starContainerRef.current.classList.add(styles.active);
-                        
-                        // Очищаем предыдущие эффекты
-                        const oldElements = starContainerRef.current.querySelectorAll(
-                            `.${styles.starTrail}, .${styles.smallParticle}, .${styles.glowEffect}, .${styles.sparkParticle}`
-                        );
-                        oldElements.forEach(el => {
-                            if (el.parentNode === starContainerRef.current) {
-                                starContainerRef.current.removeChild(el);
-                            }
-                        });
-                    }
-                    
                     // Start multiplier growth simulation with initial value of 1.0
                     setStartMultiplierTime(Date.now());
                     simulateMultiplierGrowth(Date.now(), 1.0);
-                    
-                    // Добавляем мгновенный эффект частиц для начала игры
-                    setTimeout(() => {
-                        createSmallParticles();
-                        if (starRef.current && starContainerRef.current) {
-                            const starRect = starRef.current.getBoundingClientRect();
-                            const containerRect = starContainerRef.current.getBoundingClientRect();
-                            if (starRect && containerRect) {
-                                const starCenterX = starRect.left + starRect.width / 2 - containerRect.left;
-                                const starCenterY = starRect.top + starRect.height / 2 - containerRect.top;
-                                createGlowEffect(starCenterX, starCenterY);
-                            }
-                        }
-                    }, 50);
                 }
             } catch (error) {
                 console.error('Error processing WebSocket message:', error);
@@ -654,15 +205,6 @@ export const Crash = () => {
             window.removeEventListener('resize', updateDimensions);
             if (multiplierTimerRef.current) {
                 clearInterval(multiplierTimerRef.current);
-            }
-            if (trailTimerRef.current) {
-                clearInterval(trailTimerRef.current);
-            }
-            if (smallParticleTimerRef.current) {
-                clearInterval(smallParticleTimerRef.current);
-            }
-            if (sparksTimerRef.current) {
-                clearInterval(sparksTimerRef.current);
             }
             if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
                 ws.close();
@@ -775,13 +317,14 @@ export const Crash = () => {
     };
 
     // Changing bet amount
-    const handleBetAmountChange = (newAmount) => {
-        if (newAmount > 0) {
-            setBetAmount(newAmount);
-        }
+    const handleAmountChange = (delta) => {
+        setBetAmount(prevAmount => {
+            const newAmount = prevAmount + delta;
+            return newAmount > 0 ? newAmount : prevAmount;
+        });
     };
 
-    // Multiplying bet amount
+    // Doubling or halving bet amount
     const handleMultiplyAmount = (factor) => {
         setBetAmount(prevAmount => {
             const newAmount = Math.round(prevAmount * factor);
@@ -804,21 +347,13 @@ export const Crash = () => {
                 </div>
                 
                 {/* Star animation */}
-                {/* Временно отключаем отображение звезды
-                <div className={styles.starContainer} ref={starContainerRef}>
-                    <div className={styles.sparkTrail}></div>
-                    <img 
-                        src="/star.svg" 
-                        alt="Star" 
-                        className={`${styles.star} ${isStarFlying ? styles.flying : ''} ${isStarExploding ? styles.exploding : ''}`} 
-                        ref={starRef}
-                    />
+                <div className={styles.starContainer}>
+                    <img src="/star.svg" alt="Star" className={styles.star} />
                 </div>
-                */}
                 
                 {/* Multiplier display */}
                 <div className={styles.multiplier}>
-                    {typeof xValue === 'number' ? xValue.toFixed(2) : xValue} x
+                    {xValue} x
                 </div>
                 
                 {bet > 0 && !isCrashed && <div className={styles.activeBet}>
@@ -853,24 +388,38 @@ export const Crash = () => {
                     </div>
                 </div>
 
-                {bet > 0 ? (
-                    <button 
-                        className={`${styles.mainButton} ${(gameActive && !isCrashed) ? styles.activeButton : ''}`} 
-                        onClick={handleCashout} 
-                        disabled={!gameActive || loading || isCrashed}
-                    >
-                        {loading ? 'Loading...' : 'Cash Out'}
-                    </button>
-                ) : (
-                    <BetControls 
-                        betAmount={betAmount}
-                        onBetAmountChange={handleBetAmountChange}
-                        onMultiplyAmount={handleMultiplyAmount}
-                        onBet={handleBet}
-                        loading={loading}
-                        disabled={isBettingClosed}
-                    />
-                )}
+                <div className={styles.betControls}>
+                    <div className={styles.betAmount}>
+                        <span>{betAmount} ₹</span>
+                        <div className={styles.betAmountButtons}>
+                            <button className={styles.betButton} onClick={() => handleAmountChange(-100)}>-</button>
+                            <button className={styles.betButton} onClick={() => handleAmountChange(100)}>+</button>
+                        </div>
+                    </div>
+
+                    <div className={styles.quickButtons}>
+                        <button className={styles.quickButton} onClick={() => handleMultiplyAmount(0.5)}>/2</button>
+                        <button className={styles.quickButton} onClick={() => handleMultiplyAmount(2)}>x2</button>
+                    </div>
+
+                    {bet > 0 ? (
+                        <button 
+                            className={`${styles.mainButton} ${(gameActive && !isCrashed) ? styles.activeButton : ''}`} 
+                            onClick={handleCashout} 
+                            disabled={!gameActive || loading || isCrashed}
+                        >
+                            {loading ? 'Loading...' : 'Cash Out'}
+                        </button>
+                    ) : (
+                        <button 
+                            className={styles.mainButton} 
+                            onClick={handleBet} 
+                            disabled={isBettingClosed || loading}
+                        >
+                            {loading ? 'Loading...' : 'Bet'}
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

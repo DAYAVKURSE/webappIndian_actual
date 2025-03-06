@@ -1,35 +1,25 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import styles from "./Nvuti.module.scss";
-import { ActionButtons } from "@/components";
 import { rollDice } from "@/requests";
 import { toast } from "react-hot-toast";
 import useStore from "@/store";
 
 export const Nvuti = () => {
-	const { increaseBalanceRupee, decreaseBalanceRupee, BalanceRupee } = useStore();
+	const { increaseBalanceRupee, decreaseBalanceRupee } = useStore();
 	const [bet, setBet] = useState(100);
-	const [percent, setPercent] = useState(65);
+	const [percent, setPercent] = useState(50);
 	const [number, setNumber] = useState(null);
-	const sliderRef = useRef(null);
-	const trackRef = useRef(null);
-	const thumbRef = useRef(null);
+	const [activeButton, setActiveButton] = useState("less");
+	const [isLoading, setIsLoading] = useState(false);
 
 	const calculateRange = () => {
 		const maxValue = 999999;
-		
-		// Расчет границы между диапазонами
-		const boundary = Math.floor((percent / 100) * maxValue);
-		
-		// Диапазон для красной кнопки (Less)
-		const lessRange = `0 - ${boundary.toLocaleString('ru-RU').replace(',', ' ')}`;
-		
-		// Диапазон для зеленой кнопки (More)
-		const moreStart = boundary + 1;
-		const moreRange = `${moreStart.toLocaleString('ru-RU').replace(',', ' ')} - ${maxValue.toLocaleString('ru-RU').replace(',', ' ')}`;
-		
+		const winRange = Math.round((percent / 100) * (maxValue + 1));
+		const lossRange = Math.round(maxValue - winRange + 1);
+
 		return {
-			less: lessRange,
-			more: moreRange,
+			less: `0 - ${winRange.toLocaleString()}`,
+			more: `${lossRange.toLocaleString()} - ${maxValue.toLocaleString()}`,
 		};
 	};
 
@@ -37,21 +27,13 @@ export const Nvuti = () => {
 		let newValue = parseInt(value, 10);
 
 		if (isNaN(newValue)) {
-			newValue = 5;
+			setPercent(5);
 		} else if (newValue < 5) {
-			newValue = 5;
+			setPercent(5);
 		} else if (newValue > 95) {
-			newValue = 95;
-		}
-		
-		setPercent(newValue);
-		updateSliderPosition(newValue);
-	};
-
-	const updateSliderPosition = (value) => {
-		if (sliderRef.current && trackRef.current && thumbRef.current) {
-			trackRef.current.style.setProperty('--value', value);
-			thumbRef.current.style.left = `${value}%`;
+			setPercent(95);
+		} else {
+			setPercent(newValue);
 		}
 	};
 
@@ -65,10 +47,14 @@ export const Nvuti = () => {
 		return true;
 	};
 
-	const handleBet = async (direction) => {
+	const handleBet = async (range) => {
+		if (isLoading) return;
+		
+		setIsLoading(true);
+		
 		setTimeout(async () => {
 			try {
-				const response = await rollDice(bet, percent, direction);
+				const response = await rollDice(bet, percent, range);
 
 				if (response.status === 200) {
 					const data = await response.json();
@@ -94,85 +80,126 @@ export const Nvuti = () => {
 				}
 			} catch (err) {
 				toast.error(err.message);
+			} finally {
+				setIsLoading(false);
 			}
 		}, 500);
 	};
 
-	const handleHalfBet = () => {
-		const halved = Math.max(10, Math.floor(bet / 2));
-		setBet(halved);
-	};
-
-	const handleDoubleBet = () => {
-		const doubled = Math.min(BalanceRupee, bet * 2);
-		setBet(doubled);
-	};
-
-	const handleIncreaseBet = () => {
-		setBet(prev => Math.min(BalanceRupee, prev + 10));
-	};
-
-	const handleDecreaseBet = () => {
-		setBet(prev => Math.max(10, prev - 10));
-	};
-
 	const { less, more } = calculateRange();
 
+	const handleIncreaseBet = () => {
+		setBet(prev => prev + 1);
+	};
+	
+	const handleDecreaseBet = () => {
+		setBet(prev => prev > 1 ? prev - 1 : 1);
+	};
+	
+	const handleDivideBet = () => {
+		setBet(prev => Math.max(Math.floor(prev / 2), 1));
+	};
+	
+	const handleMultiplyBet = () => {
+		setBet(prev => prev * 2);
+	};
+
+	const handleSelectRange = (range) => {
+		setActiveButton(range);
+	};
+	
 	useEffect(() => {
-		updateSliderPosition(percent);
-	}, [percent]);
+		const slider = document.querySelector('#slider');
+		
+		if (slider) {
+			slider.style.background = `linear-gradient(to right, #A90A03, #0E6B44)`;
+		}
+	}, []);
 
 	return (
 		<div className={styles.nvuti}>
-			<p className={styles.nvuti_number}>
-				{number !== null ? number : "0"}
-			</p>
-			
-			<ActionButtons
-				onclick1={() => handleBet("less")}
-				src1="/arrow_down.svg"
-				label1=""
-				color1="#BC1303"
-				onclick2={() => handleBet("more")}
-				src2="/arrow_up.svg"
-				label2=""
-				color2="#007E34"
-			/>
-			
-			<div className={styles.nvuti_tip}>
-				<p>{less}</p>
-				<p>{more}</p>
+			<div className={styles.number_container}>
+				<div className={styles.number}>
+					{number !== null ? number : "0"}
+				</div>
 			</div>
 			
-			<div className={styles.nvuti_bet_section}>
-				<div className={styles.nvuti_bet_input}>
-					<div className={styles.nvuti_bet_input_value}>
-						{bet} ₹
+			<div className={styles.range_buttons}>
+				<button 
+					className={`${styles.range_button_less} ${activeButton === "less" ? styles.active : ""}`} 
+					onClick={() => handleSelectRange("less")}
+					disabled={isLoading}
+				>
+					<div className={styles.down_icon}></div>
+				</button>
+				<button 
+					className={`${styles.range_button_more} ${activeButton === "more" ? styles.active : ""}`} 
+					onClick={() => handleSelectRange("more")}
+					disabled={isLoading}
+				>
+					<div className={styles.up_icon}></div>
+				</button>
+			</div>
+            
+            <div className={styles.range_values}>
+                <span>{less}</span>
+                <span>{more}</span>
+            </div>
+			
+			<div className={styles.bet_control_group}>
+				<div className={styles.bet_control}>
+					<div className={styles.bet_amount}>
+						<span>{bet}</span>
+						<div className={styles.amount_controls}>
+							<button 
+								className={styles.minus_button} 
+								onClick={handleDecreaseBet}
+								disabled={isLoading}
+							>
+								−
+							</button>
+							<button 
+								className={styles.plus_button} 
+								onClick={handleIncreaseBet}
+								disabled={isLoading}
+							>
+								+
+							</button>
+						</div>
 					</div>
-					<div className={styles.nvuti_bet_input_buttons}>
-						<button onClick={handleDecreaseBet}>−</button>
-						<button onClick={handleIncreaseBet}>+</button>
+					
+					<div className={styles.bet_multipliers}>
+						<button 
+							className={styles.divide_button} 
+							onClick={handleDivideBet}
+							disabled={isLoading}
+						>
+							/2
+						</button>
+						<button 
+							className={styles.multiply_button} 
+							onClick={handleMultiplyBet}
+							disabled={isLoading}
+						>
+							×2
+						</button>
 					</div>
 				</div>
-				<button className={styles.nvuti_bet_button} onClick={() => handleBet("more")}>
-					Bet
+				
+				<button 
+					className={styles.bet_button} 
+					onClick={() => handleBet(activeButton)}
+					disabled={isLoading}
+				>
+					{isLoading ? "..." : "Bet"}
 				</button>
 			</div>
 			
-			<div className={styles.nvuti_multiplier}>
-				<button onClick={handleHalfBet}>/2</button>
-				<button onClick={handleDoubleBet}>×2</button>
-			</div>
-			
-			<h3>Percent</h3>
-			
-			<div className={styles.percent_value_container}>
-				<p className={styles.percent_value}>{percent}%</p>
-			</div>
-			
-			<div className={styles.slider_container}>
+			<div className={styles.percent_container}>
+				<div className={styles.percent_label}>Percent</div>
+				<div className={styles.percent_value}>{percent}%</div>
+				
 				<input
-					ref={sliderRef}
 					type="range"
 					min="5"
 					max="95"
@@ -180,20 +207,8 @@ export const Nvuti = () => {
 					onChange={(e) => handlePercentChange(e.target.value)}
 					className={styles.slider}
 					id="slider"
+					disabled={isLoading}
 				/>
-				<div className={styles.slider_track} ref={trackRef}>
-					<div className={styles.slider_track_red}></div>
-					<div className={styles.slider_track_green}></div>
-				</div>
-				<div 
-					ref={thumbRef}
-					className={styles.slider_thumb_icon} 
-					style={{ left: `${percent}%` }}
-				>
-					<span></span>
-					<span></span>
-					<span></span>
-				</div>
 			</div>
 		</div>
 	);

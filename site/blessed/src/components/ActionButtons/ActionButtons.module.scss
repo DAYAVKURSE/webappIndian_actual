@@ -5,81 +5,119 @@
     justify-content: space-between;
     align-items: center;
     align-self: stretch;
-    gap: 10px;
-    width: 100%;
-    margin-bottom: 5px;
+    border-radius: 46px;
+    background: $low-black;
+    gap: 2px;
 
     &_button {
-        position: relative;
-        width: 165px;
-        height: 40px;
+        display: flex;
+        padding: 12px 0px;
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+        flex: 1 0 0;
+        align-self: stretch;
         outline: none;
         border: none;
         appearance: none;
         user-select: none;
         -webkit-user-drag: none;
-        border-radius: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+
+        color: $low-black;
+        text-align: center;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 800;
+        line-height: 24px; /* 150% */
+
+        img {
+            filter: brightness(0) saturate(100%) invert(0%) sepia(0%) saturate(9%) hue-rotate(287deg) brightness(104%) contrast(100%);
+        }
 
         &:first-child {
-            background: #7B0800;
-            position: relative;
-            
-            &::before {
-                content: "";
-                position: absolute;
-                width: 162px;
-                height: 35px;
-                top: 0;
-                left: 1.5px;
-                background: #BC1303;
-                box-shadow: inset 0px 3px 1px rgba(255, 255, 255, 0.25);
-                border-radius: 40px;
-            }
-
-            img {
-                position: relative;
-                width: 30px;
-                height: 20px;
-                filter: brightness(0) invert(1);
-                z-index: 1;
-            }
+            border-radius: 46px 0 0 46px;
+            background: #D22C32;
         }
 
         &:last-child {
-            background: #0C553A;
-            position: relative;
-            
-            &::before {
-                content: "";
-                position: absolute;
-                width: 162px;
-                height: 35px;
-                top: 0;
-                left: 1.5px;
-                background: #007E34;
-                box-shadow: inset 0px 3px 1px rgba(255, 255, 255, 0.25);
-                border-radius: 40px;
-            }
-
-            img {
-                position: relative;
-                width: 30px;
-                height: 20px;
-                filter: brightness(0) invert(1);
-                z-index: 1;
-            }
+            border-radius: 0 46px 46px 0;
+            background: #26CC57;
         }
     }
 }
 
-@media (max-width: 450px) {
-    .actionbuttons {
-        &_button {
-            padding: 10px 16px;
-            font-size: 14px;
+.range_buttons {
+    display: flex;
+    width: 100%;
+    margin-bottom: 10px;
+    
+    .range_button_less {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px 0;
+        border-radius: 40px 0 0 40px;
+        background: linear-gradient(to bottom, #BC1303, #7B0800);
+        box-shadow: inset 0px 3px 1px rgba(255, 255, 255, 0.25);
+        border: none;
+        color: white;
+        font-weight: 500;
+        font-size: 16px;
+        cursor: pointer;
+        height: 40px;
+        
+        &.active {
+            opacity: 1;
+            box-shadow: 0 0 10px rgba(211, 47, 47, 0.6);
+        }
+        
+        .down_icon {
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 15px solid white;
+        }
+        
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    }
+    
+    .range_button_more {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 16px 0;
+        border-radius: 0 40px 40px 0;
+        background: linear-gradient(to bottom, #007E34, #0C553A);
+        box-shadow: inset 0px 3px 1px rgba(255, 255, 255, 0.25);
+        border: none;
+        color: white;
+        font-weight: 500;
+        font-size: 16px;
+        cursor: pointer;
+        height: 40px;
+        
+        &.active {
+            opacity: 1;
+            box-shadow: 0 0 10px rgba(46, 125, 50, 0.6);
+        }
+        
+        .up_icon {
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 15px solid white;
+        }
+        
+        &:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
     }
 }

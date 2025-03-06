@@ -5,10 +5,6 @@
     align-items: center;
     gap: 14px;
 
-    @media (max-height: 640px) {
-        gap: 8px;
-    }
-
     &_input {
         display: flex;
         width: 100%;
@@ -26,17 +22,6 @@
         border: none;
         appearance: none;
         outline: none;
-
-        @media (max-height: 640px) {
-            padding: 6px 18px;
-            font-size: 16px;
-            line-height: 20px;
-        }
-
-        @media (max-width: 350px) {
-            padding: 5px 14px;
-            font-size: 14px;
-        }
 
         &::-webkit-outer-spin-button,
         &::-webkit-inner-spin-button {
@@ -67,26 +52,10 @@
         line-height: 24px;
         border: none;
 
-        @media (max-height: 640px) {
-            height: 32px;
-            font-size: 14px;
-            line-height: 18px;
-        }
-
-        @media (max-width: 350px) {
-            font-size: 12px;
-        }
-
         &_icon {
             width: 40px;
             height: 40px;
             padding: 7px 20px;
-
-            @media (max-height: 640px) {
-                width: 32px;
-                height: 32px;
-                padding: 5px 14px;
-            }
         }
 
         &_container {
@@ -100,16 +69,6 @@
             font-style: normal;
             font-weight: 500;
             line-height: 24px;
-
-            @media (max-height: 640px) {
-                gap: 6px;
-                font-size: 14px;
-                line-height: 18px;
-            }
-
-            @media (max-width: 350px) {
-                gap: 4px;
-            }
         }
     }
 }

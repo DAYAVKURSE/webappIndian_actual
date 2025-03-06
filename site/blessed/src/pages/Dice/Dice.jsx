@@ -1,6 +1,5 @@
 import { useRef, useState, useEffect } from "react";
 import styles from "./Dice.module.scss";
-import { ActionButtons, Amount } from "@/components";
 import Lottie from "lottie-react";
 import animationData from "./dice.json";
 import { rollDice } from "@/requests";
@@ -15,6 +14,8 @@ export const Dice = () => {
     const [number, setNumber] = useState(null); 
     const [isAnimating, setIsAnimating] = useState(false);
     const lottieRef = useRef();
+    const [activeButton, setActiveButton] = useState('less');
+	const [isLoading, setIsLoading] = useState(false);
 
     const calculateRange = () => {
         const maxValue = 999999;
@@ -53,6 +54,7 @@ export const Dice = () => {
 
     useEffect(() => {
         let timer;
+        setIsLoading(false);
         if (isNumberVisible) {
             timer = setTimeout(() => {
                 setIsAnimating(true);
@@ -65,6 +67,7 @@ export const Dice = () => {
     const handleBet = async (direction) => {
         setIsAnimating(false); 
         setIsNumberVisible(false);
+        setActiveButton(direction);
 
         setTimeout(async () => {
             setIsNumberVisible(true);
@@ -118,6 +121,23 @@ export const Dice = () => {
         });
     }, []);
 
+    const handleIncreaseBet = () => {
+		setBet(prev => prev + 1);
+	};
+	
+	const handleDecreaseBet = () => {
+		setBet(prev => prev > 1 ? prev - 1 : 1);
+	};
+	
+	const handleDivideBet = () => {
+		setBet(prev => Math.max(Math.floor(prev / 2), 1));
+	};
+	
+	const handleMultiplyBet = () => {
+		setBet(prev => prev * 2);
+	};
+
+
     return (
         <div className={styles.dice}>
             <div className={styles.dice_bet_container}>
@@ -131,34 +151,92 @@ export const Dice = () => {
                         loop={false}
                     />
                 </div>
-                <ActionButtons
-                    onclick1={() => handleBet("less")}
-                    src1="/24=arrow_circle_down.svg"
-                    label1="LESS"
-                    color1="#FFC397"
-                    onclick2={() => handleBet("more")}
-                    src2="/24=arrow_circle_up.svg"
-                    label2="MORE"
-                    color2="#EDFF8C"
-                />
+
+                <div className={styles.range_buttons}>
+                    <button 
+                        className={`${styles.range_button_less} ${activeButton === "less" ? styles.active : ""}`} 
+                        onClick={() => handleBet("less")}
+                    >
+                        <div className={styles.down_icon}></div>
+                    </button>
+                    <button 
+                        className={`${styles.range_button_more} ${activeButton === "more" ? styles.active : ""}`} 
+                        onClick={() => handleBet("more")}
+                    >
+                        <div className={styles.up_icon}></div>
+                    </button>
+                </div>
+
+
                 <div className={styles.dice_tip}>
                     <p>{less}</p>
                     <p>{more}</p>
                 </div>
                 <h3>Bet</h3>
-                <Amount bet={bet} setBet={setBet} />
-                <h3>Percent</h3>
-                <p className={styles.slider_value}>{percent}%</p>
-                <input
-                    type="range"
-                    min="5"
-                    max="95"
-                    value={percent}
-                    onChange={(e) => handlePercentChange(e.target.value)}
-                    className={styles.slider}
-                    id="slider"
-                />
-                <br />
+                {/* <Amount bet={bet} setBet={setBet} /> */}
+                <div className={styles.bet_control_group}>
+                    <div className={styles.bet_control}>
+                        <div className={styles.bet_amount}>
+                            <span>{bet}</span>
+                            <div className={styles.amount_controls}>
+                                <button 
+                                    className={styles.minus_button} 
+                                    onClick={handleDecreaseBet}
+                                    disabled={isLoading}
+                                >
+                                    −
+                                </button>
+                                <button 
+                                    className={styles.plus_button} 
+                                    onClick={handleIncreaseBet}
+                                    disabled={isLoading}
+                                >
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div className={styles.bet_multipliers}>
+                            <button 
+                                className={styles.divide_button} 
+                                onClick={handleDivideBet}
+                                disabled={isLoading}
+                            >
+                                /2
+                            </button>
+                            <button 
+                                className={styles.multiply_button} 
+                                onClick={handleMultiplyBet}
+                                disabled={isLoading}
+                            >
+                                ×2
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button 
+                        className={styles.bet_button} 
+                        onClick={() => handleBet(activeButton)}
+                        disabled={isLoading}
+                    >
+                        {isLoading ? "..." : "Bet"}
+                    </button>
+                </div>
+                <div className={styles.percent_container}>
+				<div className={styles.percent_label}>Percent</div>
+				<div className={styles.percent_value}>{percent}%</div>
+				
+				<input
+					type="range"
+					min="5"
+					max="95"
+					value={percent}
+					onChange={(e) => handlePercentChange(e.target.value)}
+					className={styles.slider}
+					id="slider"
+					disabled={isLoading}
+				/>
+			</div>
             </div>
         </div>
     );

@@ -205,3 +205,116 @@
         }
     }
 }
+
+.roulette__bets_title {
+    text-align: center;
+    font-weight: 500;
+    font-size: 24px;
+    letter-spacing: -0.03em;
+    color: #fff;
+}
+
+.nowins {
+    font-weight: 400;
+    font-size: 16px;
+    letter-spacing: -0.03em;
+    color: #fff;
+}
+
+.roulette__bets__button_red {
+    border-radius: 40px;
+    background: #c62314;
+    box-shadow: inset 0 3px 1px 0 rgba(255, 255, 255, 0.25);
+    font-weight: 500;
+    font-size: 20px;
+    color: #fff;
+}
+
+.roulette__bets__button_green {
+    border-radius: 40px;
+    background: #07a147;
+    box-shadow: inset 0 3px 2px 0 rgba(255, 255, 255, 0.25);
+    font-weight: 500;
+    font-size: 20px;
+    color: #fff;
+}
+
+.roulette__bets__button_yellow {
+    border-radius: 40px;
+    box-shadow: inset 0 3px 1px 0 rgba(255, 255, 255, 0.25);
+    background: #f1c53c;
+    font-weight: 500;
+    font-size: 20px;
+    color: #fff;
+}
+
+.roulette__wheel {
+    position: relative;
+    width: 60%;
+    display: flex;
+    justify-content: center;
+    margin: 0 auto;
+    margin-bottom: 20px;
+    aspect-ratio: 1/1;
+  }
+  
+  .wheel {
+    width: 100%;
+    height: 100%;
+    transition: transform 6s ease-out;
+  }
+  
+  .arrow {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%) rotate(180deg);
+    width: 30px;
+  }
+
+  .roulette__bets_wrapper {
+    display: flex;
+    flex-direction: column;
+
+    & .roulette__input {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #10202e;
+        width: calc(100% - 20px);
+        padding: 15px 22px;
+        border-radius: 10px;
+        font-weight: 500;
+        font-size: 18px;
+        color: #fff;
+    }
+
+    & .rightContainer {
+        display: flex;
+        gap:15px;
+        font-weight: 500;
+        font-size: 20px;
+        line-height: 100%;
+        text-align: center;
+        color: #fff;
+    }
+
+    .roulette__downbuttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: calc(100% - 20px);
+        margin-top: 10px;
+        gap:16px;
+
+        & button {
+            border-radius: 10px;
+            height: 40px;
+            background: #10202e;
+            font-weight: 400;
+            font-size: 18px;
+            color: #a3a3a3;
+            border:none;
+            outline: none;
+        }
+    }
+  }
