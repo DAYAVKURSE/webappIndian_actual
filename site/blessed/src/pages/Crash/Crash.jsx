@@ -357,7 +357,7 @@ export const Crash = () => {
                     <p>{overlayText}</p>
                 </div>
                 
-                {/* Star animation - только анимация полета, без взрыва */}
+                {/* Star animation - только плавное движение вверх-вниз */}
                 <div className={`${styles.starContainer} ${gameActive ? styles.active : ''}`}>
                     {startingFlash && (
                         <div className={styles.explosionFlash} style={{ left: '50%', top: '50%' }} />
@@ -367,91 +367,10 @@ export const Crash = () => {
                         alt="Star" 
                         className={`${styles.star} ${gameActive ? styles.flying : ''} ${startingFlash ? styles.rocketStart : ''}`} 
                         style={gameActive ? {
-                            filter: `drop-shadow(0 0 ${Math.min(40, 10 + parseFloat(xValue) * 3)}px rgba(255, 215, 0, ${Math.min(1, 0.6 + parseFloat(xValue) * 0.05)}))`
+                            animation: 'floatStar 3s ease-in-out infinite',
+                            filter: `drop-shadow(0 0 5px rgba(255, 215, 0, 0.8))`
                         } : {}}
                     />
-                    
-                    {/* Огненный след за звездой при активной игре */}
-                    {gameActive && (
-                        <div className={styles.sparkTrail} />
-                    )}
-                    
-                    {/* Основные частицы */}
-                    {gameActive && Array(12).fill().map((_, index) => {
-                        const angle = (index * 30) * (Math.PI / 180);
-                        const offsetX = Math.cos(angle) * 30;
-                        const offsetY = Math.sin(angle) * 30;
-                        
-                        return (
-                            <div 
-                                key={index} 
-                                className={`${styles.starParticle} ${gameActive ? styles.active : ''} ${index % 3 === 0 ? styles.type1 : index % 3 === 1 ? styles.type2 : styles.type3}`} 
-                                style={{ 
-                                    left: `calc(50% + ${offsetX}px)`, 
-                                    top: `calc(50% - ${offsetY}px)`,
-                                    '--x-end': `${offsetX * (2 + Math.min(2, parseFloat(xValue) / 2))}px`,
-                                    '--y-end': `${offsetY * (2 + Math.min(2, parseFloat(xValue) / 2))}px`,
-                                    animationDelay: `${index * 0.1}s`
-                                }}
-                            />
-                        );
-                    })}
-                    
-                    {/* Дополнительные искры при высоком мультипликаторе */}
-                    {gameActive && parseFloat(xValue) > 1.5 && Array(8).fill().map((_, index) => {
-                        const angle = ((index * 45) + 20) * (Math.PI / 180);
-                        const offsetX = Math.cos(angle) * 20;
-                        const offsetY = Math.sin(angle) * 20;
-                        
-                        return (
-                            <div 
-                                key={`spark-${index}`} 
-                                className={`${styles.starParticle} ${styles.activeFast} ${index % 2 === 0 ? styles.gold : styles.bright}`} 
-                                style={{ 
-                                    left: `calc(50% + ${offsetX}px)`, 
-                                    top: `calc(50% - ${offsetY}px)`,
-                                    '--x-end': `${offsetX * (3 + Math.min(3, parseFloat(xValue) / 1.5))}px`,
-                                    '--y-end': `${offsetY * (3 + Math.min(3, parseFloat(xValue) / 1.5))}px`,
-                                    animationDelay: `${index * 0.05 + 0.2}s`
-                                }}
-                            />
-                        );
-                    })}
-                    
-                    {/* Более интенсивные эффекты при очень высоком мультипликаторе */}
-                    {gameActive && parseFloat(xValue) > 3 && Array(6).fill().map((_, index) => {
-                        const angle = ((index * 60) + 10) * (Math.PI / 180);
-                        const offsetX = Math.cos(angle) * 25;
-                        const offsetY = Math.sin(angle) * 25;
-                        
-                        return (
-                            <div 
-                                key={`intense-${index}`} 
-                                className={`${styles.starParticle} ${styles.activeFast} ${styles.orange}`} 
-                                style={{ 
-                                    left: `calc(50% + ${offsetX}px)`, 
-                                    top: `calc(50% - ${offsetY}px)`,
-                                    '--x-end': `${offsetX * (4 + Math.min(5, parseFloat(xValue) / 2))}px`,
-                                    '--y-end': `${offsetY * (4 + Math.min(5, parseFloat(xValue) / 2))}px`,
-                                    animationDelay: `${index * 0.03}s`,
-                                    transform: `scale(${Math.min(1.5, 1 + (parseFloat(xValue) - 3) / 10)})`
-                                }}
-                            />
-                        );
-                    })}
-                    
-                    {gameActive && (
-                        <div 
-                            className={`${styles.glowEffect} ${gameActive ? styles.active : ''}`} 
-                            style={{ 
-                                left: '50%', 
-                                top: '50%',
-                                width: `${60 + Math.min(40, parseFloat(xValue) * 10)}px`,
-                                height: `${60 + Math.min(40, parseFloat(xValue) * 10)}px`,
-                                opacity: Math.min(0.7, 0.3 + parseFloat(xValue) * 0.05)
-                            }} 
-                        />
-                    )}
                 </div>
                 
                 {/* Multiplier display */}
