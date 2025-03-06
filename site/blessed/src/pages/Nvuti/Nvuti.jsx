@@ -8,7 +8,7 @@ import useStore from "@/store";
 export const Nvuti = () => {
 	const { increaseBalanceRupee, decreaseBalanceRupee, BalanceRupee } = useStore();
 	const [bet, setBet] = useState(100);
-	const [percent, setPercent] = useState(50);
+	const [percent, setPercent] = useState(65);
 	const [number, setNumber] = useState(null);
 	const sliderRef = useRef(null);
 	const trackRef = useRef(null);
@@ -16,11 +16,12 @@ export const Nvuti = () => {
 
 	const calculateRange = () => {
 		const maxValue = 999999;
-		const boundary = Math.floor((percent / 100) * maxValue);
-		
+		const winRange = Math.round((percent / 100) * (maxValue + 1));
+		const lossRange = Math.round(maxValue - winRange + 1);
+
 		return {
-			less: `0 - ${boundary.toLocaleString('ru-RU').replace(',', ' ')}`,
-			more: `${boundary.toLocaleString('ru-RU').replace(',', ' ')} - 999 999`,
+			less: `0 - ${winRange.toLocaleString('ru-RU').replace(',', ' ')}`,
+			more: `${lossRange.toLocaleString('ru-RU').replace(',', ' ')} - ${maxValue.toLocaleString('ru-RU').replace(',', ' ')}`,
 		};
 	};
 
