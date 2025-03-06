@@ -16,12 +16,13 @@ export const Nvuti = () => {
 
 	const calculateRange = () => {
 		const maxValue = 999999;
-		const winRange = Math.round((percent / 100) * (maxValue + 1));
-		const lossRange = Math.round(maxValue - winRange + 1);
-
+		const lessRange = Math.round((percent / 100) * maxValue);
+		
+		const moreStart = maxValue - lessRange;
+		
 		return {
-			less: `0 - ${winRange.toLocaleString('ru-RU').replace(',', ' ')}`,
-			more: `${lossRange.toLocaleString('ru-RU').replace(',', ' ')} - ${maxValue.toLocaleString('ru-RU').replace(',', ' ')}`,
+			less: `0 - ${lessRange.toLocaleString('ru-RU').replace(',', ' ')}`,
+			more: `${moreStart.toLocaleString('ru-RU').replace(',', ' ')} - ${maxValue.toLocaleString('ru-RU').replace(',', ' ')}`,
 		};
 	};
 
