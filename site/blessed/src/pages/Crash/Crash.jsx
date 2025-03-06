@@ -61,7 +61,7 @@ export const Crash = () => {
             
             // Format to 2 decimal places
             setXValue(parseFloat(currentMultiplier).toFixed(2));
-        }, 100); // Update every 100ms for smooth animation
+        }, 16); // Update ~60 times per second for smooth updates
     };
 
     // Setting up dimensions and WebSocket connection
@@ -103,7 +103,7 @@ export const Crash = () => {
                 console.log('WebSocket data received:', data);
                 
                 if (data.type === "multiplier_update") {
-                    // Updating game state
+                    // Immediately update game state
                     setIsBettingClosed(true);
                     setIsCrashed(false);
                     setGameActive(true);
@@ -123,14 +123,14 @@ export const Crash = () => {
                 }
 
                 if (data.type === "game_crash" && !isCrashed) {
-                    // Stop multiplier growth simulation
+                    // Immediately stop multiplier growth simulation
                     if (multiplierTimerRef.current) {
                         clearInterval(multiplierTimerRef.current);
                         multiplierTimerRef.current = null;
                     }
                     setStartMultiplierTime(null);
                     
-                    // Отображаем сообщение о крахе сразу, без эффекта взрыва
+                    // Мгновенно обновляем все значения
                     setIsCrashed(true);
                     setGameActive(false);
                     const crashPoint = parseFloat(data.crash_point).toFixed(2);
@@ -138,35 +138,28 @@ export const Crash = () => {
                     setCollapsed(true);
                     setXValue(crashPoint);
                     
-                    // Очищаем состояние сразу
+                    // Мгновенно очищаем состояние
                     if (bet > 0) {
-                        // If the player had an active bet, show a loss message
                         toast.error(`Game crashed at ${crashPoint}x! You lost ₹${bet}.`);
                         setBet(0);
                     }
-                    setXValue("1.20"); // Всегда показываем 2 знака после запятой
+                    setXValue("1.20");
                 }
 
                 if (data.type === "cashout_result") {
-                    // Don't reset bet here to show the player they won
                     toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${parseFloat(data.cashout_multiplier).toFixed(2)}x)`);
-                    
-                    // Resetting the bet immediately
                     setBet(0);
                     increaseBalanceRupee(data.win_amount);
                 }
 
-                // Processing another player's cashout message
                 if (data.type === "other_cashout") {
                     toast.success(`${data.username} won ₹${data.win_amount.toFixed(0)} at ${parseFloat(data.cashout_multiplier).toFixed(2)}x!`);
                 }
 
-                // Processing another player's bet message
                 if (data.type === "new_bet") {
                     toast.success(`${data.username} bet ₹${data.amount.toFixed(0)}`);
                 }
                 
-                // Displaying active game start
                 if (data.type === "game_started") {
                     toast.success('Game started!');
                     setIsBettingClosed(true);
@@ -177,6 +170,17 @@ export const Crash = () => {
                     // Start multiplier growth simulation with initial value of 1.0
                     setStartMultiplierTime(Date.now());
                     simulateMultiplierGrowth(Date.now(), 1.0);
+                }
+
+                if (data.type === "timer_tick") {
+                    setIsBettingClosed(data.remaining_time > 10);
+                    setIsCrashed(false);
+                    setGameActive(false);
+                    setCollapsed(true);
+                    
+                    if (data.remaining_time <= 10) {
+                        setOverlayText(`Game starts in ${data.remaining_time} seconds`);
+                    }
                 }
             } catch (error) {
                 console.error('Error processing WebSocket message:', error);
