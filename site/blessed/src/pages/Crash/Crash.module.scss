@@ -541,27 +541,27 @@
     0% {
         transform: translateX(-50%) translateY(-150px) scale(1.5);
         opacity: 1;
-        filter: drop-shadow(0 0 25px rgba(255, 215, 0, 1.0));
+        filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
     }
     10% {
         transform: translateX(-50%) translateY(-150px) scale(1.8);
-        opacity: 1;
-        filter: drop-shadow(0 0 30px rgba(255, 215, 0, 1.0));
+        opacity: 0.9;
+        filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.8));
     }
     20% {
-        transform: translateX(-50%) translateY(-150px) scale(2.2);
-        opacity: 0.95;
-        filter: drop-shadow(0 0 40px rgba(255, 215, 0, 1.0));
+        transform: translateX(-50%) translateY(-150px) scale(2.0);
+        opacity: 0.8;
+        filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8));
     }
     40% {
         transform: translateX(-50%) translateY(-150px) scale(1.5);
-        opacity: 0.8;
-        filter: drop-shadow(0 0 35px rgba(255, 215, 0, 0.8));
+        opacity: 0.6;
+        filter: drop-shadow(0 0 25px rgba(255, 215, 0, 0.6));
     }
     70% {
         transform: translateX(-50%) translateY(-150px) scale(0.8);
-        opacity: 0.4;
-        filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
+        opacity: 0.3;
+        filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.4));
     }
     100% {
         transform: translateX(-50%) translateY(-150px) scale(0);
@@ -601,21 +601,22 @@
     
     &.active {
         animation: smallParticleFly 1.5s ease-out forwards;
+        animation-iteration-count: 1;
     }
     
     &.goldParticle {
         background-color: #FFD700;
-        box-shadow: 0 0 3px 1px rgba(255, 215, 0, 0.8);
+        box-shadow: 0 0 2px 1px rgba(255, 215, 0, 0.6);
     }
     
     &.redParticle {
         background-color: #FFA500;
-        box-shadow: 0 0 3px 1px rgba(255, 165, 0, 0.8);
+        box-shadow: 0 0 2px 1px rgba(255, 165, 0, 0.6);
     }
     
     &.whiteParticle {
         background-color: #FFFFFF;
-        box-shadow: 0 0 3px 1px rgba(255, 255, 255, 0.8);
+        box-shadow: 0 0 2px 1px rgba(255, 255, 255, 0.6);
         width: 3px;
         height: 3px;
     }
@@ -624,10 +625,10 @@
 @keyframes smallParticleFly {
     0% {
         transform: translate(0, 0) scale(1);
-        opacity: 1;
+        opacity: 0.8;
     }
     30% {
-        opacity: 0.8;
+        opacity: 0.7;
     }
     100% {
         transform: translate(var(--x), var(--y)) scale(0);
@@ -1005,6 +1006,7 @@
     z-index: 10;
     transform: translate(-50%, -50%);
     animation: flashExpand 0.4s ease-out forwards;
+    animation-iteration-count: 1;
 }
 
 // Добавляем анимацию вращения для частиц
@@ -1021,13 +1023,13 @@
 @keyframes flashExpand {
     0% {
         transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-        box-shadow: 0 0 10px 5px white, 0 0 20px 10px rgba(255, 215, 0, 0.8);
+        opacity: 0.8;
+        box-shadow: 0 0 8px 4px white, 0 0 15px 8px rgba(255, 215, 0, 0.7);
     }
     50% {
-        opacity: 0.8;
+        opacity: 0.6;
         transform: translate(-50%, -50%) scale(40);
-        box-shadow: 0 0 30px 15px white, 0 0 60px 30px rgba(255, 215, 0, 0.6);
+        box-shadow: 0 0 20px 10px white, 0 0 40px 20px rgba(255, 215, 0, 0.5);
     }
     100% {
         transform: translate(-50%, -50%) scale(80);
