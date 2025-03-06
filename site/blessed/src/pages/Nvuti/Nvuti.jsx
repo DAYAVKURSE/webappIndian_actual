@@ -8,7 +8,7 @@ import useStore from "@/store";
 export const Nvuti = () => {
 	const { increaseBalanceRupee, decreaseBalanceRupee, BalanceRupee } = useStore();
 	const [bet, setBet] = useState(100);
-	const [percent, setPercent] = useState(45);
+	const [percent, setPercent] = useState(65);
 	const [number, setNumber] = useState(null);
 
 	const calculateRange = () => {
@@ -98,7 +98,7 @@ export const Nvuti = () => {
 	useEffect(() => {
 		const slider = document.querySelector('#slider');
 		if (slider) {
-			slider.style.setProperty('--value', `${percent}%`);
+			slider.style.setProperty('--value', `${percent}`);
 		}
 	}, [percent]);
 
@@ -118,8 +118,8 @@ export const Nvuti = () => {
 			</div>
 			
 			<div className={styles.nvuti_main_balance}>
-				<span className={styles.nvuti_main_balance_icon}>₹</span>
-				<span className={styles.nvuti_main_balance_value}>50552.333333333334</span>
+				<span className={styles.nvuti_balance_icon}>₹</span>
+				<span className={styles.nvuti_balance_value}>0</span>
 			</div>
 			
 			<p className={styles.nvuti_number}>
@@ -129,12 +129,12 @@ export const Nvuti = () => {
 			<ActionButtons
 				onclick1={() => handleBet("less")}
 				src1="/arrow_down.svg"
-				label1="Less"
-				color1="#D32E26"
+				label1=""
+				color1="#BC1303"
 				onclick2={() => handleBet("more")}
 				src2="/arrow_up.svg"
-				label2="More"
-				color2="#17B322"
+				label2=""
+				color2="#007E34"
 			/>
 			
 			<div className={styles.nvuti_tip}>
@@ -163,9 +163,9 @@ export const Nvuti = () => {
 			</div>
 			
 			<h3>Percent</h3>
-			<p className={styles.slider_value}>{percent}%</p>
 			
 			<div className={styles.slider_container}>
+				<p className={styles.slider_value}>{percent}%</p>
 				<input
 					type="range"
 					min="5"
@@ -175,6 +175,10 @@ export const Nvuti = () => {
 					className={styles.slider}
 					id="slider"
 				/>
+				<div className={styles.slider_track}>
+					<div className={styles.slider_track_red}></div>
+					<div className={styles.slider_track_green}></div>
+				</div>
 				<div 
 					className={styles.slider_thumb_icon} 
 					style={{ left: `${percent}%` }}
