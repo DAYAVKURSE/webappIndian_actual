@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { crashPlace, crashCashout, crashGetHistory } from '@/requests';
 import styles from "./Crash.module.scss";
-import { API_BASE_URL } from '@/config';
+import { API_BASE_URL, WS_PROTOCOL, API_PROTOCOL } from '@/config';
 const initData = window.Telegram?.WebApp?.initData || '';
 import toast from 'react-hot-toast';
 import useStore from '@/store';
@@ -23,6 +23,12 @@ export const Crash = () => {
     const [gameActive, setGameActive] = useState(false);
     const [startingFlash, setStartingFlash] = useState(false);
     const [crashParticles, setCrashParticles] = useState([]);
+    const [starPosition, setStarPosition] = useState(0);
+    const [starExploding, setStarExploding] = useState(false);
+    const [sparkParticles, setSparkParticles] = useState([]);
+    const [starAnimation, setStarAnimation] = useState('');
+    const [fallingParticles, setFallingParticles] = useState([]);
+    const [showWinResult, setShowWinResult] = useState(false);
     
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);
@@ -47,21 +53,155 @@ export const Crash = () => {
         fetchHistory();
     }, []);
 
+    // Независимая функция для генерации падающих сверху вниз частиц
+    const generateFallingParticles = () => {
+        // Не генерируем новые частицы, если звезда уже взорвалась
+        if (isCrashed) {
+            return;
+        }
+        
+        const newParticles = [];
+        const count = Math.floor(Math.random() * 3) + 1; // 1-3 частицы за раз
+        
+        for (let i = 0; i < count; i++) {
+            // Случайное горизонтальное смещение (-80px до +80px)
+            const xOffset = Math.random() * 160 - 80;
+            
+            // Скорость падения (от 300 до 800 мс)
+            const speed = Math.random() * 500 + 300;
+            
+            // Тип частицы
+            const type = Math.random() < 0.5 ? 'brightFalling' : 'goldFalling';
+            
+            // Время создания частицы и ее ожидаемое время жизни в миллисекундах
+            const creationTime = Date.now();
+            const lifespan = speed; // Время жизни равно скорости анимации
+            
+            newParticles.push({
+                id: `${creationTime}_${Math.random()}`,
+                xOffset,
+                speed,
+                type,
+                size: Math.random() * 0.7 + 0.3, // Размер от 0.3 до 1.0
+                creationTime,
+                lifespan
+            });
+        }
+        
+        setFallingParticles(prev => {
+            // Удаляем частицы, которые должны уже закончить свою анимацию
+            const currentTime = Date.now();
+            const filteredPrev = prev.filter(p => {
+                // Получаем время создания из ID или поля creationTime
+                const creationTime = p.creationTime || parseInt(p.id.split('_')[0]);
+                const lifespan = p.lifespan || p.speed;
+                
+                // Проверяем, прошло ли время, равное продолжительности анимации + запас 50мс
+                return currentTime - creationTime < lifespan + 50;
+            });
+            
+            return [...newParticles, ...filteredPrev].slice(0, 25);
+        });
+    };
+
     // Function to simulate multiplier growth on frontend
     const simulateMultiplierGrowth = (startTime, initialMultiplier = 1.0) => {
         if (multiplierTimerRef.current) {
             clearInterval(multiplierTimerRef.current);
         }
 
+        // Сохраняем последнее отображаемое значение чтобы сравнивать с новым
+        let lastDisplayedValue = initialMultiplier.toFixed(2);
+        setXValue(lastDisplayedValue);
+        
+        // Сбрасываем позицию звезды и анимацию взрыва
+        setStarPosition(0);
+        setStarExploding(false);
+        setSparkParticles([]);
+        // Не трогаем fallingParticles, они генерируются независимо
+        
+        // Сначала звезда дрожит при старте
+        setStarAnimation('rocketStart');
+        
+        // Через 1 секунду меняем анимацию на полет
+        setTimeout(() => {
+            setStarAnimation('flying');
+        }, 1000);
+
+        // Используем переменную для отслеживания времени последнего обновления
+        let lastUpdateTime = Date.now();
+        let lastSparkTime = Date.now();
+        let sparkIntensity = 1; // Начальная интенсивность искр
+        let lastPositionValue = 0; // Для сглаживания движения
+
         multiplierTimerRef.current = setInterval(() => {
-            const elapsedSeconds = (Date.now() - startTime) / 1000;
+            const now = Date.now();
+            // Обеспечиваем минимальный интервал между обновлениями UI для предотвращения мерцания
+            const minUpdateInterval = 100; // мс
+            
+            const elapsedSeconds = (now - startTime) / 1000;
             
             // Using a simplified growth model: multiplier = e^(0.1 * time)
             const currentMultiplier = initialMultiplier * Math.pow(Math.E, 0.1 * elapsedSeconds);
             
             // Format to 2 decimal places
-            setXValue(parseFloat(currentMultiplier).toFixed(2));
-        }, 16); // Update ~60 times per second for smooth updates
+            const formattedMultiplier = parseFloat(currentMultiplier).toFixed(2);
+            
+            // Увеличиваем интенсивность искр с ростом коэффициента
+            sparkIntensity = Math.min(3, 1 + (parseFloat(formattedMultiplier) - 1) / 2);
+            
+            // Обновляем значение только если изменились сотые доли И прошло достаточно времени с последнего обновления
+            if (formattedMultiplier !== lastDisplayedValue && (now - lastUpdateTime) >= minUpdateInterval) {
+                lastDisplayedValue = formattedMultiplier;
+                lastUpdateTime = now;
+                setXValue(formattedMultiplier);
+                
+                // Рассчитываем позицию звезды на основе мультипликатора
+                // Начинаем с 0 (внизу) и поднимаем звезду вверх с ростом коэффициента
+                // Максимальное значение 100 (верх контейнера)
+                const newRawPosition = Math.min(100, (parseFloat(formattedMultiplier) - 1) * 50);
+                
+                // Сглаживаем движение, применяя интерполяцию
+                const smoothedPosition = lastPositionValue * 0.3 + newRawPosition * 0.7;
+                lastPositionValue = smoothedPosition;
+                
+                setStarPosition(smoothedPosition);
+            }
+            
+            // Генерируем искры каждые 100мс
+            if (now - lastSparkTime >= 100) {
+                lastSparkTime = now;
+                
+                // Создаем новые искры, если звезда движется
+                if (parseFloat(formattedMultiplier) > 1.05) {
+                    const newSparks = [];
+                    // Количество искр зависит от интенсивности (скорости роста)
+                    const sparkCount = Math.floor(Math.random() * 4 + sparkIntensity * 3);
+                    
+                    for (let i = 0; i < sparkCount; i++) {
+                        // Разные типы искр для разнообразия
+                        const sparkType = Math.random() < 0.33 ? 'gold' : (Math.random() < 0.66 ? 'orange' : 'bright');
+                        
+                        // Чем выше скорость, тем дальше разлетаются искры
+                        const xSpread = Math.random() * 40 * sparkIntensity - 20 * sparkIntensity;
+                        const ySpread = Math.random() * 30 * sparkIntensity + 20;
+                        
+                        newSparks.push({
+                            id: Date.now() + i,
+                            x: xSpread, // Случайное смещение по X, шире с ростом интенсивности
+                            y: ySpread, // Смещение вниз, больше с ростом интенсивности
+                            type: sparkType,
+                            duration: Math.random() * 400 + 600 / sparkIntensity, // Быстрее с ростом интенсивности
+                            opacity: Math.random() * 0.3 + 0.7,
+                            size: Math.random() * 0.5 + 0.5 * sparkIntensity // Размер искр увеличивается с ростом интенсивности
+                        });
+                    }
+                    
+                    // Добавляем новые искры и удаляем старые (более 40)
+                    setSparkParticles(prev => [...newSparks, ...prev].slice(0, 40));
+                }
+            }
+        }, 16); // Update ~60 times per second for calculation accuracy
     };
 
     // Setting up dimensions and WebSocket connection
@@ -85,7 +225,7 @@ export const Crash = () => {
         }
 
         const encoded_init_data = encodeURIComponent(initData);
-        const ws = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
+        const ws = new WebSocket(`${WS_PROTOCOL}://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
         wsRef.current = ws;
 
         ws.onopen = () => {
@@ -111,6 +251,11 @@ export const Crash = () => {
                     
                     // If this is the first multiplier update, start simulation
                     if (!startMultiplierTime) {
+                        // Сбрасываем позицию звезды в начале игры
+                        setStarPosition(0);
+                        setStarExploding(false);
+                        setStarAnimation('rocketStart'); // Начинаем с дрожания
+                        
                         setStartMultiplierTime(Date.now());
                         simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
                     }
@@ -130,11 +275,42 @@ export const Crash = () => {
                     }
                     setStartMultiplierTime(null);
                     
+                    // Анимируем взрыв звезды
+                    setStarExploding(true);
+                    setStarAnimation(''); // Удаляем предыдущие анимации
+                    
+                    // Очищаем все падающие частицы при взрыве
+                    setFallingParticles([]);
+                    
+                    // Генерируем много частиц для взрыва из центра
+                    const explosionParticles = [];
+                    for (let i = 0; i < 30; i++) {
+                        const angle = Math.random() * Math.PI * 2; // Случайный угол в радианах
+                        const distance = Math.random() * 100 + 50; // Расстояние от 50 до 150px
+                        
+                        // Рассчитываем координаты на основе угла и расстояния
+                        const xEnd = Math.cos(angle) * distance;
+                        const yEnd = Math.sin(angle) * distance;
+                        
+                        const particleType = Math.random() < 0.33 ? 'gold' : (Math.random() < 0.66 ? 'orange' : 'bright');
+                        
+                        explosionParticles.push({
+                            id: Date.now() + 1000 + i,
+                            x: xEnd,
+                            y: yEnd,
+                            type: particleType,
+                            duration: Math.random() * 1000 + 500,
+                            opacity: Math.random() * 0.5 + 0.5,
+                            size: Math.random() * 2 + 1
+                        });
+                    }
+                    
+                    setSparkParticles(explosionParticles);
+                    
                     // Мгновенно обновляем все значения
                     setIsCrashed(true);
                     setGameActive(false);
                     const crashPoint = parseFloat(data.crash_point).toFixed(2);
-                    setOverlayText(`Crashed at ${crashPoint}x`);
                     setCollapsed(true);
                     setXValue(crashPoint);
                     
@@ -143,13 +319,18 @@ export const Crash = () => {
                         toast.error(`Game crashed at ${crashPoint}x! You lost ₹${bet}.`);
                         setBet(0);
                     }
-                    setXValue("1.20");
                 }
 
                 if (data.type === "cashout_result") {
                     toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${parseFloat(data.cashout_multiplier).toFixed(2)}x)`);
                     setBet(0);
                     increaseBalanceRupee(data.win_amount);
+                    // Показываем результат выигрыша
+                    setShowWinResult(true);
+                    // Через 3 секунды скрываем результат
+                    setTimeout(() => {
+                        setShowWinResult(false);
+                    }, 3000);
                 }
 
                 if (data.type === "other_cashout") {
@@ -327,6 +508,18 @@ export const Crash = () => {
         });
     };
 
+    useEffect(() => {
+        // Начинаем генерировать падающие частицы сразу при загрузке компонента
+        // и они будут генерироваться постоянно, пока не произойдет взрыв звезды
+        const particleInterval = setInterval(() => {
+            if (!isCrashed) {
+                generateFallingParticles();
+            }
+        }, 200);
+        
+        return () => clearInterval(particleInterval);
+    }, [isCrashed]); // Перезапускаем эффект при изменении isCrashed
+
     return (
         <div className={styles.crash}>
             {/* User balance */}
@@ -338,22 +531,98 @@ export const Crash = () => {
             {/* Main game screen */}
             <div className={styles.crash_wrapper} ref={crashRef}>
                 <div className={`${styles.crash__collapsed} ${collapsed ? styles.fadeIn : styles.fadeOut}`}>
-                    <p>{overlayText}</p>
+                    {/* Показываем блок с выигрышем, если showWinResult активен */}
+                    {showWinResult ? (
+                        <div className={styles.winResult}>
+                            <div className={styles.winResult_title}>Поздравляем!</div>
+                            <div className={styles.winResult_amount}>₹{Math.floor(winAmount)}</div>
+                            <div className={styles.winResult_multiplier}>x{xValue}</div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className={`${styles.explodedStar} ${starExploding ? styles.explode : ''}`}>
+                                <img 
+                                    src="/star.svg" 
+                                    alt="Star" 
+                                    className={styles.starImage}
+                                />
+                                {/* Не показываем никакой коэффициент внутри звезды */}
+                            </div>
+                            
+                            {/* Показываем коэффициент под звездой только если звезда взорвалась */}
+                            {starExploding && 
+                                <span className={styles.crashValueBelow}>{xValue}x</span>
+                            }
+                        </>
+                    )}
                 </div>
                 
-                {/* Статичное изображение звезды */}
-                <div className={`${styles.starContainer}`}>
-                    <img 
-                        src="/star.svg" 
-                        alt="Star" 
-                        className={styles.star}
-                    />
+                {/* Центральная часть с игровыми элементами */}
+                <div className={styles.gameCenter}>
+                    {/* Падающие частицы, пролетающие мимо звезды */}
+                    {fallingParticles.map(particle => (
+                        <div
+                            key={particle.id}
+                            className={`${styles.fallingParticle} ${styles[particle.type]}`}
+                            style={{
+                                left: `calc(50% + ${particle.xOffset}px)`,
+                                animationDuration: `${particle.speed}ms`,
+                                width: `${3 * particle.size}px`,
+                                height: `${10 * particle.size}px`,
+                                // Добавляем свойство, которое гарантирует исчезновение анимации
+                                willChange: 'top, opacity',
+                                // Явно указываем режим анимации для уверенности
+                                animationFillMode: 'forwards',
+                                // Гарантированное удаление с экрана по окончании анимации
+                                animationTimingFunction: 'linear'
+                            }}
+                        />
+                    ))}
+                    
+                    {/* Эффект свечения вокруг звезды */}
+                    {parseFloat(xValue) > 1.05 && !isCrashed && (
+                        <div 
+                            className={`${styles.glowEffect} ${styles.active}`} 
+                            style={{ left: '50%', top: '50%' }}
+                        />
+                    )}
+                    
+                    {/* Искры вокруг звезды в центре */}
+                    {sparkParticles.map(spark => (
+                        <div
+                            key={spark.id}
+                            className={`${styles.sparkParticle} ${styles[spark.type]} ${styles.active}`}
+                            style={{
+                                '--x': `${spark.x}px`,
+                                '--y': `${spark.y}px`,
+                                left: isCrashed ? 'calc(50% - 2px)' : '50%',
+                                top: isCrashed ? 'calc(50% - 2px)' : '50%',
+                                animationDuration: `${spark.duration}ms`,
+                                opacity: spark.opacity,
+                                width: `${4 * (spark.size || 1)}px`,
+                                height: `${4 * (spark.size || 1)}px`
+                            }}
+                        />
+                    ))}
+                    
+                    {/* Звезда по центру */}
+                    <div 
+                        className={`${styles.starContainer} ${isCrashed ? styles.hidden : ''}`}
+                    >
+                        <img 
+                            src="/star.svg" 
+                            alt="Star" 
+                            className={`${styles.star} ${starAnimation ? styles[starAnimation] : ''}`}
+                        />
+                    </div>
                 </div>
                 
-                {/* Multiplier display */}
-                <div className={styles.multiplier}>
-                    {xValue} x
-                </div>
+                {/* Multiplier display - теперь внизу, показываем только во время активной игры */}
+                {gameActive && !isCrashed && (
+                    <div className={styles.multiplierBottom}>
+                        {xValue} x
+                    </div>
+                )}
                 
                 {bet > 0 && !isCrashed && <div className={styles.activeBet}>
                     Your bet: ₹{bet}

@@ -1,9 +1,9 @@
-import { API_BASE_URL } from '@/config';
+import { API_BASE_URL, WS_PROTOCOL, API_PROTOCOL } from '@/config';
 const initData = window.Telegram.WebApp.initData;
 
 export async function exchange(AmountBcoins) {
     try {
-        const response = await fetch(`https://${API_BASE_URL}/users/exchange`, {
+        const response = await fetch(`${API_PROTOCOL}://${API_BASE_URL}/users/exchange`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

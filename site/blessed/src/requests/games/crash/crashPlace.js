@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '@/config';
+import { API_BASE_URL, WS_PROTOCOL, API_PROTOCOL } from '@/config';
 const initData = window.Telegram?.WebApp?.initData || '';
 
 export async function crashPlace(Amount, CashOutMultiplier) {
@@ -21,7 +21,7 @@ export async function crashPlace(Amount, CashOutMultiplier) {
         console.log('Отправка запроса на ставку:', requestBody);
         console.log('URL:', `https://${API_BASE_URL}/games/crashgame/place`);
         
-        const response = await fetch(`https://${API_BASE_URL}/games/crashgame/place`, {
+        const response = await fetch(`${API_PROTOCOL}://${API_BASE_URL}/games/crashgame/place`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

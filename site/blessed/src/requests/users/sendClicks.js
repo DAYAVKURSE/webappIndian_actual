@@ -1,10 +1,10 @@
-import { API_BASE_URL } from '@/config';
+import { API_BASE_URL, WS_PROTOCOL, API_PROTOCOL } from '@/config';
 import useStore from '@/store';
 const initData = window.Telegram.WebApp.initData;
 
 export async function sendClicks(Clicks, BPC) {
     try {
-        const response = await fetch(`https://${API_BASE_URL}/clicker`, {
+        const response = await fetch(`${API_PROTOCOL}://${API_BASE_URL}/clicker`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

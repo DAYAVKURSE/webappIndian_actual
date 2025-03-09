@@ -1,4 +1,4 @@
-import { API_BASE_URL } from '@/config';
+import { API_BASE_URL, WS_PROTOCOL, API_PROTOCOL } from '@/config';
 import styles from "./FortuneWheel.module.scss";
 import { useEffect, useState } from "react";
 import { getWheelWins, spinWheel, getWheelSpins, getMe } from "@/requests";
@@ -79,7 +79,7 @@ export const FortuneWheel = () => {
             });
 
         const encoded_init_data = encodeURIComponent(initData);
-        const ws = new WebSocket(`wss://${API_BASE_URL}/ws/fortunewheel/live?init_data=${encoded_init_data}`);
+        const ws = new WebSocket(`${WS_PROTOCOL}://${API_BASE_URL}/ws/fortunewheel/live?init_data=${encoded_init_data}`);
 
         ws.onmessage = (event) => {
             try {

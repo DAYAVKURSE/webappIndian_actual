@@ -182,15 +182,15 @@
 
     &__collapsed {
         position: absolute;
-        top: -5px;
-        left: -20px;
+        top: 0;
+        left: 0;
         display: flex;
         justify-content: center;
         align-items: center;
         opacity: 0;
         transition: opacity 1s;
-        width: 100svw;
-        height: calc(100% + 15px);
+        width: 100%;
+        height: 100%;
         background-color: rgba(0, 0, 0, 0.5);
         backdrop-filter: blur(2px);
         z-index: 9;
@@ -324,42 +324,119 @@
 // Звезда и мультипликатор
 .starContainer {
     position: absolute;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 5;
-    display: none;
-    
-    &.active {
-        display: block;
-    }
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+    will-change: transform; /* Оптимизация производительности анимации */
+    transition: transform 0.1s ease-out;
 }
 
 .star {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 36px;
-    height: 36px;
-    transition: transform 0.2s ease-out;
-    filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.8));
+    width: 60px;
+    height: 60px;
+    filter: drop-shadow(0 0 5px rgba(255, 255, 150, 0.7));
+    will-change: transform, filter; /* Оптимизация производительности анимации */
     
     &.flying {
         animation: 
-            starFly 5s ease-out forwards,
-            starSway 4s ease-in-out infinite alternate,
-            starPulse 1.5s ease-in-out infinite alternate,
-            starRotate 5s infinite linear;
-    }
-    
-    &.exploding {
-        animation: starExplode 0.5s ease-out forwards;
+            starSway 2s ease-in-out infinite alternate,
+            starPulse 3s infinite alternate,
+            starRotate 8s infinite linear;
+        filter: drop-shadow(0 0 12px rgba(255, 255, 0, 0.9));
     }
     
     &.rocketStart {
         animation: rocketStartShake 1s ease-in-out;
         filter: drop-shadow(0 0 15px rgba(255, 215, 0, 1.0));
+    }
+}
+
+.hidden {
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.explodedStar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+}
+
+.explodedStar .starImage {
+    width: 80px;
+    height: 80px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.explode {
+    animation: explode 0.6s forwards;
+}
+
+.crashValue {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #FFFFFF;
+    font-weight: bold;
+    z-index: 3;
+    font-size: 16px;
+    text-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.crashValueBelow {
+    position: absolute;
+    top: calc(50% + 50px); /* 50px ниже центра */
+    left: 50%;
+    transform: translate(-50%, 0);
+    color: #FFD700; /* Золотой цвет для выделения */
+    font-weight: bold;
+    z-index: 3;
+    font-size: 24px; /* Увеличенный размер для лучшей видимости */
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
+}
+
+@keyframes explode {
+    0% {
+        transform: translate(-50%, -50%) scale(0.5);
+        filter: brightness(1);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(2);
+        filter: brightness(1.8);
+    }
+    100% {
+        transform: translate(-50%, -50%) scale(1.5);
+        filter: brightness(1.4);
+    }
+}
+
+@keyframes fadeIn {
+    0% {
+        opacity: 0;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    0% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
     }
 }
 
@@ -472,7 +549,7 @@
         transform: translate(0, 0) scale(0.2);
     }
     100% {
-        transform: translate(var(--x-end), var(--y-end)) scale(0.8);
+        transform: translate(var(--x), var(--y)) scale(0.8);
     }
 }
 
@@ -509,22 +586,28 @@
 
 @keyframes starSway {
     0% {
-        transform: translateX(-7px);
+        transform: translateX(-5px);
     }
     50% {
         transform: translateX(0px);
     }
     100% {
-        transform: translateX(7px);
+        transform: translateX(5px);
     }
 }
 
 @keyframes starPulse {
     0% {
-        transform: scale(0.9);
+        filter: drop-shadow(0 0 8px rgba(255, 235, 0, 0.8));
+        transform: scale(0.95);
+    }
+    50% {
+        filter: drop-shadow(0 0 12px rgba(255, 215, 0, 0.9));
+        transform: scale(1);
     }
     100% {
-        transform: scale(1.1);
+        filter: drop-shadow(0 0 18px rgba(255, 180, 0, 1));
+        transform: scale(1.05);
     }
 }
 
@@ -640,6 +723,17 @@
     font-size: 36px;
     font-weight: bold;
     margin-top: 10px;
+}
+
+// Новый стиль для коэффициента внизу
+.multiplierBottom {
+    color: white;
+    font-size: 36px;
+    font-weight: bold;
+    position: absolute;
+    bottom: 15px;
+    left: 50%;
+    transform: translateX(-50%);
 }
 
 // Секция управления ставкой
@@ -838,25 +932,6 @@
     }
 }
 
-// Анимации для оверлея
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-@keyframes fadeOut {
-    from {
-        opacity: 1;
-    }
-    to {
-        opacity: 0;
-    }
-}
-
 @keyframes glow {
     from {
         box-shadow: 0 0 5px rgba(237, 255, 140, 0.5);
@@ -917,54 +992,47 @@
 
 .sparkParticle {
     position: absolute;
-    width: 2px;
-    height: 2px;
-    background-color: #FFD700;
+    width: 4px;
+    height: 4px;
+    background-color: gold;
     border-radius: 50%;
+    transform: translate(0, 0);
     opacity: 0;
-    z-index: 3;
+    z-index: 5;
+    pointer-events: none;
     
     &.active {
-        animation: sparkFly 1.2s ease-out forwards;
+        animation: particleFly 1.8s cubic-bezier(0.165, 0.84, 0.44, 1) forwards, particleFade 1.8s ease-out forwards;
     }
     
     &.gold {
         background-color: #FFD700;
-        box-shadow: 0 0 2px 1px rgba(255, 215, 0, 0.6);
+        box-shadow: 0 0 4px 2px rgba(255, 215, 0, 0.7);
+        width: 5px;
+        height: 5px;
     }
     
     &.bright {
         background-color: #FFFFFF;
-        box-shadow: 0 0 3px 1px rgba(255, 255, 255, 0.8);
-        width: 1px;
-        height: 1px;
+        box-shadow: 0 0 5px 2px rgba(255, 255, 255, 0.9);
+        width: 2px;
+        height: 2px;
     }
     
     &.orange {
-        background-color: #FFA500;
-        box-shadow: 0 0 2px 1px rgba(255, 165, 0, 0.6);
+        background-color: #FF6600;
+        box-shadow: 0 0 4px 2px rgba(255, 102, 0, 0.7);
+        width: 4px;
+        height: 4px;
     }
 }
 
-@keyframes sparkFly {
+@keyframes particleFly {
     0% {
-        transform: translateY(0) scale(0.5);
-        opacity: 0;
-    }
-    10% {
-        opacity: 1;
-    }
-    30% {
-        opacity: 1;
-        transform: translate(calc(var(--x) * 0.3), calc(var(--y) * 0.3)) scale(1.2);
-    }
-    60% {
-        opacity: 0.8;
-        transform: translate(calc(var(--x) * 0.6), calc(var(--y) * 0.6)) scale(1);
+        transform: translate(0, 0) scale(0.2);
     }
     100% {
-        transform: translate(var(--x), var(--y)) scale(0);
-        opacity: 0;
+        transform: translate(var(--x), var(--y)) scale(0.8);
     }
 }
 
@@ -1039,37 +1107,37 @@
 // Анимация эффекта старта ракеты
 @keyframes rocketStartShake {
     0% {
-        transform: translateX(-50%) translateY(0) scale(1);
+        transform: translateY(0) rotate(0deg);
     }
     10% {
-        transform: translateX(-53%) translateY(0) scale(1.05);
+        transform: translateY(-2px) rotate(-5deg);
     }
     20% {
-        transform: translateX(-47%) translateY(-2px) scale(1.1);
+        transform: translateY(0) rotate(5deg);
     }
     30% {
-        transform: translateX(-50%) translateY(-5px) scale(1.15);
+        transform: translateY(-1px) rotate(-3deg);
     }
     40% {
-        transform: translateX(-52%) translateY(-8px) scale(1.1);
+        transform: translateY(1px) rotate(3deg);
     }
     50% {
-        transform: translateX(-48%) translateY(-12px) scale(1.05);
+        transform: translateY(-1px) rotate(-1deg);
     }
     60% {
-        transform: translateX(-51%) translateY(-15px) scale(1.1);
+        transform: translateY(1px) rotate(1deg);
     }
     70% {
-        transform: translateX(-49%) translateY(-18px) scale(1.15);
+        transform: translateY(-1px) rotate(-1deg);
     }
     80% {
-        transform: translateX(-50%) translateY(-20px) scale(1.1);
+        transform: translateY(1px) rotate(1deg);
     }
     90% {
-        transform: translateX(-50%) translateY(-22px) scale(1.05);
+        transform: translateY(-0.5px) rotate(-0.5deg);
     }
     100% {
-        transform: translateX(-50%) translateY(-25px) scale(1);
+        transform: translateY(0) rotate(0deg);
     }
 }
 
@@ -1098,5 +1166,69 @@
     }
     100% {
         opacity: 0;
+    }
+}
+
+.gameCenter {
+    position: relative;
+    width: 100%;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 30px;
+    overflow: visible;
+}
+
+/* Стили для падающих частиц */
+.fallingParticle {
+    position: absolute;
+    top: -20px; /* Начинаем выше экрана */
+    width: 3px;
+    height: 10px;
+    border-radius: 50px;
+    opacity: 0.7;
+    z-index: 1;
+    pointer-events: none;
+    will-change: top, opacity; /* Оптимизация для браузера */
+    animation: particleFalling forwards linear;
+    
+    &.brightFalling {
+        background-color: #FFFFFF;
+        box-shadow: 0 0 4px 1px rgba(255, 255, 255, 0.9);
+    }
+    
+    &.goldFalling {
+        background-color: #FFD700;
+        box-shadow: 0 0 4px 1px rgba(255, 215, 0, 0.8);
+    }
+}
+
+@keyframes particleFalling {
+    0% {
+        top: -20px;
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.7;
+    }
+    75% {
+        opacity: 0.7;
+    }
+    100% {
+        top: 120px; /* Сделаем исчезновение даже раньше */
+        opacity: 0;
+    }
+}
+
+@keyframes starSway {
+    0% {
+        transform: translateX(-5px);
+    }
+    50% {
+        transform: translateX(0px);
+    }
+    100% {
+        transform: translateX(5px);
     }
 }

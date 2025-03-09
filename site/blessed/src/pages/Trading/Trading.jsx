@@ -5,7 +5,7 @@ import { placeBet, getOutcome, getBPC, getMe } from '@/requests';
 import useStore from "@/store";
 import toast from "react-hot-toast";
 import { Amount, ActionButtons } from '@/components';
-import { API_BASE_URL } from '@/config';
+import { API_BASE_URL, WS_PROTOCOL, API_PROTOCOL } from '@/config';
 
 export const Trading = () => {
     const { BalanceRupee, setBalanceRupee } = useStore();
