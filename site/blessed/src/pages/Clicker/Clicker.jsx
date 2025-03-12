@@ -1,10 +1,28 @@
 
 import styles from "./Clicker.module.scss";
 import { NavLink } from "react-router-dom";
-
+import { useEffect, useState } from "react";
+import { getLeaders } from "../../requests/users/getLeaders";
 
 export const Clicker = () => {
   
+    const [selected, setSelected] = useState("Daily");
+    const [leadersList, setLeadersList] = useState([]);
+
+    useEffect(() => {
+        const fetchLeaders = async () => {
+            const data = await getLeaders('day');
+            setLeadersList(data.leaders)
+        }
+
+        fetchLeaders()
+    }, []);
+
+    const handleChangeLeaderBoardState = async (state) => {
+        const stateFetch = state === "Daily" ? 'day' : state === "Weekly" ? 'week' : "Annually";
+        const data = await getLeaders(stateFetch);
+        setLeadersList(data.leaders)
+    }
 
     return (
         <div className={styles.clicker__container}>
@@ -61,71 +79,49 @@ export const Clicker = () => {
                         </NavLink>
                     </li>
                 </ul>
+                <div className={styles.topLeaders}>
+                    <h3>Top-Winnings</h3>
+                    <div className={styles.bannerLeaders}>
+                        <h4>Top-10 winners </h4>
+                        <div className={styles.controllButtons}>
+                    {["Daily", "Weekly", "Annually"].map((option) => (
+                        <label key={option} className={styles.radioLabel}>
+                        <input
+                            type="radio"
+                            name="subscription"
+                            value={option}
+                            checked={selected === option}
+                            onChange={() => setSelected(option)}
+                            className={styles.radioInput} // скрываем стандартный input
+                            onClick={() => handleChangeLeaderBoardState(option)}
+                        />
+                        <span className={styles.customRadio}></span> {/* кастомный кружок */}
+                        <span className={styles.radioText}>{option}</span>
+                        </label>
+                    ))}
+                    </div>
+                        <div className={styles.winners}>
+                            <div className={styles.leaderLine}>
+                                <div className={`${styles.titleLeader} ${styles.leadersCard} `}>User</div>
+                                <div className={`${styles.titleLeader} ${styles.leadersCard} `}>Win</div>
+                            </div>
+                            {
+                                leadersList.map((el, index) => {
+                                    return (
+                                        <div key={index} className={styles.leaderLine}>
+                                            <div className={styles.leadersCard}>{el.nickname}</div>
+                                            <div className={styles.leadersCard}>{el.total_winnings}</div>
+                                        </div>
+                                    )
+                                })
+                            }
+                        </div>
+                    </div>
+                </div>
                 <p className={styles.footer__decription}>The casino is legal, has a certificate, registered in Cyprus under number 453728992354</p>
                 <div className={styles.line}></div>
                 <img className={styles.downLogo} src={'/logosmall.png'}></img>
             </div>
-            {/* <div className={styles.clicker__balance}>
-                <p className={styles.clicker__balance__title}>Balance</p>
-                <div className={styles.clicker__block}>
-                    <p className={styles.clicker__balance__value}>
-                        <span className={styles.main}>{main}</span>
-                        {fraction && (
-                            <span className={styles.clicker__balance__value_fraction}>
-                                .{fraction}
-                            </span>
-                        )}
-                    </p>
-                    <img
-                        className={`${styles.clicker__balance__value_img} ${fraction ? styles.clicker__balance__value_img_fraction : ''}`}
-                        src="/24=BCoin-text-flat-crop.svg"
-                        alt=""
-                    />
-                </div>
-                <div className={`${styles.clicker__block} ${styles.clicker_daily}`}>
-                    <img src="/24=Clicker.svg" alt="" />
-                    <p>{dailyClicks ? dailyClicks : '0'}/10000</p>
-                </div>
-            </div>
-            <div className={`${styles.clicker__coin_container} ${isAnimating ? `${styles.animate} ${styles.clicker__coin_glow}` : ''}`} onClick={handleClick}>
-                <img src="/BCoin_base.png" alt=""
-                    className={`${styles.clicker__coin} ${dailyClicks >= 10000 ? styles.clicker__coin_disabled : ''}`}
-                />
-                <img src="/BCoin_logo.png" alt=""
-                    className={`${styles.clicker__coin} ${dailyClicks >= 10000 ? styles.clicker__coin_disabled : ''}`}
-                    style={{ mixBlendMode: "screen", position: "absolute"}}
-                />
-            </div>
-            <div className={styles.clicker__block} style={{ alignItems: 'center', opacity: 0.5, lineHeight: "18px" }}>
-                <img className={`${dailyClicks >= 10000 ? styles.clicker__block_disabled : ''}`} src="/24=BCoin-flat.svg" alt="" />
-                <p className={`${dailyClicks >= 10000 ? styles.clicker__block_disabled : ''}`}>{BiPerClick?.toFixed(1) || '0.0'} per click</p>
-            </div>
-
-            <div className={styles.clicker__navigation_container}>
-                <div className={styles.clicker__navigation_select}>
-                    <Link to="/wheel" className={styles.clicker__navigation_button}>
-                        <img className={`${styles.clicker__navigation_icon} ${styles.clicker__navigation_icon_green}`} src="/wheel_select.png" alt="" />
-                        <p className={styles.clicker__navigation_button_greenText}>Fortune Wheel</p>
-                    </Link>
-                    <div className={styles.clicker__navigation_separator}></div>
-                    <Link to="/pass" className={styles.clicker__navigation_button}>
-                        <img className={`${styles.clicker__navigation_icon} ${styles.clicker__navigation_icon_blue}`} src="/pass_case.png" alt="" />
-                        <p className={styles.clicker__navigation_button_blueText}>Trave Pass</p>
-                    </Link>
-                </div>
-            </div>
-
-            <div>
-                {spawnedTexts.map(({ id, text, x, y }) => (
-                    <span
-                        key={id}
-                        className={styles.spawnedText}
-                        style={{ top: y, left: x }}
-                    >
-                        {text}
-                    </span>
-                ))}
-            </div> */}
         </div>
     );
 };

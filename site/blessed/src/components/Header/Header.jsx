@@ -20,7 +20,7 @@ export const Header = () => {
                         <span className={styles.count}>{Math.trunc(BalanceRupee) || '0'}</span>
                     </span>
                 </div>
-                <NavLink to={'/wallet'} className={styles.deposit}>
+                <NavLink to={'/other'} className={styles.deposit}>
                     <span>Deposit</span>
                 </NavLink>
                 {/* <div className={styles.header__buttons} style={{width: "100%", justifyContent: "space-between"}}>
