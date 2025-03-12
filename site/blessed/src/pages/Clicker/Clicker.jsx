@@ -19,7 +19,7 @@ export const Clicker = () => {
     }, []);
 
     const handleChangeLeaderBoardState = async (state) => {
-        const stateFetch = state === "Daily" ? 'day' : state === "Weekly" ? 'week' : "Annually";
+        const stateFetch = state === "Daily" ? 'day' : state === "Weekly" ? 'week' : "all";
         const data = await getLeaders(stateFetch);
         setLeadersList(data.leaders)
     }
