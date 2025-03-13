@@ -1,29 +1,29 @@
 .PHONY: postgres api api-test api-start-with-test tgbot site migrate clear
 
 postgres:
-	docker compose -f backend/postgres/compose.yml up -d
+	docker-compose -f backend/postgres/compose.yml up -d
 
 api:
-	cd backend/api && docker compose -f compose.yml up -d api redis --build
+	cd backend/api && docker-compose -f compose.yml up -d api redis --build
 
 api-test:
-	cd backend/api && docker compose -f compose.yml up --exit-code-from api_test api_test
+	cd backend/api && docker-compose -f compose.yml up --exit-code-from api_test api_test
 
 api-start-with-test:
-	@cd backend/api && docker compose -f compose.yml up --exit-code-from api_test api_test
+	@cd backend/api && docker-compose -f compose.yml up --exit-code-from api_test api_test
 	@if [ $$? -eq 0 ]; then \
 		echo "Tests passed. Starting API..."; \
-		cd backend/api && docker compose -f compose.yml up -d api redis; \
+		cd backend/api && docker-compose -f compose.yml up -d api redis; \
 	else \
 		echo "Tests failed. API will not be started."; \
 		exit 1; \
 	fi
 
 tgbot:
-	cd backend/telegramBot && docker compose -f compose.yml up -d --build
+	cd backend/telegramBot && docker-compose -f compose.yml up -d --build
 
 site:
-	cd site && docker compose -f compose.yml up --build -d
+	cd site && docker-compose -f compose.yml up --build -d
 
 migrate:
 	cd backend/api && \

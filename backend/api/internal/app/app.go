@@ -141,6 +141,8 @@ func Start() {
 		authorized.POST(apiPrefix+"games/crashgame/cashout", service.ManualCashout)
 		authorized.GET(apiPrefix+"games/crashgame/history", service.CrashGameWS.GetLast50CrashGames)
 
+		router.GET(apiPrefix+"leaders/get", service.GetLeaders)
+
 	}
 
 	srv := &http.Server{
