@@ -1,1 +1,1 @@
-export const API_BASE_URL = '80.78.27.214:8443/api';
+export const API_BASE_URL = 'rupex.co:8443:8443/api';
