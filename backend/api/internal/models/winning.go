@@ -3,8 +3,8 @@ package models
 import "time"
 
 type Winning struct {
-    ID        int64     `json:"id" gorm:"primaryKey"`
-    UserID    int64     `json:"user_id"`
-    Amount    float64   `json:"amount"`
-    CreatedAt time.Time `json:"created_at"`
+    ID        uint      `gorm:"primaryKey"`
+    UserID    uint      `gorm:"not null"`
+    WinAmount float64   `gorm:"not null"`
+    CreatedAt time.Time `gorm:"autoCreateTime"`
 }
