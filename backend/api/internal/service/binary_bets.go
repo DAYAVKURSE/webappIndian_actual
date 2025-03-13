@@ -210,6 +210,7 @@ func settleBet(betID int64, redisService *redis.RedisService) error {
 		if err != nil {
 			return logger.WrapError(err, "")
 		}
+		
 
 		if !bet.IsBenefitBet {
 			if err = updateBinaryOptionTravePassLevelRequirements(tx, &bet, cashWinAmount); err != nil {

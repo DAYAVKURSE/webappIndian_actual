@@ -142,28 +142,28 @@ type LeaderboardEntry struct {
 }
 
 func GetLeaders(c *gin.Context) {
-	period := c.DefaultQuery("period", "all") 
+	period := c.DefaultQuery("period", "all")
 
 	var startTime time.Time
 	switch period {
 	case "day":
 		startTime = time.Now().AddDate(0, 0, -1)
 	case "week":
-		startTime = time.Now().AddDate(0, 0, -7) 
+		startTime = time.Now().AddDate(0, 0, -7)
 	default:
 		startTime = time.Time{}
 	}
 
 	var leaders []LeaderboardEntry
-	query := db.DB.Model(&models.RouletteX14GameResult{}).
-		Select("user_id, users.nickname, SUM(winnings) as total_winnings").
-		Joins("JOIN users ON roulette_x14_game_results.user_id = users.id")
+	query := db.DB.Model(&models.Winning{}).
+		Select("winnings.user_id, users.nickname, SUM(winnings.win_amount) as total_winnings").
+		Joins("JOIN users ON winnings.user_id = users.id")
 
 	if !startTime.IsZero() {
-		query = query.Where("roulette_x14_game_results.created_at >= ?", startTime)
+		query = query.Where("winnings.created_at >= ?", startTime)
 	}
 
-	query = query.Group("user_id, users.nickname").
+	query = query.Group("winnings.user_id, users.nickname").
 		Order("total_winnings DESC").
 		Limit(10)
 
@@ -179,6 +179,7 @@ func GetLeaders(c *gin.Context) {
 		"leaders": leaders,
 	})
 }
+
 
 func GetUserReferrals(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromGinContext(c)
