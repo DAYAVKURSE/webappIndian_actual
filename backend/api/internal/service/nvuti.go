@@ -131,14 +131,14 @@ func NvutiPlaceBet(c *gin.Context) {
 					return logger.WrapError(err, "")
 				}
 
-				// win := models.Winning{
-				// 	UserID:    user.ID,
-				// 	WinAmount: toBonusBalance,
-				// }
+				win := models.Winning{
+					UserID:    user.ID,
+					WinAmount: toBonusBalance,
+				}
 
-				// if err := tx.Create(&win).Error; err != nil {
-				// 	return logger.WrapError(err, "Failed to record winning")
-				// }
+				if err := tx.Create(&win).Error; err != nil {
+					return logger.WrapError(err, "Failed to record winning")
+				}
 			}
 
 			if err = applyBenefit(tx); err != nil {

@@ -319,14 +319,14 @@ func crashGameCashout(tx *gorm.DB, bet *models.CrashGameBet, currentMultiplier f
 	toCashBalance := bet.FromCashBalance * currentMultiplier
 	toBonusBalance := bet.FromBonusBalance * currentMultiplier
 
-	// win := models.Winning{
-	// 	UserID:    user.ID,
-	// 	WinAmount: toCashBalance + toBonusBalance,
-	// }
+	win := models.Winning{
+		UserID:    user.ID,
+		WinAmount: toCashBalance + toBonusBalance,
+	}
 
-	// if err := tx.Create(&win).Error; err != nil {
-	// 	return logger.WrapError(err, "Failed to record winning")
-	// }
+	if err := tx.Create(&win).Error; err != nil {
+		return logger.WrapError(err, "Failed to record winning")
+	}
 
 	err := exchange.UpdateUserBalances(tx, &user, toCashBalance, toBonusBalance, false)
 	if err != nil {
