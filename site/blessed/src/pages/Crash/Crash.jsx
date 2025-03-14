@@ -2,7 +2,23 @@ import { useEffect, useState, useRef } from 'react';
 import { crashPlace, crashCashout, crashGetHistory } from '@/requests';
 import styles from "./Crash.module.scss";
 import { API_BASE_URL, WS_PROTOCOL, API_PROTOCOL } from '@/config';
-const initData = window.Telegram?.WebApp?.initData || '';
+// Инициализация initData с проверкой доступности Telegram WebApp
+const initData = (() => {
+    try {
+        if (window.Telegram && window.Telegram.WebApp) {
+            console.log('Telegram WebApp detected');
+            return window.Telegram.WebApp.initData || '';
+        } else {
+            console.warn('Telegram WebApp not found');
+            return '';
+        }
+    } catch (e) {
+        console.error('Error accessing Telegram WebApp:', e);
+        return '';
+    }
+})();
+
+console.log('InitData available:', !!initData); // Логируем наличие данных
 import toast from 'react-hot-toast';
 import useStore from '@/store';
 
@@ -224,157 +240,203 @@ export const Crash = () => {
             return;
         }
 
-        const encoded_init_data = encodeURIComponent(initData);
-        const ws = new WebSocket(`${WS_PROTOCOL}://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
-        wsRef.current = ws;
-
-        ws.onopen = () => {
-            console.log('WebSocket connection established');
-        };
-
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            toast.error('Connection error. Please reload the page.');
-        };
-
-        ws.onmessage = (event) => {
+        // Функция для создания WebSocket-соединения с повторными попытками
+        const createWebSocketConnection = () => {
             try {
-                const data = JSON.parse(event.data);
-                console.log('WebSocket data received:', data);
+                const encoded_init_data = encodeURIComponent(initData);
                 
-                if (data.type === "multiplier_update") {
-                    // Immediately update game state
-                    setIsBettingClosed(true);
-                    setIsCrashed(false);
-                    setGameActive(true);
-                    setCollapsed(false);
-                    
-                    // If this is the first multiplier update, start simulation
-                    if (!startMultiplierTime) {
-                        // Сбрасываем позицию звезды в начале игры
-                        setStarPosition(0);
-                        setStarExploding(false);
-                        setStarAnimation('rocketStart'); // Начинаем с дрожания
-                        
-                        setStartMultiplierTime(Date.now());
-                        simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
-                    }
-                    
-                    // Automatic cashout when reaching the specified multiplier
-                    if (isAutoEnabled && bet > 0 && parseFloat(data.multiplier) >= autoOutputCoefficient && autoOutputCoefficient > 0) {
-                        handleCashout();
-                        toast.success(`Auto cashout at ${data.multiplier}x`);
-                    }
-                }
-
-                if (data.type === "game_crash" && !isCrashed) {
-                    // Immediately stop multiplier growth simulation
-                    if (multiplierTimerRef.current) {
-                        clearInterval(multiplierTimerRef.current);
-                        multiplierTimerRef.current = null;
-                    }
-                    setStartMultiplierTime(null);
-                    
-                    // Анимируем взрыв звезды
-                    setStarExploding(true);
-                    setStarAnimation(''); // Удаляем предыдущие анимации
-                    
-                    // Очищаем все падающие частицы при взрыве
-                    setFallingParticles([]);
-                    
-                    // Генерируем много частиц для взрыва из центра
-                    const explosionParticles = [];
-                    for (let i = 0; i < 30; i++) {
-                        const angle = Math.random() * Math.PI * 2; // Случайный угол в радианах
-                        const distance = Math.random() * 100 + 50; // Расстояние от 50 до 150px
-                        
-                        // Рассчитываем координаты на основе угла и расстояния
-                        const xEnd = Math.cos(angle) * distance;
-                        const yEnd = Math.sin(angle) * distance;
-                        
-                        const particleType = Math.random() < 0.33 ? 'gold' : (Math.random() < 0.66 ? 'orange' : 'bright');
-                        
-                        explosionParticles.push({
-                            id: Date.now() + 1000 + i,
-                            x: xEnd,
-                            y: yEnd,
-                            type: particleType,
-                            duration: Math.random() * 1000 + 500,
-                            opacity: Math.random() * 0.5 + 0.5,
-                            size: Math.random() * 2 + 1
-                        });
-                    }
-                    
-                    setSparkParticles(explosionParticles);
-                    
-                    // Мгновенно обновляем все значения
-                    setIsCrashed(true);
-                    setGameActive(false);
-                    const crashPoint = parseFloat(data.crash_point).toFixed(2);
-                    setCollapsed(true);
-                    setXValue(crashPoint);
-                    
-                    // Мгновенно очищаем состояние
-                    if (bet > 0) {
-                        toast.error(`Game crashed at ${crashPoint}x! You lost ₹${bet}.`);
-                        setBet(0);
-                    }
-                }
-
-                if (data.type === "cashout_result") {
-                    toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${parseFloat(data.cashout_multiplier).toFixed(2)}x)`);
-                    setBet(0);
-                    increaseBalanceRupee(data.win_amount);
-                    // Показываем результат выигрыша
-                    setShowWinResult(true);
-                    // Через 3 секунды скрываем результат
-                    setTimeout(() => {
-                        setShowWinResult(false);
-                    }, 3000);
-                }
-
-                if (data.type === "other_cashout") {
-                    toast.success(`${data.username} won ₹${data.win_amount.toFixed(0)} at ${parseFloat(data.cashout_multiplier).toFixed(2)}x!`);
-                }
-
-                if (data.type === "new_bet") {
-                    toast.success(`${data.username} bet ₹${data.amount.toFixed(0)}`);
+                // Формируем URL для WebSocket соединения
+                let wsUrl;
+                if (initData) {
+                    wsUrl = `${WS_PROTOCOL}://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`;
+                    console.log('Using Telegram initData for WebSocket connection');
+                } else {
+                    // Режим разработки/отладки без Telegram
+                    wsUrl = `${WS_PROTOCOL}://${API_BASE_URL}/ws/crashgame/live`;
+                    console.log('Using development mode WebSocket connection (no Telegram data)');
+                    toast.warning('Running in development mode - some features may be limited');
                 }
                 
-                if (data.type === "game_started") {
-                    toast.success('Game started!');
-                    setIsBettingClosed(true);
-                    setIsCrashed(false);
-                    setGameActive(true);
-                    setCollapsed(false);
+                console.log('Connecting to WebSocket:', wsUrl);
+                const ws = new WebSocket(wsUrl);
+                wsRef.current = ws;
+                
+                let reconnectAttempts = 0;
+                const maxReconnectAttempts = 5;
+                
+                ws.onopen = () => {
+                    console.log('WebSocket connection established');
+                    reconnectAttempts = 0; // Сбрасываем счетчик при успешном подключении
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    // Не показываем ошибку сразу, дадим шанс переподключиться
+                };
+                
+                ws.onclose = (event) => {
+                    console.log(`WebSocket connection closed. Code: ${event.code}`);
                     
-                    // Start multiplier growth simulation with initial value of 1.0
-                    setStartMultiplierTime(Date.now());
-                    simulateMultiplierGrowth(Date.now(), 1.0);
-                }
-
-                if (data.type === "timer_tick") {
-                    setIsBettingClosed(data.remaining_time > 10);
-                    setIsCrashed(false);
-                    setGameActive(false);
-                    setCollapsed(true);
-                    
-                    if (data.remaining_time <= 10) {
-                        setOverlayText(`Game starts in ${data.remaining_time} seconds`);
+                    // Пытаемся переподключиться, если соединение было закрыто не преднамеренно
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        const timeout = Math.min(1000 * reconnectAttempts, 5000); // Увеличивающийся интервал до 5 сек
+                        console.log(`Attempting to reconnect in ${timeout/1000} seconds... (Attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
+                        
+                        setTimeout(() => {
+                            if (document.visibilityState !== 'hidden') { // Подключаемся только если вкладка активна
+                                createWebSocketConnection();
+                            }
+                        }, timeout);
+                    } else {
+                        toast.error('Connection error. Please reload the page.');
                     }
-                }
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('WebSocket data received:', data);
+                        
+                        if (data.type === "multiplier_update") {
+                            // Immediately update game state
+                            setIsBettingClosed(true);
+                            setIsCrashed(false);
+                            setGameActive(true);
+                            setCollapsed(false);
+                            
+                            // If this is the first multiplier update, start simulation
+                            if (!startMultiplierTime) {
+                                // Сбрасываем позицию звезды в начале игры
+                                setStarPosition(0);
+                                setStarExploding(false);
+                                setStarAnimation('rocketStart'); // Начинаем с дрожания
+                                
+                                setStartMultiplierTime(Date.now());
+                                simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
+                            }
+                            
+                            // Automatic cashout when reaching the specified multiplier
+                            if (isAutoEnabled && bet > 0 && parseFloat(data.multiplier) >= autoOutputCoefficient && autoOutputCoefficient > 0) {
+                                handleCashout();
+                                toast.success(`Auto cashout at ${data.multiplier}x`);
+                            }
+                        }
+
+                        if (data.type === "game_crash" && !isCrashed) {
+                            // Immediately stop multiplier growth simulation
+                            if (multiplierTimerRef.current) {
+                                clearInterval(multiplierTimerRef.current);
+                                multiplierTimerRef.current = null;
+                            }
+                            setStartMultiplierTime(null);
+                            
+                            // Анимируем взрыв звезды
+                            setStarExploding(true);
+                            setStarAnimation(''); // Удаляем предыдущие анимации
+                            
+                            // Очищаем все падающие частицы при взрыве
+                            setFallingParticles([]);
+                            
+                            // Генерируем много частиц для взрыва из центра
+                            const explosionParticles = [];
+                            for (let i = 0; i < 30; i++) {
+                                const angle = Math.random() * Math.PI * 2; // Случайный угол в радианах
+                                const distance = Math.random() * 100 + 50; // Расстояние от 50 до 150px
+                                
+                                // Рассчитываем координаты на основе угла и расстояния
+                                const xEnd = Math.cos(angle) * distance;
+                                const yEnd = Math.sin(angle) * distance;
+                                
+                                const particleType = Math.random() < 0.33 ? 'gold' : (Math.random() < 0.66 ? 'orange' : 'bright');
+                                
+                                explosionParticles.push({
+                                    id: Date.now() + 1000 + i,
+                                    x: xEnd,
+                                    y: yEnd,
+                                    type: particleType,
+                                    duration: Math.random() * 1000 + 500,
+                                    opacity: Math.random() * 0.5 + 0.5,
+                                    size: Math.random() * 2 + 1
+                                });
+                            }
+                            
+                            setSparkParticles(explosionParticles);
+                            
+                            // Мгновенно обновляем все значения
+                            setIsCrashed(true);
+                            setGameActive(false);
+                            const crashPoint = parseFloat(data.crash_point).toFixed(2);
+                            setCollapsed(true);
+                            setXValue(crashPoint);
+                            
+                            // Мгновенно очищаем состояние
+                            if (bet > 0) {
+                                toast.error(`Game crashed at ${crashPoint}x! You lost ₹${bet}.`);
+                                setBet(0);
+                            }
+                        }
+
+                        if (data.type === "cashout_result") {
+                            toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${parseFloat(data.cashout_multiplier).toFixed(2)}x)`);
+                            setBet(0);
+                            increaseBalanceRupee(data.win_amount);
+                            // Показываем результат выигрыша
+                            setShowWinResult(true);
+                            // Через 3 секунды скрываем результат
+                            setTimeout(() => {
+                                setShowWinResult(false);
+                            }, 3000);
+                        }
+
+                        if (data.type === "other_cashout") {
+                            toast.success(`${data.username} won ₹${data.win_amount.toFixed(0)} at ${parseFloat(data.cashout_multiplier).toFixed(2)}x!`);
+                        }
+
+                        if (data.type === "new_bet") {
+                            toast.success(`${data.username} bet ₹${data.amount.toFixed(0)}`);
+                        }
+                        
+                        if (data.type === "game_started") {
+                            toast.success('Game started!');
+                            setIsBettingClosed(true);
+                            setIsCrashed(false);
+                            setGameActive(true);
+                            setCollapsed(false);
+                            
+                            // Start multiplier growth simulation with initial value of 1.0
+                            setStartMultiplierTime(Date.now());
+                            simulateMultiplierGrowth(Date.now(), 1.0);
+                        }
+
+                        if (data.type === "timer_tick") {
+                            setIsBettingClosed(data.remaining_time > 10);
+                            setIsCrashed(false);
+                            setGameActive(false);
+                            setCollapsed(true);
+                            
+                            if (data.remaining_time <= 10) {
+                                setOverlayText(`Game starts in ${data.remaining_time} seconds`);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error processing WebSocket message:', error);
+                    }
+                };
             } catch (error) {
-                console.error('Error processing WebSocket message:', error);
+                console.error('Error creating WebSocket connection:', error);
             }
         };
+
+        createWebSocketConnection();
 
         return () => {
             window.removeEventListener('resize', updateDimensions);
             if (multiplierTimerRef.current) {
                 clearInterval(multiplierTimerRef.current);
             }
-            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-                ws.close();
+            if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+                wsRef.current.close();
             }
         };
     }, [increaseBalanceRupee, bet, autoOutputCoefficient, isAutoEnabled]);
