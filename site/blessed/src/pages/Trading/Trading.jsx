@@ -5,7 +5,7 @@ import { placeBet, getOutcome, getBPC, getMe } from '@/requests';
 import useStore from "@/store";
 import toast from "react-hot-toast";
 import { Amount, ActionButtons } from '@/components';
-import { API_BASE_URL } from '@/config';
+import { API_BASE_URL, WS_PROTOCOL, API_PROTOCOL } from '@/config';
 
 export const Trading = () => {
     const { BalanceRupee, setBalanceRupee } = useStore();
@@ -57,15 +57,26 @@ export const Trading = () => {
         if (!chartRef.current || !candleSeriesRef.current) return;
 
         const encoded_init_data = encodeURIComponent(initData.current);
-        const ws_url_initial = `wss://${API_BASE_URL}/ws/kline?init_data=${encoded_init_data}`;
-        const ws_url_latest = `wss://${API_BASE_URL}/ws/kline/latest?init_data=${encoded_init_data}`;
+        
+        // Правильное формирование URL для WebSocket
+        // Убираем '/api' из пути и добавляем его заново для избежания дублирования
+        const baseUrl = API_BASE_URL.replace('/api', '');
+        const ws_url_initial = `${WS_PROTOCOL}://${baseUrl}/api/ws/kline?init_data=${encoded_init_data}`;
+        const ws_url_latest = `${WS_PROTOCOL}://${baseUrl}/api/ws/kline/latest?init_data=${encoded_init_data}`;
+        
+        console.log('Connecting to WebSocket URL:', ws_url_initial); // Для отладки
 
         // Получение исторических данных
         const ws_initial = new WebSocket(ws_url_initial);
+        ws_initial.onopen = () => {
+            console.log('WebSocket initial connection established');
+        };
         ws_initial.onmessage = (event) => {
             try {
+                console.log('Received initial data from WebSocket');
                 const data = JSON.parse(event.data);
                 if (Array.isArray(data) && data.length > 0) {
+                    console.log(`Received ${data.length} candles for initial data`);
                     const last100Data = data.slice(-100).map(item => ({
                         time: item.openTime / 1000,
                         open: item.open,
@@ -76,6 +87,8 @@ export const Trading = () => {
                     
                     candleSeriesRef.current.setData(last100Data);
                     setChartReady(true);
+                } else {
+                    console.warn('Received empty or invalid initial data:', data);
                 }
             } catch (error) {
                 console.error('Ошибка при обработке исходных данных WebSocket:', error);
@@ -87,16 +100,24 @@ export const Trading = () => {
         ws_initial.onerror = (error) => {
             console.error('Ошибка WebSocket для исходных данных:', error);
             toast.error('Ошибка соединения с сервером');
+            toast.error(`Не удалось получить исторические данные. Проверьте консоль`);
             ws_initial.close();
         };
 
         // Обработка обновлений в реальном времени
         const connectLatestWs = () => {
+            console.log('Connecting to latest data WebSocket:', ws_url_latest);
             const ws_latest = new WebSocket(ws_url_latest);
             wsLatestRef.current = ws_latest;
             
+            ws_latest.onopen = () => {
+                console.log('WebSocket latest connection established');
+                toast.success('Подключено к серверу данных');
+            };
+            
             ws_latest.onmessage = (event) => {
                 try {
+                    console.log('Received data update');
                     const data = JSON.parse(event.data);
                     if (data && typeof data === 'object') {
                         const time = data.openTime / 1000;
@@ -127,7 +148,11 @@ export const Trading = () => {
                                         : marker
                                 )
                             );
+                        } else {
+                            console.warn('Некорректные данные или график не готов:', { time, chartReady });
                         }
+                    } else {
+                        console.warn('Получены неожиданные данные:', data);
                     }
                 } catch (error) {
                     console.error('Ошибка при обработке обновления WebSocket:', error);
@@ -136,11 +161,13 @@ export const Trading = () => {
             
             ws_latest.onerror = (error) => {
                 console.error('Ошибка WebSocket для обновлений:', error);
+                toast.error('Ошибка соединения для обновления данных. Попытка переподключения...');
                 ws_latest.close();
                 setTimeout(connectLatestWs, 2000); // Повторное подключение через 2 секунды
             };
             
             ws_latest.onclose = () => {
+                console.log('WebSocket соединение закрыто. Переподключение...');
                 setTimeout(connectLatestWs, 2000); // Повторное подключение через 2 секунды
             };
         };
