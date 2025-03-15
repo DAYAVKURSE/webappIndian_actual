@@ -354,7 +354,7 @@ export const Crash = () => {
                 
                 {/* Multiplier display */}
                 <div className={styles.multiplier}>
-                    {xValue} x
+                    {xValue.slice(0.3)} x
                 </div>
                 
                 {bet > 0 && !isCrashed && <div className={styles.activeBet}>
