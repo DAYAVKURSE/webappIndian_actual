@@ -45,6 +45,7 @@
         height: 200px;
         background-color: #0B1728;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        border-left: 1px solid rgba(255,255,255,.1);
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -201,13 +202,15 @@
             align-items: center;
             padding: 6px 24px;
             border-radius: 30px;
-            background-color: #CFA3F2;
+            box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
+            background: #10202e;
+            border-radius: 5px;
 
-            color: #000;
-            text-align: center;
+            font-weight: 400;
             font-size: 16px;
+            color: #fff;
+            text-align: center;
             font-style: normal;
-            font-weight: 600;
             line-height: 24px;
         }
 
@@ -532,6 +535,8 @@
     position: absolute;
     width: 50px;
     height: 50px;
+    left:0;
+    bottom:130px;
     transition: transform 0.5s linear; // Плавное движение
 }
 

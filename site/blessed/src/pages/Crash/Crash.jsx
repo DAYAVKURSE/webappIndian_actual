@@ -154,7 +154,7 @@ export const Crash = () => {
                     setXValue(parseFloat(data.crash_point).toFixed(2));
 
                     setIsFalling(true);
-                    setStarPosition(prev => ({ x: prev.x - 100, y: prev.y + 200 })); // Опускаем звезду вниз
+                    setStarPosition(prev => ({ x: prev.x - 200, y: prev.y + 200 })); // Опускаем звезду вниз
                 
                     
                     setTimeout(() => {
