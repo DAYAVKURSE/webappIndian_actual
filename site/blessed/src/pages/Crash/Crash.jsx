@@ -55,20 +55,26 @@ export const Crash = () => {
         if (multiplierTimerRef.current) {
             clearInterval(multiplierTimerRef.current);
         }
-
-        // Set initial value
+    
         setXValue(initialMultiplier);
         
-        const updateInterval = 100; // ms
-        const growthFactor = 0.03; // how fast the multiplier grows
+        const updateInterval = 100; 
+        const growthFactor = 0.03; 
+    
+        let lastValue = initialMultiplier;
         
         multiplierTimerRef.current = setInterval(() => {
             const elapsedSeconds = (Date.now() - startTime) / 1000;
-            // Formula for calculating multiplier: e^(elapsedSeconds * growthFactor)
             const newMultiplier = Math.exp(elapsedSeconds * growthFactor);
-            setXValue(parseFloat(newMultiplier.toFixed(2)));
+    
+            // 📌 Экспоненциальное усреднение
+            const smoothedMultiplier = (lastValue * 0.8 + newMultiplier * 0.2).toFixed(2);
+            lastValue = smoothedMultiplier;
+            
+            setXValue(parseFloat(smoothedMultiplier));
         }, updateInterval);
     };
+    
 
     // Setting up dimensions and WebSocket connection
     useEffect(() => {
@@ -148,7 +154,7 @@ export const Crash = () => {
                     setXValue(parseFloat(data.crash_point).toFixed(2));
 
                     setIsFalling(true);
-                    setStarPosition(prev => ({ x: prev.x, y: prev.y + 100 })); // Опускаем звезду вниз
+                    setStarPosition(prev => ({ x: prev.x - 100, y: prev.y + 200 })); // Опускаем звезду вниз
                 
                     
                     setTimeout(() => {
