@@ -14,7 +14,8 @@ export const Clicker = () => {
     useEffect(() => {
         const fetchLeaders = async () => {
             const data = await getLeaders('day');
-            setLeadersList(data.leaders)
+            const leaders = getDailyLeaders(data.leaders);
+            setLeadersList(leaders)
         }
 
         fetchLeaders()
@@ -27,7 +28,6 @@ export const Clicker = () => {
         switch(stateFetch) {
             case "day": {
                 const leaders = getDailyLeaders(data.leaders);
-                console.log(leaders)
                 setLeadersList(leaders)
                 break;
             }
