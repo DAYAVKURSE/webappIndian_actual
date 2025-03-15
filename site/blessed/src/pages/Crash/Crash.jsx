@@ -122,6 +122,72 @@ export const Crash = () => {
                         toast.success(`Auto cashout at ${data.multiplier}x`);
                     }
                 }
+                
+                console.log('Connecting to WebSocket:', wsUrl);
+                const ws = new WebSocket(wsUrl);
+                wsRef.current = ws;
+                
+                let reconnectAttempts = 0;
+                const maxReconnectAttempts = 5;
+                
+                ws.onopen = () => {
+                    console.log('WebSocket connection established');
+                    reconnectAttempts = 0; // Сбрасываем счетчик при успешном подключении
+                };
+                
+                ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    // Не показываем ошибку сразу, дадим шанс переподключиться
+                };
+                
+                ws.onclose = (event) => {
+                    console.log(`WebSocket connection closed. Code: ${event.code}`);
+                    
+                    // Пытаемся переподключиться, если соединение было закрыто не преднамеренно
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        const timeout = Math.min(1000 * reconnectAttempts, 5000); // Увеличивающийся интервал до 5 сек
+                        console.log(`Attempting to reconnect in ${timeout/1000} seconds... (Attempt ${reconnectAttempts}/${maxReconnectAttempts})`);
+                        
+                        setTimeout(() => {
+                            if (document.visibilityState !== 'hidden') { // Подключаемся только если вкладка активна
+                                createWebSocketConnection();
+                            }
+                        }, timeout);
+                    } else {
+                        toast.error('Connection error. Please reload the page.');
+                    }
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('WebSocket data received:', data);
+                        
+                        if (data.type === "multiplier_update") {
+                            // Immediately update game state
+                            setIsBettingClosed(true);
+                            setIsCrashed(false);
+                            setGameActive(true);
+                            setCollapsed(false);
+                            
+                            // If this is the first multiplier update, start simulation
+                            if (!startMultiplierTime) {
+                                // Сбрасываем позицию звезды в начале игры
+                                setStarPosition(0);
+                                setStarExploding(false);
+                                setStarAnimation('rocketStart'); // Начинаем с дрожания
+                                
+                                setStartMultiplierTime(Date.now());
+                                simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
+                            }
+                            
+                            // Automatic cashout when reaching the specified multiplier
+                            if (isAutoEnabled && bet > 0 && parseFloat(data.multiplier) >= autoOutputCoefficient && autoOutputCoefficient > 0) {
+                                handleCashout();
+                                toast.success(`Auto cashout at ${data.multiplier}x`);
+                            }
+                        }
 
                 if (data.type === "game_crash") {
                     // Stop multiplier growth simulation
@@ -201,6 +267,8 @@ export const Crash = () => {
             }
         };
 
+        createWebSocketConnection();
+
         return () => {
             window.removeEventListener('resize', updateDimensions);
             if (multiplierTimerRef.current) {
@@ -210,7 +278,7 @@ export const Crash = () => {
                 ws.close();
             }
         };
-    }, [increaseBalanceRupee, bet, autoOutputCoefficient, isAutoEnabled]);
+    } catch(e) {}}, [increaseBalanceRupee, bet, autoOutputCoefficient, isAutoEnabled]);
 
     // Handling bet
     const handleBet = async () => {
@@ -332,6 +400,18 @@ export const Crash = () => {
         });
     };
 
+    useEffect(() => {
+        // Начинаем генерировать падающие частицы сразу при загрузке компонента
+        // и они будут генерироваться постоянно, пока не произойдет взрыв звезды
+        const particleInterval = setInterval(() => {
+            if (!isCrashed) {
+                generateFallingParticles();
+            }
+        }, 200);
+        
+        return () => clearInterval(particleInterval);
+    }, [isCrashed]); // Перезапускаем эффект при изменении isCrashed
+
     return (
         <div className={styles.crash}>
             {/* User balance */}
@@ -343,7 +423,30 @@ export const Crash = () => {
             {/* Main game screen */}
             <div className={styles.crash_wrapper} ref={crashRef}>
                 <div className={`${styles.crash__collapsed} ${collapsed ? styles.fadeIn : styles.fadeOut}`}>
-                    <p>{overlayText}</p>
+                    {/* Показываем блок с выигрышем, если showWinResult активен */}
+                    {showWinResult ? (
+                        <div className={styles.winResult}>
+                            <div className={styles.winResult_title}>Поздравляем!</div>
+                            <div className={styles.winResult_amount}>₹{Math.floor(winAmount)}</div>
+                            <div className={styles.winResult_multiplier}>x{xValue}</div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className={`${styles.explodedStar} ${starExploding ? styles.explode : ''}`}>
+                                <img 
+                                    src="/star.svg" 
+                                    alt="Star" 
+                                    className={styles.starImage}
+                                />
+                                {/* Не показываем никакой коэффициент внутри звезды */}
+                            </div>
+                            
+                            {/* Показываем коэффициент под звездой только если звезда взорвалась */}
+                            {starExploding && 
+                                <span className={styles.crashValueBelow}>{xValue}x</span>
+                            }
+                        </>
+                    )}
                 </div>
                 
                 {/* Star animation */}

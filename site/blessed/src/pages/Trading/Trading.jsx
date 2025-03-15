@@ -56,27 +56,20 @@ export const Trading = () => {
     const setupWebSockets = useCallback(() => {
         if (!chartRef.current || !candleSeriesRef.current) return;
 
+        console.log('Настраиваем WebSocket соединения');
         const encoded_init_data = encodeURIComponent(initData.current);
-        
-        // Правильное формирование URL для WebSocket
-        // Убираем '/api' из пути и добавляем его заново для избежания дублирования
-        const baseUrl = API_BASE_URL.replace('/api', '');
-        const ws_url_initial = `${WS_PROTOCOL}://${baseUrl}/api/ws/kline?init_data=${encoded_init_data}`;
-        const ws_url_latest = `${WS_PROTOCOL}://${baseUrl}/api/ws/kline/latest?init_data=${encoded_init_data}`;
-        
-        console.log('Connecting to WebSocket URL:', ws_url_initial); // Для отладки
+        const ws_url_initial = `${WS_PROTOCOL}://${API_BASE_URL}/ws/kline?init_data=${encoded_init_data}`;
+        const ws_url_latest = `${WS_PROTOCOL}://${API_BASE_URL}/ws/kline/latest?init_data=${encoded_init_data}`;
+
+        console.log('URL для исторических данных:', ws_url_initial);
+        console.log('URL для обновлений:', ws_url_latest);
 
         // Получение исторических данных
         const ws_initial = new WebSocket(ws_url_initial);
-        ws_initial.onopen = () => {
-            console.log('WebSocket initial connection established');
-        };
         ws_initial.onmessage = (event) => {
             try {
-                console.log('Received initial data from WebSocket');
                 const data = JSON.parse(event.data);
                 if (Array.isArray(data) && data.length > 0) {
-                    console.log(`Received ${data.length} candles for initial data`);
                     const last100Data = data.slice(-100).map(item => ({
                         time: item.openTime / 1000,
                         open: item.open,
@@ -87,8 +80,6 @@ export const Trading = () => {
                     
                     candleSeriesRef.current.setData(last100Data);
                     setChartReady(true);
-                } else {
-                    console.warn('Received empty or invalid initial data:', data);
                 }
             } catch (error) {
                 console.error('Ошибка при обработке исходных данных WebSocket:', error);
@@ -97,27 +88,89 @@ export const Trading = () => {
             }
         };
 
-        ws_initial.onerror = (error) => {
-            console.error('Ошибка WebSocket для исходных данных:', error);
-            toast.error('Ошибка соединения с сервером');
-            toast.error(`Не удалось получить исторические данные. Проверьте консоль`);
-            ws_initial.close();
+        const connectInitialWs = () => {
+            try {
+                const ws_initial = new WebSocket(ws_url_initial);
+                
+                ws_initial.onopen = () => {
+                    console.log('WebSocket соединение для исторических данных установлено');
+                    reconnectAttempts = 0; // Сбросить счетчик попыток
+                };
+                
+                ws_initial.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        console.log('Получены исторические данные, количество элементов:', data?.length);
+                        
+                        if (Array.isArray(data) && data.length > 0) {
+                            const last100Data = data.slice(-100).map(item => ({
+                                time: item.openTime / 1000,
+                                open: item.open,
+                                high: item.high,
+                                low: item.low,
+                                close: item.close
+                            }));
+                            
+                            if (candleSeriesRef.current) {
+                                candleSeriesRef.current.setData(last100Data);
+                                setChartReady(true);
+                                console.log('Данные установлены в график, chartReady =', true);
+                            } else {
+                                console.error('candleSeriesRef.current отсутствует при попытке установить данные');
+                            }
+                        } else {
+                            console.warn('Получен пустой массив данных или некорректные данные');
+                        }
+                    } catch (error) {
+                        console.error('Ошибка при обработке исходных данных WebSocket:', error);
+                    } finally {
+                        ws_initial.close();
+                    }
+                };
+
+                ws_initial.onerror = (error) => {
+                    console.error('Ошибка WebSocket для исходных данных:', error);
+                    ws_initial.close();
+                    
+                    // Повторная попытка подключения с увеличением задержки
+                    if (reconnectAttempts < maxReconnectAttempts) {
+                        reconnectAttempts++;
+                        const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                        console.log(`Попытка повторного подключения ${reconnectAttempts} из ${maxReconnectAttempts} через ${delay}мс`);
+                        setTimeout(connectInitialWs, delay);
+                    } else {
+                        toast.error('Не удалось подключиться к серверу. Пожалуйста, обновите страницу.');
+                    }
+                };
+                
+                ws_initial.onclose = (event) => {
+                    if (!event.wasClean) {
+                        console.warn('WebSocket для исходных данных был закрыт некорректно', event);
+                    }
+                };
+                
+            } catch (error) {
+                console.error('Ошибка при создании WebSocket соединения:', error);
+                
+                // Повторная попытка подключения с увеличением задержки
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 30000);
+                    console.log(`Попытка повторного подключения ${reconnectAttempts} из ${maxReconnectAttempts} через ${delay}мс`);
+                    setTimeout(connectInitialWs, delay);
+                } else {
+                    toast.error('Не удалось подключиться к серверу. Пожалуйста, обновите страницу.');
+                }
+            }
         };
 
         // Обработка обновлений в реальном времени
         const connectLatestWs = () => {
-            console.log('Connecting to latest data WebSocket:', ws_url_latest);
             const ws_latest = new WebSocket(ws_url_latest);
             wsLatestRef.current = ws_latest;
             
-            ws_latest.onopen = () => {
-                console.log('WebSocket latest connection established');
-                toast.success('Подключено к серверу данных');
-            };
-            
             ws_latest.onmessage = (event) => {
                 try {
-                    console.log('Received data update');
                     const data = JSON.parse(event.data);
                     if (data && typeof data === 'object') {
                         const time = data.openTime / 1000;
@@ -148,35 +201,44 @@ export const Trading = () => {
                                         : marker
                                 )
                             );
-                        } else {
-                            console.warn('Некорректные данные или график не готов:', { time, chartReady });
                         }
-                    } else {
-                        console.warn('Получены неожиданные данные:', data);
-                    }
-                } catch (error) {
+                    } 
+                }
+                catch (error) {
                     console.error('Ошибка при обработке обновления WebSocket:', error);
                 }
-            };
-            
-            ws_latest.onerror = (error) => {
-                console.error('Ошибка WebSocket для обновлений:', error);
-                toast.error('Ошибка соединения для обновления данных. Попытка переподключения...');
-                ws_latest.close();
-                setTimeout(connectLatestWs, 2000); // Повторное подключение через 2 секунды
-            };
-            
-            ws_latest.onclose = () => {
-                console.log('WebSocket соединение закрыто. Переподключение...');
-                setTimeout(connectLatestWs, 2000); // Повторное подключение через 2 секунды
-            };
+                
+                ws_latest.onerror = (error) => {
+                    console.error('Ошибка WebSocket для обновлений:', error);
+                    if (wsLatestRef.current === ws_latest) {
+                        wsLatestRef.current = null;
+                    }
+                    ws_latest.close();
+                    setTimeout(connectLatestWs, 2000); // Повторное подключение через 2 секунды
+                };
+                
+                ws_latest.onclose = (event) => {
+                    console.log('WebSocket для обновлений закрыт:', event.wasClean ? 'корректно' : 'некорректно');
+                    if (wsLatestRef.current === ws_latest) {
+                        wsLatestRef.current = null;
+                    }
+                    setTimeout(connectLatestWs, 2000); // Повторное подключение через 2 секунды
+                };
+            } 
         };
         
-        connectLatestWs();
+        // Сначала подключаемся к исходным данным, затем к обновлениям
+        connectInitialWs();
+        
+        // Задержка перед подключением к потоку обновлений, чтобы убедиться,
+        // что исторические данные загружены
+        setTimeout(connectLatestWs, 1000);
         
         return () => {
             if (wsLatestRef.current) {
+                console.log('Закрываем WebSocket соединение при размонтировании компонента');
                 wsLatestRef.current.close();
+                wsLatestRef.current = null;
             }
         };
     }, [chartReady]);
@@ -263,13 +325,118 @@ export const Trading = () => {
         if (watermark_Ebaniy) {
             watermark_Ebaniy.style.display = 'none';
         }
+        
+        try {
+            const chart = createChart('chart', {
+                layout: {
+                    background: { color: '#000000' },
+                    textColor: '#3F7FFB',
+                    fontSize: 12,
+                },
+                grid: {
+                    vertLines: { color: 'rgba(63, 127, 251, 0.1)' },
+                    horzLines: { color: 'rgba(63, 127, 251, 0.1)' },
+                },
+                rightPriceScale: {
+                    borderColor: 'rgba(63, 127, 251, 0.2)',
+                    scaleMargins: {
+                        top: 0.1,
+                        bottom: 0.1,
+                    },
+                    visible: true,
+                },
+                timeScale: {
+                    borderColor: 'rgba(63, 127, 251, 0.2)',
+                    visible: true,
+                    timeVisible: true,
+                    secondsVisible: false,
+                    tickMarkFormatter: (time) => {
+                        const date = new Date(time * 1000);
+                        const hours = date.getHours().toString().padStart(2, '0');
+                        const minutes = date.getMinutes().toString().padStart(2, '0');
+                        return `${hours}:${minutes}`;
+                    },
+                },
+                crosshair: {
+                    mode: 1,
+                    vertLine: {
+                        color: 'rgba(63, 127, 251, 0.5)',
+                        width: 1,
+                        style: 1,
+                        visible: true,
+                        labelVisible: true,
+                    },
+                    horzLine: {
+                        color: 'rgba(63, 127, 251, 0.5)',
+                        width: 1,
+                        style: 1,
+                        visible: true,
+                        labelVisible: true,
+                    },
+                },
+                localization: {
+                    timeFormatter: (time) => {
+                        const date = new Date(time * 1000);
+                        const hours = date.getHours().toString().padStart(2, '0');
+                        const minutes = date.getMinutes().toString().padStart(2, '0');
+                        const seconds = date.getSeconds().toString().padStart(2, '0');
+                        return `${hours}:${minutes}:${seconds}`;
+                    },
+                },
+                // Добавляем обработку обновления размера
+                handleScale: true,
+                handleScroll: true,
+            });
 
-        return () => {
-            chart.remove();
-            if (wsLatestRef.current) {
-                wsLatestRef.current.close();
+            // Создаем свечной график вместо линейного
+            const candleSeries = chart.addCandlestickSeries({
+                upColor: 'rgba(0, 150, 136, 0.8)',
+                downColor: 'rgba(255, 82, 82, 0.8)',
+                borderVisible: false,
+                wickUpColor: 'rgba(0, 150, 136, 0.8)',
+                wickDownColor: 'rgba(255, 82, 82, 0.8)',
+                priceFormat: {
+                    type: 'price',
+                    precision: 2,
+                    minMove: 0.01,
+                },
+            });
+            
+            candleSeriesRef.current = candleSeries;
+            chartRef.current = chart;
+            console.log('График инициализирован успешно');
+
+            // Адаптация размера при изменении размеров окна
+            const resizeHandler = () => {
+                if (chartRef.current) {
+                    chartRef.current.resize(
+                        chartContainer.clientWidth,
+                        chartContainer.clientHeight
+                    );
+                }
+            };
+            window.addEventListener('resize', resizeHandler);
+
+            // Скрываем водяной знак
+            const watermark_Ebaniy = document.getElementById('tv-attr-logo');
+            if (watermark_Ebaniy) {
+                watermark_Ebaniy.style.display = 'none';
             }
-        };
+
+            return () => {
+                window.removeEventListener('resize', resizeHandler);
+                chart.remove();
+                if (wsLatestRef.current) {
+                    wsLatestRef.current.close();
+                }
+                chartRef.current = null;
+                candleSeriesRef.current = null;
+            };
+        } catch (error) {
+            console.error('Ошибка при создании графика:', error);
+            toast.error('Не удалось инициализировать график');
+            return () => {};
+        }
     }, []);
 
     // Установка WebSocket соединений после инициализации графика
