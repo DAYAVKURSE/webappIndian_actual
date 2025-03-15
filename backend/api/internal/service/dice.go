@@ -98,6 +98,15 @@ func DicePlaceBet(c *gin.Context) {
 			if result.Won {
 				toCashBalance = fromCashBalance * winMultiplier
 				toBonusBalance = fromBonusBalance * winMultiplier
+
+				win := models.Winning{
+					UserID:    user.ID,
+					WinAmount: toCashBalance + toBonusBalance,
+				}
+			
+				if err := tx.Create(&win).Error; err != nil {
+					return logger.WrapError(err, "Failed to record winning")
+				}
 			}
 
 			// Update both balances even if won is false
@@ -114,6 +123,16 @@ func DicePlaceBet(c *gin.Context) {
 
 			if result.Won {
 				toBonusBalance = benefitFreeDeposit * winMultiplier
+				
+
+				win := models.Winning{
+					UserID:    user.ID,
+					WinAmount: toBonusBalance,
+				}
+
+				if err := tx.Create(&win).Error; err != nil {
+					return logger.WrapError(err, "Failed to record winning")
+				}
 
 				// Update both balances
 				err = exchange.UpdateUserBalances(tx, &user, 0, toBonusBalance, true)

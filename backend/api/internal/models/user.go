@@ -26,6 +26,7 @@ type User struct {
 	CreatedAt        time.Time
 }
 
+
 func (u *User) Validate() error {
 	return validate.Struct(u)
 }

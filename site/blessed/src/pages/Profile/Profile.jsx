@@ -7,10 +7,10 @@ export const Profile = () => {
     const { userName } = useStore();
     const [referrals, setReferrals] = useState([]);
     const [totalEarned, setTotalEarned] = useState(0);
-    const userId = window.Telegram.WebApp.initDataUnsafe.user.id 
-
+    const userId = Number(window.Telegram.WebApp.initDataUnsafe.user.id)
+    
     const copyLink = () => {
-        const link = `https://t.me/BiTRave_bot?start=${userId}`;
+        const link = `https://t.me/RupeXBot=${userId}`;
         navigator.clipboard.writeText(link);
     }
 
@@ -37,7 +37,7 @@ export const Profile = () => {
     return (
         <div className={styles.profile}>
             <h1 className={styles.title}>Account</h1>
-            <p className={styles.username}>Name {userName || ''}</p>
+            <p className={styles.username}>Name {userName.username || ''}</p>
             
             <div className={styles.referralSection}>
                 <h2 className={styles.referHeader}>Refer a friend and earn 20%</h2>

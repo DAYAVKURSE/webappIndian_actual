@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+блбimport { useEffect, useState, useRef, useCallback } from 'react';
 import { createChart } from 'lightweight-charts';
 import styles from './Trading.module.scss';
 import { placeBet, getOutcome, getBPC, getMe } from '@/requests';
@@ -65,8 +65,28 @@ export const Trading = () => {
         console.log('URL для обновлений:', ws_url_latest);
 
         // Получение исторических данных
-        let reconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
+        const ws_initial = new WebSocket(ws_url_initial);
+        ws_initial.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (Array.isArray(data) && data.length > 0) {
+                    const last100Data = data.slice(-100).map(item => ({
+                        time: item.openTime / 1000,
+                        open: item.open,
+                        high: item.high,
+                        low: item.low,
+                        close: item.close,
+                    }));
+                    
+                    candleSeriesRef.current.setData(last100Data);
+                    setChartReady(true);
+                }
+            } catch (error) {
+                console.error('Ошибка при обработке исходных данных WebSocket:', error);
+            } finally {
+                ws_initial.close();
+            }
+        };
 
         const connectInitialWs = () => {
             try {
@@ -146,58 +166,47 @@ export const Trading = () => {
 
         // Обработка обновлений в реальном времени
         const connectLatestWs = () => {
-            try {
-                const ws_latest = new WebSocket(ws_url_latest);
-                wsLatestRef.current = ws_latest;
-                
-                ws_latest.onopen = () => {
-                    console.log('WebSocket соединение для обновлений установлено');
-                };
-                
-                ws_latest.onmessage = (event) => {
-                    try {
-                        const data = JSON.parse(event.data);
-                        if (data && typeof data === 'object') {
-                            const time = data.openTime / 1000;
+            const ws_latest = new WebSocket(ws_url_latest);
+            wsLatestRef.current = ws_latest;
+            
+            ws_latest.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data && typeof data === 'object') {
+                        const time = data.openTime / 1000;
+                        
+                        if (time && candleSeriesRef.current && chartReady) {
+                            // Обновляем свечной график
+                            candleSeriesRef.current.update({
+                                time,
+                                open: data.open,
+                                high: data.high,
+                                low: data.low,
+                                close: data.close
+                            });
                             
-                            if (time && candleSeriesRef.current && chartReady) {
-                                // Обновляем свечной график
-                                candleSeriesRef.current.update({
-                                    time,
-                                    open: data.open,
-                                    high: data.high,
-                                    low: data.low,
-                                    close: data.close
-                                });
-                                
-                                // Обновляем текущую цену и изменение
-                                setCurrentPrice(data.close);
-                                if (lastPriceRef.current !== null) {
-                                    const change = (data.close - lastPriceRef.current) / lastPriceRef.current * 100;
-                                    setPriceChange(change);
-                                }
-                                lastPriceRef.current = data.close;
-
-                                // Обновляем маркеры ставок
-                                setMarkers((prevMarkers) =>
-                                    prevMarkers.map((marker) =>
-                                        marker.time === time && marker.value === null
-                                            ? { ...marker, value: data.close }
-                                            : marker
-                                    )
-                                );
-                            } else {
-                                console.warn('Не удалось обновить график:', { 
-                                    hasTime: Boolean(time),
-                                    hasCandleSeries: Boolean(candleSeriesRef.current),
-                                    isChartReady: chartReady
-                                });
+                            // Обновляем текущую цену и изменение
+                            setCurrentPrice(data.close);
+                            if (lastPriceRef.current !== null) {
+                                const change = (data.close - lastPriceRef.current) / lastPriceRef.current * 100;
+                                setPriceChange(change);
                             }
+                            lastPriceRef.current = data.close;
+
+                            // Обновляем маркеры ставок
+                            setMarkers((prevMarkers) =>
+                                prevMarkers.map((marker) =>
+                                    marker.time === time && marker.value === null
+                                        ? { ...marker, value: data.close }
+                                        : marker
+                                )
+                            );
                         }
-                    } catch (error) {
-                        console.error('Ошибка при обработке обновления WebSocket:', error);
-                    }
-                };
+                    } 
+                }
+                catch (error) {
+                    console.error('Ошибка при обработке обновления WebSocket:', error);
+                }
                 
                 ws_latest.onerror = (error) => {
                     console.error('Ошибка WebSocket для обновлений:', error);
@@ -215,10 +224,7 @@ export const Trading = () => {
                     }
                     setTimeout(connectLatestWs, 2000); // Повторное подключение через 2 секунды
                 };
-            } catch (error) {
-                console.error('Ошибка при создании WebSocket соединения для обновлений:', error);
-                setTimeout(connectLatestWs, 2000);
-            }
+            } 
         };
         
         // Сначала подключаемся к исходным данным, затем к обновлениям
@@ -239,11 +245,85 @@ export const Trading = () => {
 
     // Инициализация графика
     useEffect(() => {
-        console.log('Инициализация графика');
-        const chartContainer = document.getElementById('chart');
-        if (!chartContainer) {
-            console.error('Контейнер графика не найден');
-            return;
+        const chart = createChart('chart', {
+            layout: {
+                background: { color: '#000000' },
+                textColor: '#3F7FFB',
+                fontSize: 12,
+            },
+            grid: {
+                vertLines: { color: 'rgba(63, 127, 251, 0.1)' },
+                horzLines: { color: 'rgba(63, 127, 251, 0.1)' },
+            },
+            rightPriceScale: {
+                borderColor: 'rgba(63, 127, 251, 0.2)',
+                scaleMargins: {
+                    top: 0.1,
+                    bottom: 0.1,
+                },
+                visible: true,
+            },
+            timeScale: {
+                borderColor: 'rgba(63, 127, 251, 0.2)',
+                visible: true,
+                timeVisible: true,
+                secondsVisible: false,
+                tickMarkFormatter: (time) => {
+                    const date = new Date(time * 1000);
+                    const hours = date.getHours().toString().padStart(2, '0');
+                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                    return `${hours}:${minutes}`;
+                },
+            },
+            crosshair: {
+                mode: 1,
+                vertLine: {
+                    color: 'rgba(63, 127, 251, 0.5)',
+                    width: 1,
+                    style: 1,
+                    visible: true,
+                    labelVisible: true,
+                },
+                horzLine: {
+                    color: 'rgba(63, 127, 251, 0.5)',
+                    width: 1,
+                    style: 1,
+                    visible: true,
+                    labelVisible: true,
+                },
+            },
+            localization: {
+                timeFormatter: (time) => {
+                    const date = new Date(time * 1000);
+                    const hours = date.getHours().toString().padStart(2, '0');
+                    const minutes = date.getMinutes().toString().padStart(2, '0');
+                    const seconds = date.getSeconds().toString().padStart(2, '0');
+                    return `${hours}:${minutes}:${seconds}`;
+                },
+            },
+        });
+
+        // Создаем свечной график вместо линейного
+        const candleSeries = chart.addCandlestickSeries({
+            upColor: 'rgba(0, 150, 136, 0.8)',
+            downColor: 'rgba(255, 82, 82, 0.8)',
+            borderVisible: false,
+            wickUpColor: 'rgba(0, 150, 136, 0.8)',
+            wickDownColor: 'rgba(255, 82, 82, 0.8)',
+            priceFormat: {
+                type: 'price',
+                precision: 2,
+                minMove: 0.01,
+            },
+        });
+        
+        candleSeriesRef.current = candleSeries;
+        chartRef.current = chart;
+
+        // Скрываем водяной знак
+        const watermark_Ebaniy = document.getElementById('tv-attr-logo');
+        if (watermark_Ebaniy) {
+            watermark_Ebaniy.style.display = 'none';
         }
         
         try {
@@ -513,11 +593,6 @@ export const Trading = () => {
             
             <div className={styles.chartWrap}>
                 <div id="chart" className={styles.chart} />
-                {!chartReady && (
-                    <div className={styles.chartLoading}>
-                        Загрузка графика...
-                    </div>
-                )}
             </div>
             
             <div className={styles.trading__bet}>

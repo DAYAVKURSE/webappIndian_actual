@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"gorm.io/gorm"
+	"time"
 )
 
 type signUpInput struct {
@@ -133,6 +134,52 @@ func GetUser(c *gin.Context) {
 
 	c.JSON(200, user)
 }
+
+type LeaderboardEntry struct {
+	UserID      int64   `json:"user_id"`
+	Nickname    string  `json:"nickname"`
+	TotalWinnings float64 `json:"total_winnings"`
+}
+
+func GetLeaders(c *gin.Context) {
+	period := c.DefaultQuery("period", "all")
+
+	var startTime time.Time
+	switch period {
+	case "day":
+		startTime = time.Now().AddDate(0, 0, -1)
+	case "week":
+		startTime = time.Now().AddDate(0, 0, -7)
+	default:
+		startTime = time.Time{}
+	}
+
+	var leaders []LeaderboardEntry
+	query := db.DB.Model(&models.Winning{}).
+		Select("winnings.user_id, users.nickname, SUM(winnings.win_amount) as total_winnings").
+		Joins("JOIN users ON winnings.user_id = users.id")
+
+	if !startTime.IsZero() {
+		query = query.Where("winnings.created_at >= ?", startTime)
+	}
+
+	query = query.Group("winnings.user_id, users.nickname").
+		Order("total_winnings DESC").
+		Limit(10)
+
+	// Выполняем запрос
+	if err := query.Find(&leaders).Error; err != nil {
+		logger.Error("Failed to fetch leaders: %v", err)
+		c.JSON(500, gin.H{"error": "Failed to fetch leaders"})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"period":  period,
+		"leaders": leaders,
+	})
+}
+
 
 func GetUserReferrals(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromGinContext(c)
