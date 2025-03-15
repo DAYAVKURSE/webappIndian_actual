@@ -21,13 +21,12 @@ export const Crash = () => {
     const [isCrashed, setIsCrashed] = useState(false);
     const [isAutoEnabled, setIsAutoEnabled] = useState(false);
     const [gameActive, setGameActive] = useState(false);
-
-    console.log(dimensions);
     
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);
     const [startMultiplierTime, setStartMultiplierTime] = useState(null);
 
+    console.log(dimensions)
     // Getting game history on component load
     useEffect(() => {
         const fetchHistory = async () => {

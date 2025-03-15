@@ -30,7 +30,6 @@
             display: flex;
             justify-content: flex-start;
             align-items: center;
-            margin-left: 3px;
         }
     }
 
@@ -43,6 +42,8 @@
         font-weight: 500;
         line-height: 35px;
         padding-right: 12px;
+        width: 150px;
+        text-align: start;
     }
 
     &_desc {
