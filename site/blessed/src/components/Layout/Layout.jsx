@@ -1,5 +1,5 @@
 import toastStyles from "@/scss/toast.module.scss";
-import { Toaster, useToasterStore, toast } from 'react-hot-toast';
+import { Toaster, useToasterStore, toast } from "react-hot-toast";
 import { Header, Footer } from "@/components";
 import { Outlet } from "react-router-dom";
 import { getMe } from "@/requests";
@@ -23,32 +23,36 @@ export const Layout = () => {
 
   return (
     <>
-      <div>
-        <Toaster
-          toastOptions={{
-            position: 'top-center',
-            success: {
-              className: toastStyles.toastSuccess,
-              iconTheme: {
-                primary: '#EDFF8C',
-                secondary: '#0B0B0B',
-              },
-            },
-            error: {
-              className: toastStyles.toastError,
-              iconTheme: {
-                primary: '#FFC397',
-                secondary: '#0B0B0B',
-              },
-            },
-            default: {
-              className: toastStyles.toast,
-            },
-          }}
-        />
-      </div>
+      <Toaster
+  toastOptions={{
+    position: "top-center",
+    success: {
+      className: toastStyles.toastSuccess,
+      style: { border: "1px solid #6ebeff" },
+      iconTheme: {
+        primary: "#6ebeff",
+        secondary: "#0B0B0B",
+      },
+    },
+    error: {
+      className: toastStyles.toastError,
+      style: { border: "1px solid #6ebeff" },
+      iconTheme: {
+        primary: "#6ebeff",
+        secondary: "#0B0B0B",
+      },
+    },
+    default: {
+      className: toastStyles.toast,
+      style: { border: "1px solid #6ebeff" },
+    },
+  }}
+/>
+
       <Header />
-      <main><Outlet /></main>
+      <main>
+        <Outlet />
+      </main>
       <Footer />
     </>
   );

@@ -21,6 +21,10 @@ export const Crash = () => {
     const [isCrashed, setIsCrashed] = useState(false);
     const [isAutoEnabled, setIsAutoEnabled] = useState(false);
     const [gameActive, setGameActive] = useState(false);
+
+    const [starPosition, setStarPosition] = useState({ x: 0, y: 0 });
+    const [isFalling, setIsFalling] = useState(false);
+
     
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);
@@ -110,6 +114,11 @@ export const Crash = () => {
                     setIsCrashed(false);
                     setGameActive(true);
                     setCollapsed(false);
+
+                    setStarPosition({
+                        x: data.multiplier * 50,  // Чем больше множитель, тем дальше вправо
+                        y: -data.multiplier * 40, // Чем больше множитель, тем выше
+                    });
                     
                     // If this is the first multiplier update, start simulation
                     if (!startMultiplierTime) {
@@ -137,6 +146,10 @@ export const Crash = () => {
                     setOverlayText(`Crashed at ${data.crash_point.toFixed(2)}x`);
                     setCollapsed(true);
                     setXValue(parseFloat(data.crash_point).toFixed(2));
+
+                    setIsFalling(true);
+                    setStarPosition(prev => ({ x: prev.x, y: prev.y + 100 })); // Опускаем звезду вниз
+                
                     
                     setTimeout(() => {
                         if (bet > 0) {
@@ -348,9 +361,14 @@ export const Crash = () => {
                 </div>
                 
                 {/* Star animation */}
-                <div className={styles.starContainer}>
-                    <img src="/star.svg" alt="Star" className={styles.star} />
-                </div>
+                <div 
+                className={`${styles.star} ${isFalling ? styles.falling : ''}`} 
+                style={{
+                    transform: `translate(${starPosition.x}px, ${starPosition.y}px)`,
+                }}
+            >
+                <img src="/star.svg" alt="Star" />
+            </div>
                 
                 {/* Multiplier display */}
                 <div className={styles.multiplier}>

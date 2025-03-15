@@ -528,14 +528,17 @@
 }
 
 // Анимация полёта звезды
-@keyframes floatStar {
-    0% {
-        transform: translateY(0);
-    }
-    100% {
-        transform: translateY(-10px);
-    }
+.star {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    transition: transform 0.5s linear; // Плавное движение
 }
+
+.falling {
+    transition: transform 1s ease-in; // Медленное падение
+}
+
 
 // Анимации для оверлея
 @keyframes fadeIn {

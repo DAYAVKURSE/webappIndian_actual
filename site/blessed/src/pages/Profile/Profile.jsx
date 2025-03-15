@@ -1,13 +1,12 @@
 import styles from "./Profile.module.scss";
-import useStore from "@/store";
 import { useEffect, useState } from "react";
 import { getReferrals, getMe } from "@/requests";
 
 export const Profile = () => {
-    const { userName } = useStore();
     const [referrals, setReferrals] = useState([]);
     const [totalEarned, setTotalEarned] = useState(0);
-    const userId = Number(window.Telegram.WebApp.initDataUnsafe.user.id)
+    const userId = Number(window.Telegram.WebApp.initDataUnsafe.user.id);
+    const userName = localStorage.getItem('store').userName
     
     const copyLink = () => {
         const link = `https://t.me/RupeXBot=${userId}`;
@@ -37,7 +36,7 @@ export const Profile = () => {
     return (
         <div className={styles.profile}>
             <h1 className={styles.title}>Account</h1>
-            <p className={styles.username}>Name {userName.username || ''}</p>
+            <p className={styles.username}>Name {userName || ''}</p>
             
             <div className={styles.referralSection}>
                 <h2 className={styles.referHeader}>Refer a friend and earn 20%</h2>

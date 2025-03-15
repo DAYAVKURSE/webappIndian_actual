@@ -47,9 +47,9 @@ export const Other = () => {
             <div className={styles.other_dev} onClick={() => copyLink()} />
 
             <div className={styles.other__social}>
-                <a href="https://t.me/bitrave"><img src="/telegram.png" alt="telegram" /></a>
-                <a href="https://discord.com/invite/asdjwqweq"><img src="/discord.png" alt="discord" /></a>
-                <a href="https://instagram.com/profile/bitrave"><img src="/instagram.png" alt="instagram" /></a>
+                <a href="https://t.me/RupeXBot"><img src="/telegram.png" alt="telegram" /></a>
+                <a ><img src="/discord.png" alt="discord" /></a>
+                <a ><img src="/instagram.png" alt="instagram" /></a>
                 
             </div>
         </div>

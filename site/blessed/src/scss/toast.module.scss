@@ -1,18 +1,19 @@
 @import "@/scss/variables.module.scss";
 
 .toast {
-    background-color: $low-black !important;
-    color: $biege !important;
-    border: none;
+    background-color: #0B151E !important;
+    color: #6ebeff !important;
     z-index: 100;
+    border: 1px solid #6ebeff !important;;
+    border-radius: 10px !important;
 }
 
 .toastSuccess {
-    background-color: $low-black !important;
-    color: $green !important;
+    background-color: #0B151E !important;
+    color: #6ebeff !important;
 }
 
 .toastError {
-    background-color: $low-black !important;
-    color: $red !important;
+    background-color: #0B151E !important;
+    color: #6ebeff !important;
 }
