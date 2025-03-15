@@ -21,6 +21,8 @@ export const Crash = () => {
     const [isCrashed, setIsCrashed] = useState(false);
     const [isAutoEnabled, setIsAutoEnabled] = useState(false);
     const [gameActive, setGameActive] = useState(false);
+
+    console.log(dimensions);
     
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);

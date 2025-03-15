@@ -3,11 +3,13 @@ import styles from "./Clicker.module.scss";
 import { NavLink } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { getLeaders } from "../../requests/users/getLeaders";
+import { getLeadersDates } from "../../hooks/getLeaders";
 
 export const Clicker = () => {
   
     const [selected, setSelected] = useState("Daily");
     const [leadersList, setLeadersList] = useState([]);
+    const { getAllLeaders, getWeeklyLeaders, getDailyLeaders} = getLeadersDates()
 
     useEffect(() => {
         const fetchLeaders = async () => {
@@ -21,7 +23,25 @@ export const Clicker = () => {
     const handleChangeLeaderBoardState = async (state) => {
         const stateFetch = state === "Daily" ? 'day' : state === "Weekly" ? 'week' : "all";
         const data = await getLeaders(stateFetch);
-        setLeadersList(data.leaders)
+        
+        switch(stateFetch) {
+            case "day": {
+                const leaders = getDailyLeaders(data.leaders);
+                console.log(leaders)
+                setLeadersList(leaders)
+                break;
+            }
+            case "week": {
+                const leaders = getWeeklyLeaders(data.leaders);
+                setLeadersList(leaders)
+                break;
+            }
+            case "all": {
+                const leaders = getAllLeaders(data.leaders);
+                setLeadersList(leaders)
+                break;
+            }
+        }
     }
 
     return (

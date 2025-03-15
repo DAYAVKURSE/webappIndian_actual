@@ -16,6 +16,5 @@ export async function getLeaders(type) {
         return contentLength;
     } catch (error) {
         console.error('Error registering user:', error);
-        throw error;
     }
 }
