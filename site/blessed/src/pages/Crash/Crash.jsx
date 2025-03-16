@@ -22,7 +22,7 @@ export const Crash = () => {
     const [isAutoEnabled, setIsAutoEnabled] = useState(false);
     const [gameActive, setGameActive] = useState(false);
 
-    const [starPosition, setStarPosition] = useState({ x: 60, y: 70 });
+    const [starPosition, setStarPosition] = useState({ x: 50, y: -40 });
     const [isFalling, setIsFalling] = useState(false);
 
     
