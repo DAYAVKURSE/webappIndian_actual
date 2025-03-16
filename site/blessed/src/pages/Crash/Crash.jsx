@@ -33,13 +33,13 @@ export const Crash = () => {
     const valXValut = useRef(1);
 
     useEffect(() => {
-        const val = valXValut.current;
-        setTimeout(() => {
-            if(val === valXValut.current) {
-                setXValue(val);
-            }
-        }, 40)
-    }, [valXValut.current])
+        const interval = setInterval(() => {
+            setXValue(valXValut.current);
+        }, 80);
+    
+        return () => clearInterval(interval);
+    }, []);
+    
 
     console.log(dimensions)
     // Getting game history on component load
