@@ -21,7 +21,7 @@ export const Header = () => {
                             <span className={styles.count}>{Math.trunc(BalanceRupee) || '0'}</span>
                         </span>
                     </div>
-                    <NavLink to={'/other'} className={styles.deposit}>
+                    <NavLink to={'/wallet/topup'} className={styles.deposit}>
                         <span>Deposit</span>
                     </NavLink>
                 </div>
