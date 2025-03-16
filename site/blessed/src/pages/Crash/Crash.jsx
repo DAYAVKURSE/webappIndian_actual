@@ -38,7 +38,7 @@ export const Crash = () => {
             if(val === valXValut.current) {
                 setXValue(val);
             }
-        }, 80)
+        }, 40)
     }, [valXValut.current])
 
     console.log(dimensions)
