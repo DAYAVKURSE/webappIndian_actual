@@ -29,8 +29,8 @@ export const Onboarding = () => {
     useEffect(() => {
         const handleFocus = () => {
             if (containerRef.current) {
-                containerRef.current.style.minHeight = "120vh";
-                outContainerRef.current.scrollTop = 200;
+                containerRef.current.style.minHeight = "135vh";
+                outContainerRef.current.scrollTop = 600;
             }
         };
 
