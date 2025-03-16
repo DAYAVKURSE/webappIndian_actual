@@ -12,7 +12,7 @@ export const Crash = () => {
     const [bet, setBet] = useState(0);
     const [isBettingClosed, setIsBettingClosed] = useState(false);
     const [autoOutputCoefficient, setAutoOutputCoefficient] = useState(0);
-    const [xValue, setXValue] = useState(1);
+    const [xValue, setXValue] = useState(1.2);
     const [collapsed, setCollapsed] = useState(false);
     const [overlayText, setOverlayText] = useState('Game starts soon');
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -30,6 +30,17 @@ export const Crash = () => {
     const multiplierTimerRef = useRef(null);
     const [startMultiplierTime, setStartMultiplierTime] = useState(null);
 
+    const valXValut = useRef(1);
+
+    useEffect(() => {
+        const val = valXValut.current;
+        setTimeout(() => {
+            if(val === valXValut.current) {
+                setXValue(val);
+            }
+        }, 80)
+    }, [valXValut.current])
+
     console.log(dimensions)
     // Getting game history on component load
     useEffect(() => {
@@ -39,7 +50,7 @@ export const Crash = () => {
                 if (data && data.results) {
                     const lastResult = data.results[0];
                     if (lastResult) {
-                        setXValue(parseFloat(lastResult.CrashPointMultiplier.toFixed(2)));
+                        valXValut.current = parseFloat(lastResult.CrashPointMultiplier.toFixed(2));
                     }
                 }
             } catch (error) {
@@ -56,7 +67,7 @@ export const Crash = () => {
             clearInterval(multiplierTimerRef.current);
         }
     
-        setXValue(initialMultiplier);
+        valXValut.current = initialMultiplier ;
         
         const updateInterval = 100; 
         const growthFactor = 0.03; 
@@ -71,7 +82,7 @@ export const Crash = () => {
             const smoothedMultiplier = (lastValue * 0.8 + newMultiplier * 0.2).toFixed(2);
             lastValue = smoothedMultiplier;
             
-            setXValue(parseFloat(smoothedMultiplier));
+            valXValut.current = parseFloat(smoothedMultiplier);
         }, updateInterval);
     };
     
@@ -122,8 +133,8 @@ export const Crash = () => {
                     setCollapsed(false);
 
                     setStarPosition({
-                        x: data.multiplier * 80,  // Чем больше множитель, тем дальше вправо
-                        y: -data.multiplier * 20, // Чем больше множитель, тем выше
+                        x: data.multiplier * 50,  // Чем больше множитель, тем дальше вправо
+                        y: -data.multiplier * 40, // Чем больше множитель, тем выше
                     });
                     
                     // If this is the first multiplier update, start simulation
@@ -151,16 +162,10 @@ export const Crash = () => {
                     setGameActive(false);
                     setOverlayText(`Crashed at ${data.crash_point.toFixed(2)}x`);
                     setCollapsed(true);
-                    const val = parseFloat(data.crash_point).toFixed(2).slice(0.2);
-
-                    setTimeout(() => {
-                        if(parseFloat(data.crash_point).toFixed(2).slice(0.2) === val) {
-                            setXValue(parseFloat(data.crash_point).toFixed(2));
-                        }
-                    }, 80)
+                    valXValut.current = parseFloat(data.crash_point).toFixed(2);
 
                     setIsFalling(true);
-                    setStarPosition(prev => ({ x: prev.x - 10, y: prev.y + 10 })); // Опускаем звезду вниз
+                    setStarPosition(prev => ({ x: prev.x, y: prev.y })); // Опускаем звезду вниз
                 
                     
                     setTimeout(() => {
@@ -169,7 +174,7 @@ export const Crash = () => {
                             toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
                             setBet(0);
                         }
-                        setXValue(1);
+                        valXValut.current = 1.2;
                     }, 3000);
                 }
 
