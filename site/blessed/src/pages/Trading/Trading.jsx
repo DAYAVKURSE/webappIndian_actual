@@ -38,8 +38,8 @@ export const Trading = () => {
                     });
                 }
             } catch (error) {
-                console.error('Ошибка при загрузке начальных данных:', error);
-                toast.error('Не удалось загрузить данные');
+                console.error('Error loading initial data:', error);
+                toast.error('Couldnt upload data');
             }
         };
 
@@ -78,15 +78,15 @@ export const Trading = () => {
                     setChartReady(true);
                 }
             } catch (error) {
-                console.error('Ошибка при обработке исходных данных WebSocket:', error);
+                console.error('Error when processing WebSocket source data:', error);
             } finally {
                 ws_initial.close();
             }
         };
 
         ws_initial.onerror = (error) => {
-            console.error('Ошибка WebSocket для исходных данных:', error);
-            toast.error('Ошибка соединения с сервером');
+            console.error('WebSocket error for source data:', error);
+            toast.error('Server connection error');
             ws_initial.close();
         };
 
@@ -130,12 +130,12 @@ export const Trading = () => {
                         }
                     }
                 } catch (error) {
-                    console.error('Ошибка при обработке обновления WebSocket:', error);
+                    console.error('Error when processing WebSocket update:', error);
                 }
             };
             
             ws_latest.onerror = (error) => {
-                console.error('Ошибка WebSocket для обновлений:', error);
+                console.error('WebSocket error for updates:', error);
                 ws_latest.close();
                 setTimeout(connectLatestWs, 2000); // Повторное подключение через 2 секунды
             };
@@ -267,7 +267,7 @@ export const Trading = () => {
                     }
                 }
             } catch (error) {
-                console.error('Ошибка при обновлении данных:', error);
+                console.error('Error updating data:', error);
             }
         }, 30000); // Обновлять каждые 30 секунд
         
@@ -280,14 +280,14 @@ export const Trading = () => {
             
             if (!response || response.status !== 200) {
                 const errorData = await response?.json().catch(() => ({}));
-                toast.error(errorData?.error || 'Не удалось разместить ставку');
+                toast.error(errorData?.error || 'Couldnt place a bid');
                 return;
             }
             
             const data = await response.json().catch(() => ({}));
             
             if (data) {
-                toast.success('Ставка успешно размещена');
+                toast.success('The bid was successfully placed');
                 setBalanceRupee(Math.max(0, BalanceRupee - bet));
 
                 const betTime = Math.floor(Date.now() / 1000);
@@ -345,22 +345,22 @@ export const Trading = () => {
                             const latestBet = outcomeData.latestBets[0];
                             if (latestBet && latestBet.outcome) {
                                 if (latestBet.outcome === "win") {
-                                    toast.success(`Вы выиграли! (+₹ ${latestBet.payout})`);
+                                    toast.success(`You win! (+₹ ${latestBet.payout})`);
                                 } else if (latestBet.outcome === "lose") {
-                                    toast.error(`Вы проиграли! (-₹ ${bet})`);
+                                    toast.error(`You lose! (-₹ ${bet})`);
                                 }
                             }
                         }
                     } catch (error) {
-                        console.error('Ошибка при получении результата:', error);
+                        console.error('Error when getting the result:', error);
                     } finally {
                         clearInterval(checkInterval);
                     }
                 }, (time * 1000) + 1000); // Добавляем 1 секунду для завершения обработки на сервере
             }
         } catch (error) {
-            console.error('Ошибка при размещении ставки:', error);
-            toast.error('Не удалось разместить ставку');
+            console.error('Error when placing a bid:', error);
+            toast.error('Couldnt place a bid');
         }
     };
 
