@@ -12,7 +12,7 @@ export const Crash = () => {
     const [bet, setBet] = useState(0);
     const [isBettingClosed, setIsBettingClosed] = useState(false);
     const [autoOutputCoefficient, setAutoOutputCoefficient] = useState(0);
-    const [xValue, setXValue] = useState(1.2);
+    const [xValue, setXValue] = useState(1);
     const [collapsed, setCollapsed] = useState(false);
     const [overlayText, setOverlayText] = useState('Game starts soon');
     const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -151,10 +151,16 @@ export const Crash = () => {
                     setGameActive(false);
                     setOverlayText(`Crashed at ${data.crash_point.toFixed(2)}x`);
                     setCollapsed(true);
-                    setXValue(parseFloat(data.crash_point).toFixed(2));
+                    const val = parseFloat(data.crash_point).toFixed(2).slice(0.2);
+
+                    setTimeout(() => {
+                        if(parseFloat(data.crash_point).toFixed(2).slice(0.2) === val) {
+                            setXValue(parseFloat(data.crash_point).toFixed(2));
+                        }
+                    }, 80)
 
                     setIsFalling(true);
-                    setStarPosition(prev => ({ x: prev.x, y: prev.y })); // Опускаем звезду вниз
+                    setStarPosition(prev => ({ x: prev.x - 10, y: prev.y + 10 })); // Опускаем звезду вниз
                 
                     
                     setTimeout(() => {
@@ -163,7 +169,7 @@ export const Crash = () => {
                             toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
                             setBet(0);
                         }
-                        setXValue(1.2);
+                        setXValue(1);
                     }, 3000);
                 }
 

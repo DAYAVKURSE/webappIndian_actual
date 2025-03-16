@@ -1,3 +1,5 @@
+
+//    const userId = Number(window.Telegram.WebApp.initDataUnsafe.user.id);
 import styles from "./Profile.module.scss";
 import { useEffect, useState } from "react";
 import { getReferrals, getMe } from "@/requests";
@@ -6,7 +8,8 @@ export const Profile = () => {
     const [referrals, setReferrals] = useState([]);
     const [totalEarned, setTotalEarned] = useState(0);
     const userId = Number(window.Telegram.WebApp.initDataUnsafe.user.id);
-    const userName = localStorage.getItem('store').userName
+    const userName = localStorage.getItem('store')
+    console.log(userName);
     
     const copyLink = () => {
         const link = `https://t.me/RupeXBot=${userId}`;
@@ -36,7 +39,7 @@ export const Profile = () => {
     return (
         <div className={styles.profile}>
             <h1 className={styles.title}>Account</h1>
-            <p className={styles.username}>Name {userName || ''}</p>
+            <p className={styles.username}>Name {userName.userName || ''}</p>
             
             <div className={styles.referralSection}>
                 <h2 className={styles.referHeader}>Refer a friend and earn 20%</h2>
@@ -51,7 +54,7 @@ export const Profile = () => {
                     <input 
                         type="text" 
                         className={styles.linkInput} 
-                        value={`https://t.me/BiTRave_bot?start=${userId}`} 
+                        value={`https://t.me/RupeXBot?start=${userId}`} 
                         readOnly 
                     />
                     <button className={styles.copyButton} onClick={copyLink}>
@@ -90,4 +93,4 @@ export const Profile = () => {
             </div>
         </div>
     );
-};
+};  
