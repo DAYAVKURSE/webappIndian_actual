@@ -39,7 +39,7 @@ export const Profile = () => {
     return (
         <div className={styles.profile}>
             <h1 className={styles.title}>Account</h1>
-            <p className={styles.username}>Name {userName.userName}</p>
+            <p className={styles.username}>Name {JSON.parse(localStorage.getItem('store')).userName}</p>
             
             <div className={styles.referralSection}>
                 <h2 className={styles.referHeader}>Refer a friend and earn 20%</h2>
