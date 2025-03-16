@@ -1,9 +1,10 @@
 import styles from "./Input.module.scss";
 
-export const Input = ({ id, type, onChange, placeholder, disabled, center, min, max, value, name }) => {
+export const Input = ({ id, type, onChange, placeholder, disabled, center, min, max, value, name, ref }) => {
     return (
         <div className={styles.input__container}>
             <input
+                ref={ref}
                 className={styles.input}
                 type={type || "text"}
                 onChange={onChange}
