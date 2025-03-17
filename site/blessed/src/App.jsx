@@ -47,7 +47,11 @@ export default function App() {
   }, [isMobile]);
   
   return (
-    <Router>
+    <>
+    {
+      isMobile  && <div style={{height:'70px'}}></div>
+    }
+      <Router>
       <Routes>
         <Route index element={<Loading />} exact />
         
@@ -79,5 +83,6 @@ export default function App() {
         </Route>
       </Routes>
     </Router>
+    </>
   )
 };

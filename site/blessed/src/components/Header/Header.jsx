@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import styles from "./Header.module.scss";
 import useStore from "@/store";
+import { isMobile } from "react-device-detect";
 
 export const Header = () => {
     const { BalanceRupee } = useStore();
@@ -8,7 +9,9 @@ export const Header = () => {
     return (
         <>
             <div className={styles.header__spacer} />
-            <header className={styles.header}>
+            <header className={styles.header}
+                style={{paddingTop: isMobile ? '70px' : '0'}}
+            >
                 <NavLink to={'clicker'} className={styles.logo}>
                     <img src={'./logo.png'}></img>
                 </NavLink>
