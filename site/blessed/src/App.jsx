@@ -49,7 +49,7 @@ export default function App() {
   return (
     <>
     {
-      window.innerWidth < 600 && <div style={{height:'70px'}}></div>
+      window.innerWidth < 600 && <div style={{minHeight:'70px'}}></div>
     }
       <Router>
       <Routes>
