@@ -137,7 +137,6 @@ export const Dice = () => {
 		setBet(prev => prev * 2);
 	};
 
-
     return (
         <div className={styles.dice}>
             <div className={styles.dice_bet_container}>
@@ -177,7 +176,13 @@ export const Dice = () => {
                 <div className={styles.bet_control_group}>
                     <div className={styles.bet_control}>
                         <div className={styles.bet_amount}>
-                            <span>{bet}</span>
+                            {/* <span>{bet}</span> */}
+                            <input className={styles.amount__input} value={bet}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/\D/g, ""); // Удаляем все нецифровые символы
+                                    setBet(value);
+                                }}
+                            ></input>
                             <div className={styles.amount_controls}>
                                 <button 
                                     className={styles.minus_button} 

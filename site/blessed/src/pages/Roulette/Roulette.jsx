@@ -126,7 +126,14 @@ export const Roulette = () => {
 			<div className={styles.roulette__bets_wrapper}>
 				{/* <Amount bet={bet} setBet={setBet} /> */}
 				<div className={styles.roulette__input}>
-					<span className={styles.leftContainer}>{bet}₹</span>
+					<span className={styles.leftContainer}>
+						<input className={styles.amount__input} value={bet}
+							onChange={(e) => {
+								const value = e.target.value.replace(/\D/g, ""); // Удаляем все нецифровые символы
+								setBet(value);
+							}}
+						></input>
+					</span>
 					<span className={styles.rightContainer}>
 						<div onClick={handleDecreaseBet}>-</div>
 						<div onClick={handleIncreaseBet}>+</div>

@@ -429,7 +429,12 @@ export const Trading = () => {
             
             <div className={styles.betAmount}>
                 <div className={styles.amountDisplay}>
-                    <span>100 ₹</span>
+                            <input className={styles.amount__input} value={bet}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/\D/g, ""); // Удаляем все нецифровые символы
+                                    setBet(value);
+                                }}
+                            ></input>
                     <div className={styles.amountControls}>
                         <button onClick={() => setBet(prev => Math.max(prev - 10, 10))}>−</button>
                         <button onClick={() => setBet(prev => prev + 10)}>+</button>

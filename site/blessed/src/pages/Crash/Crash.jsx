@@ -426,7 +426,12 @@ export const Crash = () => {
 
                 <div className={styles.betControls}>
                     <div className={styles.betAmount}>
-                        <span>{betAmount} ₹</span>
+                        <input className={styles.amount__input} value={betAmount}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/\D/g, ""); // Удаляем все нецифровые символы
+                                    setBetAmount(value);
+                                }}
+                            ></input>
                         <div className={styles.betAmountButtons}>
                             <button className={styles.betButton} onClick={() => handleAmountChange(-100)}>-</button>
                             <button className={styles.betButton} onClick={() => handleAmountChange(100)}>+</button>
