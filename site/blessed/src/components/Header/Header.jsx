@@ -10,7 +10,7 @@ export const Header = () => {
         <>
             <div className={styles.header__spacer} />
             <header className={styles.header}
-                style={{paddingTop: window.innerWidth < 600 ? '70px'}}
+                style={{paddingTop: window.innerWidth < 600 ? '70px' : '0'}}
             >
                 <NavLink to={'clicker'} className={styles.logo}>
                     <img src={'./logo.png'}></img>
