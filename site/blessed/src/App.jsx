@@ -35,15 +35,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if(!isMobile) return;
+    if (!isMobile) return;
+
     if (window.TelegramWebviewProxy) {
       window.TelegramWebviewProxy.postEvent('web_app_request_fullscreen', null);
     } else if (typeof window.external !== 'undefined' && 'notify' in window.external && typeof window.external.notify === 'function') {
-      (window.external as { notify: (message: string) => void }).notify(JSON.stringify({ eventType: 'web_app_request_fullscreen', eventData: null }));
+      window.external.notify(JSON.stringify({ eventType: 'web_app_request_fullscreen', eventData: null }));
     } else if (window.parent) {
       window.parent.postMessage(JSON.stringify({ eventType: 'web_app_request_fullscreen', eventData: null }), '*');
     }
-  }, []);
+  }, [isMobile]);
   
   return (
     <Router>
