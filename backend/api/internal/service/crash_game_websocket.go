@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+    "log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -94,7 +95,7 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		return
 	}
 
-	log.Printf("User %d connected to WebSocket", userId)
+	logger.Info("User %d connected to WebSocket", userId)
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
@@ -115,7 +116,7 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		delete(w.lastActivityTime, userId)
 		w.mu.Unlock()
 		conn.Close()
-		log.Printf("User %d disconnected from WebSocket", userId)
+		logger.Info("User %d disconnected from WebSocket", userId)
 	}()
 
 	for {
