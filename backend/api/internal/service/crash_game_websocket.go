@@ -9,9 +9,7 @@ import (
 	"math"
 	"strings"
 	"sync"
-    "log"
 	"time"
-    "fmt"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -29,7 +27,25 @@ type CrashGameWebsocketService struct {
 	mu               sync.Mutex
 	lastActivityTime map[int64]time.Time
 	bets             map[int64]*models.CrashGameBet
-    betCount         int
+	betCount         int
+}
+
+var crashPoints = map[int]float64{
+	76:     1.5,
+	538:    32,
+	17216:  2.5,
+	372:    1.5,
+	1186:   14,
+	16604:  4,
+	614:    1.5,
+	2307:   13,
+	29991:  3,
+	1476:   1.5,
+	5738:   7,
+	40166:  3,
+	3258:   1.5,
+	11629:  4,
+	465616: 4.5,
 }
 
 func NewCrashGameWebsocketService() *CrashGameWebsocketService {
@@ -37,6 +53,7 @@ func NewCrashGameWebsocketService() *CrashGameWebsocketService {
 		connections:      make(map[int64]*websocket.Conn),
 		lastActivityTime: make(map[int64]time.Time),
 		bets:             make(map[int64]*models.CrashGameBet),
+		betCount:         0,
 	}
 	go service.cleanupInactiveConnections()
 	return service
@@ -62,35 +79,17 @@ func (w *CrashGameWebsocketService) cleanupInactiveConnections() {
 	}
 }
 
-var crashValues = map[int]float64{
-	76:     1.5,
-	538:    32,
-	17216:  2.5,
-	372:    1.5,
-	1186:   14,
-	16604:  4,
-	614:    1.5,
-	2307:   13,
-	29991:  3,
-	1476:   1.5,
-	5738:   7,
-	40166:  3,
-	3258:   1.5,
-	11629:  4,
-	465616: 4.5,
-}
-
 func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context) {
 	userId, err := middleware.GetUserIDFromGinContext(c)
 	if err != nil {
-		log.Printf("Error retrieving user ID: %v", err)
+		logger.Error("%v", err)
 		c.Status(500)
 		return
 	}
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Printf("WebSocket upgrade failed: %v", err)
+		logger.Error("%v", err)
 		return
 	}
 
@@ -116,9 +115,12 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		}
 		w.mu.Lock()
 		w.lastActivityTime[userId] = time.Now()
-		if crashMultiplier, exists := crashValues[currentBet]; exists {
-			log.Printf("Crash event at bet %d with multiplier %.1fx", currentBet, crashMultiplier)
-			conn.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Crash at %.1fx", crashMultiplier)))
+		if crashMultiplier, exists := crashPoints[currentBet]; exists {
+			logger.Info("Crash event at bet %d with multiplier %.1fx", currentBet, crashMultiplier)
+			conn.WriteJSON(gin.H{
+				"type":        "game_crash",
+				"crash_point": crashMultiplier,
+			})
 		}
 		w.mu.Unlock()
 	}
