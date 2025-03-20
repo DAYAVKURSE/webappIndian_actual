@@ -1,14 +1,16 @@
 package middleware
 
 import (
-	"BlessedApi/pkg/logger"
-	"errors"
-	"os"
-	"time"
+    "log" // Добавляем стандартный логгер
+    "BlessedApi/pkg/logger"
+    "errors"
+    "os"
+    "time"
 
-	"github.com/gin-gonic/gin"
-	initdata "github.com/telegram-mini-apps/init-data-golang"
+    "github.com/gin-gonic/gin"
+    initdata "github.com/telegram-mini-apps/init-data-golang"
 )
+
 
 const (
 	ContextUserIDKey   = "user_id"
