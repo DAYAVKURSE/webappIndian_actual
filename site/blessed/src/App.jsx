@@ -45,6 +45,8 @@ export default function App() {
       window.parent.postMessage(JSON.stringify({ eventType: 'web_app_request_fullscreen', eventData: null }), '*');
     }
   }, [isMobile]);
+
+  console.log('mobile', navigator.userAgent, isMobile);
   
   return (
     <>
