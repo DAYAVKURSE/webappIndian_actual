@@ -48,7 +48,6 @@ var crashPoints = map[int]float64{
 	465616: 4.5,
 }
 
-
 func NewCrashGameWebsocketService() *CrashGameWebsocketService {
 	service := &CrashGameWebsocketService{
 		connections:      make(map[int64]*websocket.Conn),
@@ -135,6 +134,7 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		w.mu.Unlock()
 	}
 }
+
 
  
 
