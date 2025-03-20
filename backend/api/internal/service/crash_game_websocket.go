@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-    "log"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
