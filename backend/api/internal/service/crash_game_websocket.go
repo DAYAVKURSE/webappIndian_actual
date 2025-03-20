@@ -47,7 +47,6 @@ var crashPoints = map[int]float64{
 	11629:  4,
 	465616: 4.5,
 }
-
 func NewCrashGameWebsocketService() *CrashGameWebsocketService {
 	service := &CrashGameWebsocketService{
 		connections:      make(map[int64]*websocket.Conn),
@@ -135,6 +134,18 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 	}
 }
 
+func (w *CrashGameWebsocketService) GetUserLatestBet(userId int64) (*models.CrashGameBet, error) {
+	var bet models.CrashGameBet
+	if err := db.DB.Where("user_id = ?", userId).Order("id desc").First(&bet).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Warn("No bets found for user %d", userId)
+			return nil, nil
+		}
+		logger.Error("Error fetching latest bet for user %d: %v", userId, err)
+		return nil, err
+	}
+	return &bet, nil
+}
 
  
 
