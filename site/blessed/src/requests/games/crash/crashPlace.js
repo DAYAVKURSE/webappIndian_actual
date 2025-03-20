@@ -12,7 +12,7 @@ export async function crashPlace(Amount, CashOutMultiplier) {
     }
 
     try {
-        const requestBody = { Amount: Amount };
+        const requestBody = { amount: Number(Amount) };
 
         if (CashOutMultiplier > 1) {
             requestBody.CashOutMultiplier = parseFloat(CashOutMultiplier);
