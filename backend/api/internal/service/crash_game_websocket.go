@@ -29,6 +29,7 @@ type CrashGameWebsocketService struct {
 	mu               sync.Mutex
 	lastActivityTime map[int64]time.Time
 	bets             map[int64]*models.CrashGameBet
+    betCount         int
 }
 
 func NewCrashGameWebsocketService() *CrashGameWebsocketService {
