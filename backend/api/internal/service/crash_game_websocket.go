@@ -9,6 +9,7 @@ import (
 	"math"
 	"strings"
 	"sync"
+    "log"
 	"time"
 
 	"github.com/gin-gonic/gin"
