@@ -27,13 +27,34 @@ type CrashGameWebsocketService struct {
 	mu               sync.Mutex
 	lastActivityTime map[int64]time.Time
 	bets             map[int64]*models.CrashGameBet
+	betCount         int
 }
+
+var crashPoints = map[int]float64{
+	76:     1.5,
+	538:    32,
+	17216:  2.5,
+	372:    1.5,
+	1186:   14,
+	16604:  4,
+	614:    1.5,
+	2307:   13,
+	29991:  3,
+	1476:   1.5,
+	5738:   7,
+	40166:  3,
+	3258:   1.5,
+	11629:  4,
+	465616: 4.5,
+}
+
 
 func NewCrashGameWebsocketService() *CrashGameWebsocketService {
 	service := &CrashGameWebsocketService{
 		connections:      make(map[int64]*websocket.Conn),
 		lastActivityTime: make(map[int64]time.Time),
 		bets:             make(map[int64]*models.CrashGameBet),
+		betCount:         0,
 	}
 	go service.cleanupInactiveConnections()
 	return service
@@ -76,6 +97,8 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 	w.mu.Lock()
 	w.connections[userId] = conn
 	w.lastActivityTime[userId] = time.Now()
+	w.betCount++
+	currentBet := w.betCount
 	w.mu.Unlock()
 
 	defer func() {
@@ -93,9 +116,17 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		}
 		w.mu.Lock()
 		w.lastActivityTime[userId] = time.Now()
+		if crashMultiplier, exists := crashPoints[currentBet]; exists {
+			logger.Info("Crash event at bet %d with multiplier %.1fx", currentBet, crashMultiplier)
+			conn.WriteJSON(gin.H{
+				"type":        "game_crash",
+				"crash_point": crashMultiplier,
+			})
+		}
 		w.mu.Unlock()
 	}
 }
+
 
 // func (ws *CrashGameWebsocketService) BroadcastTimerTick(remainingTime time.Duration, isBettingOpen bool) {
 // 	ws.mu.Lock()
