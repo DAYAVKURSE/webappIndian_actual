@@ -83,14 +83,22 @@ func (w *CrashGameWebsocketService) cleanupInactiveConnections() {
 func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context) {
 	userId, err := middleware.GetUserIDFromGinContext(c)
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error("Error retrieving user ID: %v", err)
 		c.Status(500)
 		return
 	}
 
+	if userId == 0 {
+		logger.Warn("Invalid userId: 0, skipping WebSocket connection")
+		c.JSON(400, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	log.Printf("User %d connected to WebSocket", userId)
+
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error("WebSocket upgrade failed: %v", err)
 		return
 	}
 
@@ -107,6 +115,7 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		delete(w.lastActivityTime, userId)
 		w.mu.Unlock()
 		conn.Close()
+		log.Printf("User %d disconnected from WebSocket", userId)
 	}()
 
 	for {
@@ -126,6 +135,7 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		w.mu.Unlock()
 	}
 }
+
 
 
 // func (ws *CrashGameWebsocketService) BroadcastTimerTick(remainingTime time.Duration, isBettingOpen bool) {
