@@ -46,12 +46,11 @@ export default function App() {
     }
   }, [isMobile]);
 
-  alert(isMobile);
   
   return (
     <>
     {
-      isMobile && <div style={{minHeight:'70px'}}></div>
+      isMobile && <div style={{minHeight:'70px', background: 'red'}}></div>
     }
       <Router>
       <Routes>
