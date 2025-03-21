@@ -84,7 +84,8 @@ func GetUserIDFromGinContext(c *gin.Context) (int64, error) {
 		return 0, logger.WrapError(errors.New("unable to cast user_id value to int"), "")
 	}
 
-	log.Printf("GetUserIDFromGinContext - checking context keys: %+v", c.Keys)
+	log.Printf("GetUserIDFromGinContext - checking context keys: %+v", c.Keys);
+	logger.Warn(c);
 
 	return userIDInt, nil
 }
