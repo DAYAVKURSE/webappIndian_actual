@@ -14,7 +14,7 @@ export const Header = () => {
                 style={{paddingTop: isMobile ? '70px' : '0'}}
             >
                 {
-                    isMobile && <div style={{minHeight:'70px', background: 'transparent'}}></div>
+                    isMobile && <div style={{minHeight:'50px', background: 'transparent'}}></div>
                     }
     
                <div className={styles.headerContainer}>
