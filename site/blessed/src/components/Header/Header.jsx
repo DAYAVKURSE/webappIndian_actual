@@ -8,11 +8,17 @@ export const Header = () => {
 
     return (
         <>
+            
             <div className={styles.header__spacer} />
             <header className={styles.header}
                 style={{paddingTop: isMobile ? '70px' : '0'}}
             >
-                <NavLink to={'clicker'} className={styles.logo}>
+                {
+                    isMobile && <div style={{minHeight:'70px', background: 'transparent'}}></div>
+                    }
+    
+               <div className={styles.headerContainer}>
+               <NavLink to={'clicker'} className={styles.logo}>
                     <img src={'./logo.png'}></img>
                 </NavLink>
 
@@ -28,6 +34,7 @@ export const Header = () => {
                         <span>Deposit</span>
                     </NavLink>
                 </div>
+               </div>
               
             </header>
         </>

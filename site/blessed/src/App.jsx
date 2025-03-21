@@ -49,7 +49,9 @@ export default function App() {
   
   return (
     <>
-    <div style={{minHeight:'70px', background: 'red'}}></div>
+    {
+      isMobile && <div style={{minHeight:'70px', background: 'transparent'}}></div>
+    }
     
       <Router>
       <Routes>

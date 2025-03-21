@@ -1,8 +1,11 @@
 .header {
-    display: flex;
-    justify-content: space-between;
     position: fixed;
     padding: 16px 18px;
+
+    & .headerContainer {
+        display: flex;
+    justify-content: space-between;
+    }
     font-size: 16px;
     animation: fadeIn .2s ease-in-out forwards;
     width: 100%;
