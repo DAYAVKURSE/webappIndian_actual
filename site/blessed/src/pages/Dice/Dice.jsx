@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import { isMobile } from "react-device-detect";
 import styles from "./Dice.module.scss";
 import Lottie from "lottie-react";
 import animationData from "./dice.json";
@@ -139,6 +140,9 @@ export const Dice = () => {
 
     return (
         <div className={styles.dice}>
+                {
+                  isMobile && <div style={{minHeight:'80px', background: 'transparent'}}></div>
+                }
             <div className={styles.dice_bet_container}>
                 <p className={`${styles.dice_number} ${isAnimating ? styles.fadeIn : styles.fadeOut}`}>
                     {number !== null ? number : ""}
