@@ -46,7 +46,7 @@ export default function App() {
     }
   }, [isMobile]);
 
-  console.log('mobile', navigator.userAgent, isMobile);
+  alert('mobile', isMobile);
   
   return (
     <>
