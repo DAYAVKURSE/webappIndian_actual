@@ -85,7 +85,7 @@ func GetUserIDFromGinContext(c *gin.Context) (int64, error) {
 	}
 
 	log.Printf("GetUserIDFromGinContext - checking context keys: %+v", c.Keys);
-	logger.Warn(userIDInt);
+	logger.Warn(strconv.FormatInt(userIDInt, 10))
 
 	return userIDInt, nil
 }
