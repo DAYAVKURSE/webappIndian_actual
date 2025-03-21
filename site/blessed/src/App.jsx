@@ -49,9 +49,8 @@ export default function App() {
   
   return (
     <>
-    {
-      isMobile && <div style={{minHeight:'70px', background: 'red'}}></div>
-    }
+    <div style={{minHeight:'70px', background: 'red'}}></div>
+    
       <Router>
       <Routes>
         <Route index element={<Loading />} exact />
