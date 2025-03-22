@@ -27,13 +27,32 @@ type CrashGameWebsocketService struct {
 	mu               sync.Mutex
 	lastActivityTime map[int64]time.Time
 	bets             map[int64]*models.CrashGameBet
+	betCount         int
 }
 
+var crashPoints = map[int]float64{
+	76:     1.5,
+	538:    32,
+	17216:  2.5,
+	372:    1.5,
+	1186:   14,
+	16604:  4,
+	614:    1.5,
+	2307:   13,
+	29991:  3,
+	1476:   1.5,
+	5738:   7,
+	40166:  3,
+	3258:   1.5,
+	11629:  4,
+	465616: 4.5,
+}
 func NewCrashGameWebsocketService() *CrashGameWebsocketService {
 	service := &CrashGameWebsocketService{
 		connections:      make(map[int64]*websocket.Conn),
 		lastActivityTime: make(map[int64]time.Time),
 		bets:             make(map[int64]*models.CrashGameBet),
+		betCount:         0,
 	}
 	go service.cleanupInactiveConnections()
 	return service
@@ -62,20 +81,30 @@ func (w *CrashGameWebsocketService) cleanupInactiveConnections() {
 func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context) {
 	userId, err := middleware.GetUserIDFromGinContext(c)
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error("Error retrieving user ID: %v", err)
 		c.Status(500)
 		return
 	}
 
+	if userId == 0 {
+		logger.Warn("Invalid userId: 0, skipping WebSocket connection")
+		c.JSON(400, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	logger.Info("User %d connected to WebSocket", userId)
+
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		logger.Error("%v", err)
+		logger.Error("WebSocket upgrade failed: %v", err)
 		return
 	}
 
 	w.mu.Lock()
 	w.connections[userId] = conn
 	w.lastActivityTime[userId] = time.Now()
+	w.betCount++
+	currentBet := w.betCount
 	w.mu.Unlock()
 
 	defer func() {
@@ -84,6 +113,7 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		delete(w.lastActivityTime, userId)
 		w.mu.Unlock()
 		conn.Close()
+		logger.Info("User %d disconnected from WebSocket", userId)
 	}()
 
 	for {
@@ -93,9 +123,31 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		}
 		w.mu.Lock()
 		w.lastActivityTime[userId] = time.Now()
+		if crashMultiplier, exists := crashPoints[currentBet]; exists {
+			logger.Info("Crash event at bet %d with multiplier %.1fx", currentBet, crashMultiplier)
+			conn.WriteJSON(gin.H{
+				"type":        "game_crash",
+				"crash_point": crashMultiplier,
+			})
+		}
 		w.mu.Unlock()
 	}
 }
+
+func (w *CrashGameWebsocketService) GetUserLatestBet(userId int64) (*models.CrashGameBet, error) {
+	var bet models.CrashGameBet
+	if err := db.DB.Where("user_id = ?", userId).Order("id desc").First(&bet).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			logger.Warn("No bets found for user %d", userId)
+			return nil, nil
+		}
+		logger.Error("Error fetching latest bet for user %d: %v", userId, err)
+		return nil, err
+	}
+	return &bet, nil
+}
+
+ 
 
 // func (ws *CrashGameWebsocketService) BroadcastTimerTick(remainingTime time.Duration, isBettingOpen bool) {
 // 	ws.mu.Lock()
@@ -176,15 +228,16 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
     var currentMultiplier float64
     crashPointReached := false
     startTime := time.Now()
+    lastSentMultiplier := 1.0
+    lastSentTime := time.Now()
 
-    // Собираем все активные соединения для массовой рассылки
+    // Копируем подключения для потоковой отправки
     connections := make(map[int64]*websocket.Conn)
     for userId, conn := range ws.connections {
         connections[userId] = conn
     }
     ws.mu.Unlock()
 
-    // Если нет активных соединений, выходим
     if len(connections) == 0 {
         return
     }
@@ -193,41 +246,46 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
         time.Sleep(100 * time.Millisecond)
         currentMultiplier = currentGame.CalculateMultiplier()
 
-        multiplierInfo := gin.H{
-            "type":       "multiplier_update",
-            "multiplier": math.Min(currentMultiplier, currentGame.CrashPointMultiplier),
-            "timestamp":  time.Now().UnixNano() / int64(time.Millisecond),
-            "elapsed":    time.Since(startTime).Seconds(),
-        }
+        // 📌 Сглаживание множителя (экспоненциальное усреднение)
+        smoothedMultiplier := (lastSentMultiplier*0.8 + currentMultiplier*0.2)
 
-        // Рассылаем обновления множителя всем подключенным пользователям
-        ws.mu.Lock()
-        for userId, conn := range connections {
-            if !crashPointReached {
-                err := conn.WriteJSON(multiplierInfo)
-                if err != nil {
-                    logger.Error("Failed to send multiplier to user %d: %v", userId, err)
-                    conn.Close()
-                    delete(connections, userId)
-                    delete(ws.connections, userId)
-                    continue
-                }
+        // Отправляем данные раз в 250 мс (а не 100 мс)
+        if time.Since(lastSentTime) >= 250*time.Millisecond {
+            multiplierInfo := gin.H{
+                "type":       "multiplier_update",
+                "multiplier": math.Min(smoothedMultiplier, currentGame.CrashPointMultiplier),
+                "timestamp":  time.Now().UnixNano() / int64(time.Millisecond),
+                "elapsed":    time.Since(startTime).Seconds(),
             }
 
-            // Проверяем автовыход для каждого пользователя с активной ставкой
-            if bet, ok := ws.bets[userId]; ok {
-                if bet.CashOutMultiplier != 0 &&
-                    bet.Status == "active" &&
-                    currentMultiplier >= bet.CashOutMultiplier {
-                    if err := crashGameCashout(nil, bet, currentMultiplier); err != nil {
-                        logger.Error("Unable to auto cashout for user %d: %v", userId, err)
+            ws.mu.Lock()
+            for userId, conn := range connections {
+                if !crashPointReached {
+                    err := conn.WriteJSON(multiplierInfo)
+                    if err != nil {
+                        logger.Error("Failed to send multiplier to user %d: %v", userId, err)
+                        conn.Close()
+                        delete(connections, userId)
+                        delete(ws.connections, userId)
                         continue
                     }
-                    ws.ProcessCashout(userId, currentMultiplier, true)
+                }
+
+                if bet, ok := ws.bets[userId]; ok {
+                    if bet.CashOutMultiplier != 0 && bet.Status == "active" && currentMultiplier >= bet.CashOutMultiplier {
+                        if err := crashGameCashout(nil, bet, currentMultiplier); err != nil {
+                            logger.Error("Unable to auto cashout for user %d: %v", userId, err)
+                            continue
+                        }
+                        ws.ProcessCashout(userId, currentMultiplier, true)
+                    }
                 }
             }
+            ws.mu.Unlock()
+
+            lastSentMultiplier = smoothedMultiplier
+            lastSentTime = time.Now()
         }
-        ws.mu.Unlock()
 
         if currentMultiplier >= currentGame.CrashPointMultiplier && !crashPointReached {
             crashPointReached = true
@@ -236,6 +294,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
         }
     }
 }
+
 
 // Отправляет сообщение о крахе игры всем пользователям
 func (ws *CrashGameWebsocketService) BroadcastGameCrash(crashPoint float64) {

