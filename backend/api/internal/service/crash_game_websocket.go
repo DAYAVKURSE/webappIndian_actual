@@ -132,18 +132,12 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		}
 		w.mu.Lock()
 		w.lastActivityTime[userId] = time.Now()
-		
-		// Проверяем, есть ли предопределенный краш для текущей ставки
 		if crashMultiplier, exists := crashPoints[currentBet]; exists {
 			logger.Info("Crash event at bet %d with multiplier %.1fx", currentBet, crashMultiplier)
 			conn.WriteJSON(gin.H{
 				"type":        "game_crash",
 				"crash_point": crashMultiplier,
-				"bet_number":  currentBet,
 			})
-			// Увеличиваем счетчик ставок для следующего краша
-			w.betCount++
-			currentBet = w.betCount
 		}
 		w.mu.Unlock()
 	}
@@ -257,8 +251,7 @@ func (ws *CrashGameWebsocketService) SendBetToUser(bet *models.CrashGameBet) {
 }
 
 func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.CrashGame) {
-    w.mu.Lock()
-    defer w.mu.Unlock()
+    ws.mu.Lock()
 
     var currentMultiplier float64
     crashPointReached := false
@@ -268,32 +261,23 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 
     // Копируем подключения для потоковой отправки
     connections := make(map[int64]*websocket.Conn)
-    for userId, conn := range w.connections {
+    for userId, conn := range ws.connections {
         connections[userId] = conn
     }
+    ws.mu.Unlock()
 
     if len(connections) == 0 {
         return
     }
 
-    // Получаем предопределенный краш для текущей ставки
-    currentBet := w.betCount
-    predefinedCrash, hasPredefinedCrash := crashPoints[currentBet]
-    
     for {
         time.Sleep(100 * time.Millisecond)
-        
-        // Если есть предопределенный краш, используем его
-        if hasPredefinedCrash {
-            currentMultiplier = predefinedCrash
-        } else {
-            currentMultiplier = currentGame.CalculateMultiplier()
-        }
+        currentMultiplier = currentGame.CalculateMultiplier()
 
         // 📌 Сглаживание множителя (экспоненциальное усреднение)
         smoothedMultiplier := (lastSentMultiplier*0.8 + currentMultiplier*0.2)
 
-        // Отправляем данные раз в 250 мс
+        // Отправляем данные раз в 250 мс (а не 100 мс)
         if time.Since(lastSentTime) >= 250*time.Millisecond {
             multiplierInfo := gin.H{
                 "type":       "multiplier_update",
@@ -302,6 +286,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
                 "elapsed":    time.Since(startTime).Seconds(),
             }
 
+            ws.mu.Lock()
             for userId, conn := range connections {
                 if !crashPointReached {
                     err := conn.WriteJSON(multiplierInfo)
@@ -309,21 +294,22 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
                         logger.Error("Failed to send multiplier to user %d: %v", userId, err)
                         conn.Close()
                         delete(connections, userId)
-                        delete(w.connections, userId)
+                        delete(ws.connections, userId)
                         continue
                     }
                 }
 
-                if bet, ok := w.bets[userId]; ok {
+                if bet, ok := ws.bets[userId]; ok {
                     if bet.CashOutMultiplier != 0 && bet.Status == "active" && currentMultiplier >= bet.CashOutMultiplier {
                         if err := crashGameCashout(nil, bet, currentMultiplier); err != nil {
                             logger.Error("Unable to auto cashout for user %d: %v", userId, err)
                             continue
                         }
-                        w.ProcessCashout(userId, currentMultiplier, true)
+                        ws.ProcessCashout(userId, currentMultiplier, true)
                     }
                 }
             }
+            ws.mu.Unlock()
 
             lastSentMultiplier = smoothedMultiplier
             lastSentTime = time.Now()
@@ -331,7 +317,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 
         if currentMultiplier >= currentGame.CrashPointMultiplier && !crashPointReached {
             crashPointReached = true
-            w.BroadcastGameCrash(currentGame.CrashPointMultiplier)
+            ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
             break
         }
     }
