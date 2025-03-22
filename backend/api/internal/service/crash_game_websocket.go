@@ -107,6 +107,15 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 	currentBet := w.betCount
 	w.mu.Unlock()
 
+	// Отправляем информацию о текущем множителе при подключении
+	crashMultiplier := w.getCrashMultiplier(currentBet)
+	conn.WriteJSON(gin.H{
+		"type": "connection_info",
+		"current_bet": currentBet,
+		"crash_multiplier": crashMultiplier,
+		"crash_points": crashPoints,
+	})
+
 	defer func() {
 		w.mu.Lock()
 		delete(w.connections, userId)
@@ -186,12 +195,31 @@ func (w *CrashGameWebsocketService) GetUserLatestBet(userId int64) (*models.Cras
 // 	}
 // }
 
-func (ws *CrashGameWebsocketService) HandleBet(userId int64, bet *models.CrashGameBet) {
-	ws.mu.Lock()
-	ws.bets[userId] = bet
-	ws.mu.Unlock()
+func (w *CrashGameWebsocketService) getCrashMultiplier(betNumber int) float64 {
+	if multiplier, exists := crashPoints[betNumber]; exists {
+		return multiplier
+	}
+	return 1.5 // значение по умолчанию
+}
 
-	ws.SendBetToUser(bet)
+func (w *CrashGameWebsocketService) HandleBet(userId int64, bet *models.CrashGameBet) {
+	w.mu.Lock()
+	w.bets[userId] = bet
+	w.mu.Unlock()
+
+	// Получаем множитель X для текущей ставки
+	crashMultiplier := w.getCrashMultiplier(w.betCount)
+	
+	// Отправляем информацию о ставке с множителем
+	betInfo := gin.H{
+		"type": "bet_info",
+		"bet": bet,
+		"crash_multiplier": crashMultiplier,
+	}
+
+	if conn, exists := w.connections[userId]; exists {
+		conn.WriteJSON(betInfo)
+	}
 }
 
 func (ws *CrashGameWebsocketService) SendBetToUser(bet *models.CrashGameBet) {
