@@ -511,7 +511,7 @@ export const Crash = () => {
                              queuedBet > 0 ? `Queued: ₹${queuedBet}` :
                              gameActive ? 'Queue Bet' : 'Place Bet'}
                         </button>
-                    )}
+                    )} 
                 </div>
             </div>
         </div>
