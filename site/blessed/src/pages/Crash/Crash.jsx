@@ -199,31 +199,6 @@ export const Crash = () => {
                         setGameActive(false);
                         setOverlayText(`Game starts in ${data.remaining_time} seconds`);
                         console.log('Betting open - time remaining:', data.remaining_time);
-                        
-                        // If there's a queued bet and betting is open, place it
-                        if (queuedBet > 0) {
-                            console.log('Attempting to place queued bet:', queuedBet);
-                            try {
-                                const response = await crashPlace(queuedBet, autoOutputCoefficient);
-                                if (response.ok) {
-                                    setBet(queuedBet);
-                                    toast.success('Queued bet placed!');
-                                    setQueuedBet(0); // Clear queue
-                                    console.log('Queued bet placed successfully');
-                                } else {
-                                    const errorData = await response.json();
-                                    console.error('Failed to place queued bet:', errorData);
-                                    toast.error(errorData.error || 'Failed to place queued bet');
-                                    increaseBalanceRupee(queuedBet); // Return money on error
-                                    setQueuedBet(0);
-                                }
-                            } catch (error) {
-                                console.error('Error placing queued bet:', error);
-                                toast.error('Failed to place queued bet');
-                                increaseBalanceRupee(queuedBet); // Return money on error
-                                setQueuedBet(0);
-                            }
-                        }
                     }
                 }
 
