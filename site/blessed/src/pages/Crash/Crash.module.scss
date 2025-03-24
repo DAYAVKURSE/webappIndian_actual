@@ -488,26 +488,70 @@
 
 .activeBet {
     position: absolute;
-    bottom: 10px;
-    color: #EDFF8C;
-    background-color: rgba(11, 23, 40, 0.7);
-    padding: 6px 16px;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    padding: 8px 16px;
     border-radius: 20px;
+    color: #fff;
     font-size: 14px;
-    font-weight: 600;
-    animation: pulse 2s infinite;
+    font-weight: 500;
+    z-index: 10;
 }
 
 @keyframes pulse {
     0% {
-        opacity: 0.8;
-    }
-    50% {
+        transform: translateX(-50%) scale(1);
         opacity: 1;
     }
-    100% {
+    50% {
+        transform: translateX(-50%) scale(1.05);
         opacity: 0.8;
     }
+    100% {
+        transform: translateX(-50%) scale(1);
+        opacity: 1;
+    }
+}
+
+.queuedBet {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(237, 255, 140, 0.2);
+    padding: 8px 16px;
+    border-radius: 20px;
+    color: #EDFF8C;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10;
+    border: 1px solid rgba(237, 255, 140, 0.3);
+    animation: pulse 2s infinite;
+}
+
+@keyframes glow {
+    from {
+        box-shadow: 0 0 5px rgba(237, 255, 140, 0.5);
+    }
+    to {
+        box-shadow: 0 0 15px rgba(237, 255, 140, 0.8);
+    }
+}
+
+.amount__input {
+    background: none;
+    border: none;
+    outline: none;
+    color:#fff;
+    font-family: "Jost", sans-serif;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 18px;
+    line-height: 26px;
+    color: #FFFFFF;
+    margin-left: 15px;
 }
 
 .autoCashoutBtn {
@@ -544,7 +588,6 @@
     transition: transform 1s ease-in; // Медленное падение
 }
 
-
 // Анимации для оверлея
 @keyframes fadeIn {
     from {
@@ -562,27 +605,4 @@
     to {
         opacity: 0;
     }
-}
-
-@keyframes glow {
-    from {
-        box-shadow: 0 0 5px rgba(237, 255, 140, 0.5);
-    }
-    to {
-        box-shadow: 0 0 15px rgba(237, 255, 140, 0.8);
-    }
-}
-
-.amount__input {
-    background: none;
-    border: none;
-    outline: none;
-    color:#fff;
-    font-family: "Jost", sans-serif;
-    font-style: normal;
-    font-weight: 500;
-    font-size: 18px;
-    line-height: 26px;
-    color: #FFFFFF;
-    margin-left: 15px;
 }

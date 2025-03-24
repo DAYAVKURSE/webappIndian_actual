@@ -17,22 +17,22 @@ export async function createPaymentPage(amount) {
             }),
         });
 
-        if (response.status === 404 || response.status === 406 || response.status === 400) {
-            const data = await response.json();
-            const message = data.error.charAt(0).toUpperCase() + data.error.slice(1);
-            toast.error(message);
-            return;
-        }
-
-        if (response.status === 406) {
-            toast.error('The minimum top-up amount is 1600 rupees. Please enter an amount equal to or greater than this.');
-            return;
-        }
-
         const data = await response.json();
+
+        if (!response.ok) {
+            if (response.status === 406) {
+                toast.error('Minimum deposit amount is 500 rupees');
+            } else {
+                const message = data.error ? data.error.charAt(0).toUpperCase() + data.error.slice(1) : 'Error creating payment page';
+                toast.error(message);
+            }
+            return null;
+        }
+
         return data;
     } catch (error) {
         console.error('Error creating payment page:', error);
+        toast.error('Error creating payment page');
         throw error;
     }
 }

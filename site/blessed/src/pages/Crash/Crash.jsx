@@ -445,6 +445,9 @@ export const Crash = () => {
                 {bet > 0 && !isCrashed && <div className={styles.activeBet}>
                     Your bet: ₹{bet}
                 </div>}
+                {queuedBet > 0 && <div className={styles.queuedBet}>
+                    Queued bet: ₹{queuedBet}
+                </div>}
             </div>
 
             {/* Bet control section */}
