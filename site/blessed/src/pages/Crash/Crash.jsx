@@ -176,8 +176,8 @@ export const Crash = () => {
                     valXValut.current = parseFloat(data.crash_point).toFixed(2);
 
                     setIsFalling(true);
-                    setStarPosition(prev => ({ x: prev.x, y: prev.y })); // Опускаем звезду вниз
-                
+                    // Оставляем звезду на последней позиции при крахе
+                    setStarPosition(prev => ({ x: prev.x, y: prev.y }));
                     
                     setTimeout(() => {
                         if (bet > 0) {
@@ -186,6 +186,9 @@ export const Crash = () => {
                             setBet(0);
                         }
                         valXValut.current = 1.2;
+                        // Возвращаем звезду в начальную позицию
+                        setStarPosition({ x: 50, y: -40 });
+                        setIsFalling(false);
                     }, 3000);
                 }
 
@@ -264,6 +267,13 @@ export const Crash = () => {
                     // Start multiplier growth simulation with initial value of 1.0
                     setStartMultiplierTime(Date.now());
                     simulateMultiplierGrowth(Date.now(), 1.0);
+
+                    // Очищаем ставку в очереди, если она не была размещена
+                    if (queuedBet > 0) {
+                        increaseBalanceRupee(queuedBet);
+                        setQueuedBet(0);
+                        toast.error('Failed to place queued bet - game started');
+                    }
                 }
             } catch (error) {
                 console.error('Error processing WebSocket message:', error);
