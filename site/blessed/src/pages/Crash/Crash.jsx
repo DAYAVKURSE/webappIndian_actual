@@ -160,6 +160,7 @@ export const Crash = () => {
                     
                     setIsCrashed(true);
                     setGameActive(false);
+                    setIsBettingClosed(true);
                     setOverlayText(`Разбился на ${data.crash_point.toFixed(2)}x`);
                     setCollapsed(true);
                     valXValut.current = parseFloat(data.crash_point).toFixed(2);
@@ -181,15 +182,15 @@ export const Crash = () => {
 
                 if (data.type === "timer_tick") {
                     setCollapsed(true);
-                    if (data.remaining_time > 10) {
-                        setIsBettingClosed(true);
-                        setGameActive(false);
-                        setOverlayText('Игра скоро начнется');
-                    } else {
+                    if (data.remaining_time <= 10) {
                         setIsBettingClosed(false);
                         setIsCrashed(false);
                         setGameActive(false);
                         setOverlayText(`Игра начнется через ${data.remaining_time} секунд`);
+                    } else {
+                        setIsBettingClosed(true);
+                        setGameActive(false);
+                        setOverlayText('Ожидаем следующую игру');
                     }
                 }
 
@@ -212,13 +213,13 @@ export const Crash = () => {
                 
                 // Displaying active game start
                 if (data.type === "game_started") {
-                    toast.success('Game started!');
+                    toast.success('Игра началась!');
                     setIsBettingClosed(true);
                     setIsCrashed(false);
                     setGameActive(true);
                     setCollapsed(false);
                     
-                    // Start multiplier growth simulation with initial value of 1.0
+                    // Запускаем симуляцию множителя
                     setStartMultiplierTime(Date.now());
                     simulateMultiplierGrowth(Date.now(), 1.0);
                 }
