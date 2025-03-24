@@ -123,7 +123,7 @@ export const Crash = () => {
             toast.error('Connection error. Please reload the page.');
         };
 
-        ws.onmessage = (event) => {
+        ws.onmessage = async (event) => {
             try {
                 const data = JSON.parse(event.data);
                 console.log('WebSocket data received:', data);
