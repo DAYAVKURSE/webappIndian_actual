@@ -2,6 +2,7 @@ import styles from "./Topup.module.scss";
 import { useState } from "react";
 import { createPaymentPage } from "@/requests";
 import { toast } from "react-hot-toast";
+import { isMobile } from 'react-device-detect'
 
 export const Topup = () => {
     const [amount, setAmount] = useState(500);
@@ -33,6 +34,10 @@ export const Topup = () => {
     };
 
     return (
+        <>
+        {
+            isMobile && <div style={{minHeight:'50px', background: 'transparent'}}></div>
+          }
         <div className={styles.topup}>
             <div className={styles.topup__topup}>
                 <h1 className={styles.topup__topup_title}>Deposit</h1>
@@ -74,5 +79,6 @@ export const Topup = () => {
                >Next</button>
             </div>
         </div>
+        </>
     );
 };
