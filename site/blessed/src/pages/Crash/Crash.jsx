@@ -260,11 +260,29 @@ export const Crash = () => {
                     setStartMultiplierTime(Date.now());
                     simulateMultiplierGrowth(Date.now(), 1.0);
 
-                    // Clear queued bet if it wasn't placed
+                    // Place queued bet if exists
                     if (queuedBet > 0) {
-                        increaseBalanceRupee(queuedBet);
-                        setQueuedBet(0);
-                        toast.error('Failed to place queued bet - game started');
+                        console.log('Attempting to place queued bet:', queuedBet);
+                        try {
+                            const response = await crashPlace(queuedBet, autoOutputCoefficient);
+                            if (response.ok) {
+                                setBet(queuedBet);
+                                toast.success('Queued bet placed!');
+                                setQueuedBet(0); // Clear queue
+                                console.log('Queued bet placed successfully');
+                            } else {
+                                const errorData = await response.json();
+                                console.error('Failed to place queued bet:', errorData);
+                                toast.error(errorData.error || 'Failed to place queued bet');
+                                increaseBalanceRupee(queuedBet); // Return money on error
+                                setQueuedBet(0);
+                            }
+                        } catch (error) {
+                            console.error('Error placing queued bet:', error);
+                            toast.error('Failed to place queued bet');
+                            increaseBalanceRupee(queuedBet); // Return money on error
+                            setQueuedBet(0);
+                        }
                     }
                 }
             } catch (error) {
