@@ -135,9 +135,17 @@ export const Crash = () => {
                     setGameActive(true);
                     setCollapsed(false);
 
+                    // Ограничиваем позицию звезды высотой контейнера
+                    const maxHeight = dimensions.height;
+                    const maxWidth = dimensions.width;
+                    
+                    // Вычисляем позицию с учетом ограничений
+                    const xPos = Math.min(data.multiplier * 50, maxWidth * 0.8); // 80% от ширины
+                    const yPos = Math.max(-data.multiplier * 40, -maxHeight * 0.8); // 80% от высоты вверх
+
                     setStarPosition({
-                        x: data.multiplier * 50,  // Чем больше множитель, тем дальше вправо
-                        y: -data.multiplier * 40, // Чем больше множитель, тем выше
+                        x: xPos,
+                        y: yPos,
                     });
                     
                     // If this is the first multiplier update, start simulation
