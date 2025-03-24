@@ -160,45 +160,49 @@ export const Crash = () => {
                     
                     setIsCrashed(true);
                     setGameActive(false);
-                    setIsBettingClosed(true);
-                    setOverlayText(`Разбился на ${data.crash_point.toFixed(2)}x`);
+                    setOverlayText(`Crashed at ${data.crash_point.toFixed(2)}x`);
                     setCollapsed(true);
                     valXValut.current = parseFloat(data.crash_point).toFixed(2);
 
                     setIsFalling(true);
-                    setStarPosition(prev => ({ x: prev.x, y: prev.y }));
+                    setStarPosition(prev => ({ x: prev.x, y: prev.y })); // Опускаем звезду вниз
                 
-                    if (bet > 0) {
-                        // Если у игрока была активная ставка, показываем сообщение о проигрыше
-                        toast.error(`Игра разбилась на ${data.crash_point.toFixed(2)}x! Вы проиграли ₹${bet}.`);
-                        setBet(0);
-                    }
                     
-                    // Сбрасываем значение через 3 секунды
                     setTimeout(() => {
+                        if (bet > 0) {
+                            // If the player had an active bet, show a loss message
+                            toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
+                            setBet(0);
+                        }
                         valXValut.current = 1.2;
                     }, 3000);
                 }
 
                 if (data.type === "timer_tick") {
                     setCollapsed(true);
-                    if (data.remaining_time <= 10) {
+                    if (data.remaining_time > 10) {
+                        setIsBettingClosed(true);
+                        setGameActive(false);
+                    } else {
                         setIsBettingClosed(false);
                         setIsCrashed(false);
                         setGameActive(false);
-                        setOverlayText(`Игра начнется через ${data.remaining_time} секунд`);
-                    } else {
-                        setIsBettingClosed(true);
-                        setGameActive(false);
-                        setOverlayText('Ожидаем следующую игру');
                     }
+
+                    if (data.remaining_time <= 10) {
+                        setOverlayText(`Game starts in ${data.remaining_time} seconds`);
+                    } 
                 }
 
                 if (data.type === "cashout_result") {
-                    // Автоматически получаем выигрыш сразу, без задержки
-                    increaseBalanceRupee(data.win_amount);
-                    toast.success(`Выигрыш: ₹${data.win_amount.toFixed(0)}! (${data.cashout_multiplier}x)`);
-                    setBet(0); // Сразу сбрасываем ставку
+                    // Don't reset bet here to show the player they won
+                    toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${data.cashout_multiplier}x)`);
+                    
+                    // Delay resetting the bet to give the user time to see the result
+                    setTimeout(() => {
+                        setBet(0);
+                        increaseBalanceRupee(data.win_amount);
+                    }, 2000);
                 }
 
                 // Processing another player's cashout message
@@ -213,13 +217,13 @@ export const Crash = () => {
                 
                 // Displaying active game start
                 if (data.type === "game_started") {
-                    toast.success('Игра началась!');
+                    toast.success('Game started!');
                     setIsBettingClosed(true);
                     setIsCrashed(false);
                     setGameActive(true);
                     setCollapsed(false);
                     
-                    // Запускаем симуляцию множителя
+                    // Start multiplier growth simulation with initial value of 1.0
                     setStartMultiplierTime(Date.now());
                     simulateMultiplierGrowth(Date.now(), 1.0);
                 }
@@ -445,15 +449,15 @@ export const Crash = () => {
                             onClick={handleCashout} 
                             disabled={!gameActive || loading || isCrashed}
                         >
-                            {loading ? 'Загрузка...' : 'Забрать'}
+                            {loading ? 'Loading...' : 'Cash Out'}
                         </button>
                     ) : (
                         <button 
-                            className={`${styles.mainButton} ${isBettingClosed ? styles.disabledButton : ''}`}
+                            className={styles.mainButton} 
                             onClick={handleBet} 
                             disabled={isBettingClosed || loading}
                         >
-                            {loading ? 'Загрузка...' : isBettingClosed ? 'Ставки закрыты' : 'Поставить'}
+                            {loading ? 'Loading...' : 'Bet'}
                         </button>
                     )}
                 </div>
