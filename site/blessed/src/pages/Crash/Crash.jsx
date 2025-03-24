@@ -183,24 +183,36 @@ export const Crash = () => {
 
                 if (data.type === "timer_tick") {
                     setCollapsed(true);
+                    console.log('Timer tick received:', data.remaining_time);
+                    
                     if (data.remaining_time > 13) {
                         setIsBettingClosed(true);
                         setGameActive(false);
                         setOverlayText('Game starts soon');
+                        console.log('Betting closed - waiting for game');
                     } else if (data.remaining_time > 0) {
                         setIsBettingClosed(false);
                         setIsCrashed(false);
                         setGameActive(false);
                         setOverlayText(`Game starts in ${data.remaining_time} seconds`);
+                        console.log('Betting open - time remaining:', data.remaining_time);
                         
                         // If there's a queued bet and betting is open, place it
                         if (queuedBet > 0) {
+                            console.log('Attempting to place queued bet:', queuedBet);
                             try {
                                 const response = await crashPlace(queuedBet, autoOutputCoefficient);
                                 if (response.ok) {
                                     setBet(queuedBet);
                                     toast.success('Queued bet placed!');
                                     setQueuedBet(0); // Clear queue
+                                    console.log('Queued bet placed successfully');
+                                } else {
+                                    const errorData = await response.json();
+                                    console.error('Failed to place queued bet:', errorData);
+                                    toast.error(errorData.error || 'Failed to place queued bet');
+                                    increaseBalanceRupee(queuedBet); // Return money on error
+                                    setQueuedBet(0);
                                 }
                             } catch (error) {
                                 console.error('Error placing queued bet:', error);
@@ -280,11 +292,14 @@ export const Crash = () => {
 
         try {
             setLoading(true);
+            console.log('Attempting to place bet:', betAmount, 'Betting closed:', isBettingClosed);
+            
             if (isBettingClosed) {
                 // If betting is closed, queue the bet
                 setQueuedBet(betAmount);
                 decreaseBalanceRupee(betAmount);
                 toast.success('Bet will be placed in the next game!');
+                console.log('Bet queued for next game');
                 return;
             }
 
@@ -306,10 +321,12 @@ export const Crash = () => {
                 const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
                 console.error('Bet error:', errorData);
                 toast.error(errorData.error || 'Error placing bet');
+                increaseBalanceRupee(betAmount); // Return money on error
             }
         } catch (err) {
             console.error('Error placing bet:', err.message);
             toast.error('Failed to place bet');
+            increaseBalanceRupee(betAmount); // Return money on error
         } finally {
             setLoading(false);
         }
