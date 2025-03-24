@@ -549,3 +549,45 @@ func (ws *RouletteX14WebsocketService) SendCrashGameBetResultToUser(userId int64
 // 		}
 // 	}
 // }
+
+func crashGameCashout(c *gin.Context, bet *models.CrashGameBet, currentMultiplier float64) error {
+	if bet == nil {
+		return errors.New("bet is nil")
+	}
+
+	if bet.Status != "active" {
+		return errors.New("bet is not active")
+	}
+
+	winAmount := bet.Amount * currentMultiplier
+
+	err := db.DB.Transaction(func(tx *gorm.DB) error {
+		// Update bet status
+		bet.Status = "cashed_out"
+		bet.CashOutMultiplier = currentMultiplier
+		bet.WinAmount = winAmount
+		if err := tx.Save(bet).Error; err != nil {
+			return logger.WrapError(err, "Failed to update bet status")
+		}
+
+		// Update user balance
+		var user models.User
+		if err := tx.First(&user, bet.UserID).Error; err != nil {
+			return logger.WrapError(err, "Failed to find user")
+		}
+
+		// Add winnings to user's balance
+		user.BalanceRupee += winAmount
+		if err := tx.Save(&user).Error; err != nil {
+			return logger.WrapError(err, "Failed to update user balance")
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return logger.WrapError(err, "Failed to process cashout")
+	}
+
+	return nil
+}
