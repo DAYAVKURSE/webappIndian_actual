@@ -310,3 +310,52 @@ func PlaceCrashGameBet(c *gin.Context) {
 
 	c.JSON(200, gin.H{"status": "bet placed successfully"})
 }
+
+func ManualCashout(c *gin.Context) {
+	userID, err := middleware.GetUserIDFromGinContext(c)
+	if err != nil {
+		logger.Error("Failed to get user ID: %v", err)
+		c.Status(500)
+		return
+	}
+
+	// Получаем активную ставку пользователя
+	var bet models.CrashGameBet
+	err = db.DB.Where("user_id = ? AND status = ?", userID, "active").First(&bet).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(400, gin.H{"error": "No active bet found"})
+			return
+		}
+		logger.Error("Failed to get active bet: %v", err)
+		c.Status(500)
+		return
+	}
+
+	// Получаем текущий множитель из игры
+	if currentCrashGame == nil {
+		c.JSON(400, gin.H{"error": "No active game"})
+		return
+	}
+
+	currentMultiplier := currentCrashGame.CalculateMultiplier()
+
+	// Проверяем, не крашнулась ли уже игра
+	if currentMultiplier >= currentCrashGame.CrashPointMultiplier {
+		c.JSON(400, gin.H{"error": "Game already crashed"})
+		return
+	}
+
+	// Обрабатываем кэшаут
+	err = crashGameCashout(c, &bet, currentMultiplier)
+	if err != nil {
+		logger.Error("Failed to process cashout: %v", err)
+		c.Status(500)
+		return
+	}
+
+	// Отправляем результат кэшаута через WebSocket
+	CrashGameWS.ProcessCashout(userID, currentMultiplier, false)
+
+	c.JSON(200, gin.H{"status": "cashout successful"})
+}
