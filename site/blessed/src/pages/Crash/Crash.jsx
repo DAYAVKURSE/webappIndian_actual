@@ -32,6 +32,9 @@ export const Crash = () => {
 
     const valXValut = useRef(1);
 
+    // Добавляем новое состояние для отслеживания ставки в очереди
+    const [queuedBet, setQueuedBet] = useState(0);
+
     useEffect(() => {
         const interval = setInterval(() => {
             setXValue(valXValut.current);
@@ -183,15 +186,30 @@ export const Crash = () => {
                     if (data.remaining_time > 10) {
                         setIsBettingClosed(true);
                         setGameActive(false);
+                        setOverlayText('Игра скоро начнется');
                     } else {
                         setIsBettingClosed(false);
                         setIsCrashed(false);
                         setGameActive(false);
+                        setOverlayText(`Игра начнется через ${data.remaining_time} секунд`);
+                        
+                        // Если есть ставка в очереди и ставки открыты, размещаем её
+                        if (queuedBet > 0) {
+                            try {
+                                const response = await crashPlace(queuedBet, autoOutputCoefficient);
+                                if (response.ok) {
+                                    setBet(queuedBet);
+                                    toast.success('Отложенная ставка размещена!');
+                                    setQueuedBet(0); // Очищаем очередь
+                                }
+                            } catch (error) {
+                                console.error('Ошибка при размещении отложенной ставки:', error);
+                                toast.error('Не удалось разместить отложенную ставку');
+                                increaseBalanceRupee(queuedBet); // Возвращаем деньги при ошибке
+                                setQueuedBet(0);
+                            }
+                        }
                     }
-
-                    if (data.remaining_time <= 10) {
-                        setOverlayText(`Game starts in ${data.remaining_time} seconds`);
-                    } 
                 }
 
                 if (data.type === "cashout_result") {
@@ -246,45 +264,52 @@ export const Crash = () => {
     // Handling bet
     const handleBet = async () => {
         if (!initData) {
-            toast.error('Authorization error. Please restart the application.');
+            toast.error('Ошибка авторизации. Пожалуйста, перезапустите приложение.');
             return;
         }
 
         if (betAmount <= 0) {
-            toast.error('Bet amount must be greater than 0');
+            toast.error('Ставка должна быть больше 0');
             return;
         }
 
         if (betAmount > BalanceRupee) {
-            toast.error('Insufficient funds');
+            toast.error('Недостаточно средств');
             return;
         }
 
         try {
             setLoading(true);
+            if (isBettingClosed) {
+                // Если ставки закрыты, ставим в очередь
+                setQueuedBet(betAmount);
+                decreaseBalanceRupee(betAmount);
+                toast.success('Ставка будет размещена в следующей игре!');
+                return;
+            }
+
             const response = await crashPlace(betAmount, autoOutputCoefficient);
             
             if (response.ok) {
                 const data = await response.json();
-                console.log('Server response to bet:', data);
+                console.log('Ответ сервера на ставку:', data);
                 setBet(betAmount);
                 decreaseBalanceRupee(betAmount);
-                toast.success('Bet placed! Waiting for game to start');
+                toast.success('Ставка принята! Ожидаем начала игры');
                 
-                // Animation for feedback
                 setCollapsed(true);
-                setOverlayText('Your bet has been accepted! Waiting for game...');
+                setOverlayText('Ваша ставка принята! Ожидаем игру...');
                 setTimeout(() => {
                     setCollapsed(false);
                 }, 2000);
             } else {
-                const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
-                console.error('Bet error:', errorData);
-                toast.error(errorData.error || 'Error placing bet');
+                const errorData = await response.json().catch(() => ({ error: 'Произошла ошибка' }));
+                console.error('Ошибка ставки:', errorData);
+                toast.error(errorData.error || 'Ошибка при размещении ставки');
             }
         } catch (err) {
-            console.error('Exception during bet:', err.message);
-            toast.error('Failed to place bet');
+            console.error('Ошибка при размещении ставки:', err.message);
+            toast.error('Не удалось сделать ставку');
         } finally {
             setLoading(false);
         }
@@ -449,15 +474,17 @@ export const Crash = () => {
                             onClick={handleCashout} 
                             disabled={!gameActive || loading || isCrashed}
                         >
-                            {loading ? 'Loading...' : 'Cash Out'}
+                            {loading ? 'Загрузка...' : 'Забрать'}
                         </button>
                     ) : (
                         <button 
-                            className={styles.mainButton} 
+                            className={`${styles.mainButton} ${isBettingClosed ? styles.queuedButton : ''}`}
                             onClick={handleBet} 
-                            disabled={isBettingClosed || loading}
+                            disabled={loading}
                         >
-                            {loading ? 'Loading...' : 'Bet'}
+                            {loading ? 'Загрузка...' : 
+                             queuedBet > 0 ? `В очереди: ₹${queuedBet}` :
+                             isBettingClosed ? 'Поставить в очередь' : 'Поставить'}
                         </button>
                     )}
                 </div>
