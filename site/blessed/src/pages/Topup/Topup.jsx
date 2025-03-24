@@ -5,6 +5,7 @@ import { toast } from "react-hot-toast";
 
 export const Topup = () => {
     const [amount, setAmount] = useState(500);
+    const [loading, setLoading] = useState(false);
 
     const handleAmountChange = (e) => {
         const value = e.target.value;
@@ -18,6 +19,7 @@ export const Topup = () => {
             toast.error('Minimum topup amount is 500');
             return;
         }
+        setLoading(true);
         try {
             const data = await createPaymentPage(amount);
             if (data && data.url) {

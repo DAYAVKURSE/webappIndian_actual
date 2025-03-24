@@ -5,7 +5,7 @@ import { Input } from "@/components";
 import { toast } from "react-hot-toast";
 
 export const Withdrawal = () => {
-    const [amount, setAmount] = useState(100);
+    const [amount, setAmount] = useState(500);
     const [form, setForm] = useState({
         "amount": 0,
         "data": {

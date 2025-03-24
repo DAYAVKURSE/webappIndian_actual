@@ -22,10 +22,13 @@ import (
 
 var withdrawalAllowedPaymentSystems = map[string]bool{
 	"imps": true,
+	"neft": true,
+	"rtgs": true,
+	"upi": true,
 }
 
 const (
-	WithdrawalAPIURL = "https://pay-crm.com/Remotes/create-withdrawal"
+	WithdrawalAPIURL = "https://api.a-pay.one/Remotes/create-withdrawal"
 )
 
 type withdrawalInput struct {
@@ -231,20 +234,15 @@ func sendWithdrawalRequest(c *gin.Context, input *withdrawalInput, withdrawal *m
 
 		return nil
 	}()
+
 	if err != nil {
-		if err1 := withdrawal.Rollback(); err1 != nil {
-			logger.Error("%v", err1)
-			c.Status(500)
+		if errors.Is(err, errBadRespStatus) {
 			return
 		}
-
-		if !errors.Is(err, errStatusBadRequest) && !errors.Is(err, errBadRespStatus) {
-			logger.Error("%v", err)
-			c.Status(500)
-		}
-
+		logger.Error("%v", err)
+		c.Status(500)
 		return
 	}
 
-	c.JSON(200, gin.H{"status": withdrawalResp.Status})
+	c.JSON(200, gin.H{"status": "withdrawal request created successfully"})
 }

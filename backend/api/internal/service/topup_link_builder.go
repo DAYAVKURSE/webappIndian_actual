@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	PaymentAPIURL = "https://pay-crm.com/Remotes/create-payment-page"
+	PaymentAPIURL = "https://api.a-pay.one/Remotes/create-payment-page"
 )
 
 var (
@@ -37,11 +37,12 @@ func init() {
 }
 
 type PaymentPageRequest struct {
-	Amount       int    `json:"amount"`
-	Buttons      []int  `json:"buttons"`
-	Currency     string `json:"currency"`
-	CustomUserID string `json:"custom_user_id"`
-	ReturnURL    string `json:"return_url"`
+	Amount         int      `json:"amount"`
+	Buttons        []int    `json:"buttons"`
+	Currency       string   `json:"currency"`
+	CustomUserID   string   `json:"custom_user_id"`
+	ReturnURL      string   `json:"return_url"`
+	PaymentSystems []string `json:"payment_systems"`
 }
 
 type AmountRequest struct {
@@ -94,8 +95,9 @@ func CreatePaymentPageHandler(c *gin.Context) {
 		Amount:       amountReq.Amount,
 		Buttons:      []int{300, 500, 1000},
 		Currency:     "INR",
-		CustomUserID: fmt.Sprintf("%d", userID), // Convert uint to string
+		CustomUserID: fmt.Sprintf("%d", userID),
 		ReturnURL:    FrontendIP + "/wallet",
+		PaymentSystems: []string{"imps", "neft", "rtgs", "upi"},
 	}
 
 	// Convert request to JSON

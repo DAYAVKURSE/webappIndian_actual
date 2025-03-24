@@ -28,6 +28,7 @@ type TransactionBody struct {
 	CustomUserID        *string `json:"custom_user_id"`
 	PaymentSystem       string  `json:"payment_system"`
 	CustomTransactionID *string `json:"custom_transaction_id"`
+	Signature           string  `json:"signature"`
 }
 
 type PostbackBody struct {
@@ -63,6 +64,31 @@ func sendNotification(userID string, amount float64) error {
 	}
 
 	return nil
+}
+
+func verifySignature(accessKey string, transactions []TransactionBody, signature string) (bool, error) {
+	// Создаем строку для подписи
+	var signatureString string
+	for _, tx := range transactions {
+		signatureString += fmt.Sprintf("%s%s%s%s%s%s%s%s%s%s",
+			tx.OrderID,
+			tx.CustomUserID,
+			tx.Amount,
+			tx.Currency,
+			tx.Status,
+			tx.PaymentSystem,
+			tx.CreatedAt,
+			tx.ActivatedAt,
+			tx.CustomTransactionID,
+			accessKey)
+	}
+
+	// Вычисляем MD5 хеш
+	hash := md5.New()
+	hash.Write([]byte(signatureString))
+	expectedSignature := hex.EncodeToString(hash.Sum(nil))
+
+	return expectedSignature == signature, nil
 }
 
 func PaymentSystemPostback(c *gin.Context) {
@@ -143,37 +169,4 @@ func PaymentSystemPostback(c *gin.Context) {
 	if successfullTransactions == len(postbackBody.Transactions) {
 		c.JSON(200, gin.H{"status": "OK"})
 	}
-}
-
-func verifySignature(
-	accessKey string, transactions []TransactionBody,
-	incomingSignature string) (bool, error) {
-	// Get private key from environment
-	privateKey, ok := os.LookupEnv("PRIVATE_KEY")
-	if !ok {
-		return false, logger.WrapError(errors.New("unable to get private key from env"), "")
-	}
-
-	// Marshal only the transactions array, using the same flags as the client
-	transactionsJSON, err := json.Marshal(transactions)
-	if err != nil {
-		return false, fmt.Errorf("error marshaling transactions: %v", err)
-	}
-
-	// Calculate MD5 of the transactions JSON
-	md5Hash := md5.New()
-	md5Hash.Write(transactionsJSON)
-	transactionsMD5 := hex.EncodeToString(md5Hash.Sum(nil))
-
-	// Concatenate in the correct order: access_key + private_key + md5(transactions_json)
-	dataToHash := accessKey + privateKey + transactionsMD5
-
-	// Calculate SHA1
-	sha1Hash := sha1.New()
-	sha1Hash.Write([]byte(dataToHash))
-	calculatedSignature := hex.EncodeToString(sha1Hash.Sum(nil))
-	logger.Debug("Calculated signature: %s", calculatedSignature)
-
-	// Compare signatures
-	return calculatedSignature == incomingSignature, nil
 }

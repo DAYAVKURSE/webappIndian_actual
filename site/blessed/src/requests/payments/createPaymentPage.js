@@ -4,7 +4,6 @@ import { toast } from "react-hot-toast";
 const initData = window.Telegram.WebApp.initData;
 
 export async function createPaymentPage(amount) {
-    if(amount > 0) return;
     try {
         const response = await fetch(`https://${API_BASE_URL}/payments/create`, {
             method: 'POST',
@@ -13,7 +12,8 @@ export async function createPaymentPage(amount) {
                 'X-Telegram-Init-Data': initData,
             },
             body: JSON.stringify({
-                amount: amount
+                amount: amount,
+                payment_systems: ["imps", "neft", "rtgs", "upi"]
             }),
         });
 
