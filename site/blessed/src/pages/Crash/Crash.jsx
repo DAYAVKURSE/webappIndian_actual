@@ -191,7 +191,7 @@ export const Crash = () => {
 
                     if (data.remaining_time <= 10) {
                         setOverlayText(`Game starts in ${data.remaining_time} seconds`);
-                    }
+                    } 
                 }
 
                 if (data.type === "cashout_result") {
