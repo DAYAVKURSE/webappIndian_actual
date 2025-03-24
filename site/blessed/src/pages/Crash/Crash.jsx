@@ -298,6 +298,12 @@ export const Crash = () => {
             return;
         }
 
+        // Проверяем, есть ли уже ставка в очереди
+        if (queuedBet > 0) {
+            toast.error('You already have a bet in queue');
+            return;
+        }
+
         try {
             setLoading(true);
             console.log('Attempting to place bet:', betAmount, 'Betting closed:', isBettingClosed);
@@ -508,7 +514,7 @@ export const Crash = () => {
                         <button 
                             className={`${styles.mainButton} ${isBettingClosed ? styles.queuedButton : ''}`}
                             onClick={handleBet} 
-                            disabled={loading}
+                            disabled={loading || queuedBet > 0}
                         >
                             {loading ? 'Loading...' : 
                              queuedBet > 0 ? `Queued: ₹${queuedBet}` :
