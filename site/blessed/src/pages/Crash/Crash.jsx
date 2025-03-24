@@ -160,20 +160,21 @@ export const Crash = () => {
                     
                     setIsCrashed(true);
                     setGameActive(false);
-                    setOverlayText(`Crashed at ${data.crash_point.toFixed(2)}x`);
+                    setOverlayText(`Разбился на ${data.crash_point.toFixed(2)}x`);
                     setCollapsed(true);
                     valXValut.current = parseFloat(data.crash_point).toFixed(2);
 
                     setIsFalling(true);
-                    setStarPosition(prev => ({ x: prev.x, y: prev.y })); // Опускаем звезду вниз
+                    setStarPosition(prev => ({ x: prev.x, y: prev.y }));
                 
+                    if (bet > 0) {
+                        // Если у игрока была активная ставка, показываем сообщение о проигрыше
+                        toast.error(`Игра разбилась на ${data.crash_point.toFixed(2)}x! Вы проиграли ₹${bet}.`);
+                        setBet(0);
+                    }
                     
+                    // Сбрасываем значение через 3 секунды
                     setTimeout(() => {
-                        if (bet > 0) {
-                            // If the player had an active bet, show a loss message
-                            toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
-                            setBet(0);
-                        }
                         valXValut.current = 1.2;
                     }, 3000);
                 }
@@ -183,26 +184,20 @@ export const Crash = () => {
                     if (data.remaining_time > 10) {
                         setIsBettingClosed(true);
                         setGameActive(false);
+                        setOverlayText('Игра скоро начнется');
                     } else {
                         setIsBettingClosed(false);
                         setIsCrashed(false);
                         setGameActive(false);
+                        setOverlayText(`Игра начнется через ${data.remaining_time} секунд`);
                     }
-
-                    if (data.remaining_time <= 10) {
-                        setOverlayText(`Game starts in ${data.remaining_time} seconds`);
-                    } 
                 }
 
                 if (data.type === "cashout_result") {
-                    // Don't reset bet here to show the player they won
-                    toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${data.cashout_multiplier}x)`);
-                    
-                    // Delay resetting the bet to give the user time to see the result
-                    setTimeout(() => {
-                        setBet(0);
-                        increaseBalanceRupee(data.win_amount);
-                    }, 2000);
+                    // Автоматически получаем выигрыш сразу, без задержки
+                    increaseBalanceRupee(data.win_amount);
+                    toast.success(`Выигрыш: ₹${data.win_amount.toFixed(0)}! (${data.cashout_multiplier}x)`);
+                    setBet(0); // Сразу сбрасываем ставку
                 }
 
                 // Processing another player's cashout message
@@ -449,15 +444,15 @@ export const Crash = () => {
                             onClick={handleCashout} 
                             disabled={!gameActive || loading || isCrashed}
                         >
-                            {loading ? 'Loading...' : 'Cash Out'}
+                            {loading ? 'Загрузка...' : 'Забрать'}
                         </button>
                     ) : (
                         <button 
-                            className={styles.mainButton} 
+                            className={`${styles.mainButton} ${isBettingClosed ? styles.disabledButton : ''}`}
                             onClick={handleBet} 
                             disabled={isBettingClosed || loading}
                         >
-                            {loading ? 'Loading...' : 'Bet'}
+                            {loading ? 'Загрузка...' : isBettingClosed ? 'Ставки закрыты' : 'Поставить'}
                         </button>
                     )}
                 </div>
