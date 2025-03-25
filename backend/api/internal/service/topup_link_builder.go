@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -15,7 +16,7 @@ import (
 )
 
 const (
-	PaymentAPIURL = "https://pay-crm.com/Remotes/create-payment-page"
+	PaymentAPIURL = "https://api.a-pay.one/Remotes/create-deposit"
 )
 
 var (
@@ -30,12 +31,10 @@ func init() {
 }
 
 type PaymentPageRequest struct {
-	Amount         int      `json:"amount"`
-	Buttons        []int    `json:"buttons"`
-	Currency       string   `json:"currency"`
-	CustomUserID   string   `json:"custom_user_id"`
-	ReturnURL      string   `json:"return_url"`
-	PaymentSystems []string `json:"payment_systems"`
+	Amount       int    `json:"amount"`
+	Currency     string `json:"currency"`
+	CustomUserID string `json:"custom_user_id"`
+	ReturnURL    string `json:"return_url"`
 }
 
 type AmountRequest struct {
@@ -79,18 +78,16 @@ func CreatePaymentPageHandler(c *gin.Context) {
 	}
 
 	if amountReq.Amount < models.MinDepositRupee {
-		c.JSON(406, gin.H{"error": "Minumim deposit is 500 rupees"})
+		c.JSON(406, gin.H{"error": "Minimum deposit is 500 rupees"})
 		return
 	}
 
 	// Create payment page request
 	paymentReq := PaymentPageRequest{
 		Amount:       amountReq.Amount,
-		Buttons:      []int{300, 500, 1000},
 		Currency:     "INR",
 		CustomUserID: fmt.Sprintf("%d", userID),
 		ReturnURL:    FrontendIP + "/wallet",
-		PaymentSystems: []string{"imps", "neft", "rtgs", "upi"},
 	}
 
 	// Convert request to JSON
@@ -129,6 +126,15 @@ func CreatePaymentPageHandler(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
+	// Read response body for logging
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.Error("Error reading response body: %v", err)
+		c.Status(500)
+		return
+	}
+	logger.Debug("Payment API response: %s", string(body))
+
 	// Check response status
 	if resp.StatusCode != http.StatusOK {
 		logger.Debug("payment API returned status: %d", resp.StatusCode)
@@ -138,8 +144,8 @@ func CreatePaymentPageHandler(c *gin.Context) {
 
 	// Decode response
 	var paymentResp PaymentPageResponse
-	if err := json.NewDecoder(resp.Body).Decode(&paymentResp); err != nil {
-		logger.Error("%v", err)
+	if err := json.Unmarshal(body, &paymentResp); err != nil {
+		logger.Error("Error decoding response: %v", err)
 		c.Status(500)
 		return
 	}
