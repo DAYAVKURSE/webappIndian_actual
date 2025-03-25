@@ -77,7 +77,7 @@ func Start() {
 	// authorized
 	{
 		// payment system
-		authorized.POST(apiPrefix+"/payments/withdrawal", service.CreateWithdrawal)
+		authorized.POST(apiPrefix+"payments/withdrawal", service.CreateWithdrawal)
 
 		// trave pass
 		authorized.GET(apiPrefix+"travepass", service.GetAllTravePassLevelsWithRequirementsAndBenefits)
