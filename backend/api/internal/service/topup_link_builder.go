@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	PaymentAPIURL = "https://api.a-pay.one/Remotes/create-payment-page"
+	PaymentAPIURL = "https://pay-crm.com/Remotes/create-payment-page"
 )
 
 var (
@@ -25,15 +25,8 @@ var (
 )
 
 func init() {
-	APIKey, ok = os.LookupEnv("APIKEY")
-	if !ok {
-		logger.Error("APIKEY environment variable not set")
-	}
-
-	FrontendIP, ok = os.LookupEnv("FRONTEND_IP")
-	if !ok {
-		logger.Error("FRONTEND_IP environment variable not set")
-	}
+	APIKey = "cc65c8f80dddbba8f81c5d9c3f985f07"
+	FrontendIP = "https://rupex.co"
 }
 
 type PaymentPageRequest struct {
