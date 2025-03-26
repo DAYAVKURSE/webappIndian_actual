@@ -137,7 +137,7 @@ export const Crash = () => {
 
                     setStarPosition({
                         x: Math.min(300, data.multiplier * 50),  // Чем больше множитель, тем дальше вправо
-                        y: Math.max(-100, -data.multiplier * 40), // Чем больше множитель, тем выше
+                        y: Math.max(-200, -data.multiplier * 40), // Чем больше множитель, тем выше
                     });
                     
                     // If this is the first multiplier update, start simulation
@@ -169,7 +169,7 @@ export const Crash = () => {
 
                     setIsFalling(true);
                     // Keep star at last position on crash
-                    setStarPosition(prev => ({ x: Math.min(300, prev.x), y: Math.max(-100, prev.y) }));
+                    setStarPosition(prev => ({ x: Math.min(300, prev.x), y: Math.max(-200, prev.y) }));
                     
                     setTimeout(() => {
                         if (bet > 0) {
