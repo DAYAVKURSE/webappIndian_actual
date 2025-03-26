@@ -12,9 +12,9 @@ export async function crashPlace(Amount, CashOutMultiplier) {
     }
 
     try {
-        const requestBody = {
+        const requestBody = { 
             Amount: Number(Amount),
-            CashOutMultiplier: CashOutMultiplier > 1 ? CashOutMultiplier : undefined
+            CashOutMultiplier: CashOutMultiplier > 1 ? Number(CashOutMultiplier) : undefined
         };
 
         console.log('Sending bet request:', requestBody);
@@ -24,9 +24,9 @@ export async function crashPlace(Amount, CashOutMultiplier) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': initData
+                'X-Telegram-Init-Data': initData,
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
         });
 
         console.log('Received response with status:', response.status);
