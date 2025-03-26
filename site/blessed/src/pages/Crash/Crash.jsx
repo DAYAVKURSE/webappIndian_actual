@@ -136,8 +136,8 @@ export const Crash = () => {
                     setCollapsed(false);
 
                     setStarPosition({
-                        x: data.multiplier * 50,  // Чем больше множитель, тем дальше вправо
-                        y: -data.multiplier * 40, // Чем больше множитель, тем выше
+                        x: Math.min(300, data.multiplier * 50),  // Чем больше множитель, тем дальше вправо
+                        y: Math.max(-100, -data.multiplier * 40), // Чем больше множитель, тем выше
                     });
                     
                     // If this is the first multiplier update, start simulation
