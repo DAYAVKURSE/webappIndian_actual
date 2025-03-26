@@ -169,7 +169,7 @@ export const Crash = () => {
 
                     setIsFalling(true);
                     // Keep star at last position on crash
-                    setStarPosition(prev => ({ x: prev.x, y: prev.y }));
+                    setStarPosition(prev => ({ x: Math.min(300, prev.x), y: Math.max(-100, prev.y) }));
                     
                     setTimeout(() => {
                         if (bet > 0) {
