@@ -36,6 +36,13 @@ export const Crash = () => {
     const [queuedBet, setQueuedBet] = useState(0);
 
     useEffect(() => {
+        const queuedBetFromStorage = localStorage.getItem('queuedBet');
+        if (queuedBetFromStorage) {
+            setQueuedBet(parseInt(queuedBetFromStorage));
+        }
+    }, []);
+    
+    useEffect(() => {
         const interval = setInterval(() => {
             setXValue(valXValut.current);
         }, 80);
@@ -307,6 +314,7 @@ export const Crash = () => {
                 // If betting is closed, queue the bet
                 setQueuedBet(betAmount);
                 decreaseBalanceRupee(betAmount);
+                localStorage.setItem('queuedBet', betAmount);
                 toast.success('Bet will be placed in the next game!');
                 console.log('Bet queued for next game');
                 return;
