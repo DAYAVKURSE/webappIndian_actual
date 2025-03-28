@@ -53,6 +53,7 @@ export const Crash = () => {
     // Добавляем функцию placeBetQueue на уровень компонента
     const placeBetQueue = async (amount) => {
         try {
+            // Добавляем задержку перед размещением ставки
             await new Promise(resolve => setTimeout(resolve, 1500));
             console.log('Attempting to place queued bet:', amount);
             const response = await crashPlace(Number(amount), autoOutputCoefficient);
@@ -81,14 +82,13 @@ export const Crash = () => {
     };
 
     useEffect(() => {
-        if (gameActive) {
-           
+        if (gameActive && !isBettingClosed) {
             const queueBetFromStorage = localStorage.getItem('queuedBet');
             if (queueBetFromStorage) {
                 placeBetQueue(queueBetFromStorage);
             }
         }
-    }, [gameActive]);
+    }, [gameActive, isBettingClosed]);
     
 
     console.log(dimensions)
@@ -246,7 +246,7 @@ export const Crash = () => {
                         console.log('Betting open - time remaining:', data.remaining_time);
                     } else {
                         // Когда таймер достиг нуля, начинаем новую игру
-                        setIsBettingClosed(true);
+                        setIsBettingClosed(false);
                         setGameActive(true);
                         setOverlayText('Game started!');
                     }
@@ -272,7 +272,7 @@ export const Crash = () => {
                 
                 if (data.type === "game_started") {
                     toast.success('Game started!');
-                    setIsBettingClosed(true);
+                    setIsBettingClosed(false);
                     setIsCrashed(false);
                     setGameActive(true);
                     setCollapsed(false);
