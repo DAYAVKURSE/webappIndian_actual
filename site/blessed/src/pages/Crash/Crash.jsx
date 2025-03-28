@@ -276,6 +276,28 @@ export const Crash = () => {
                     setStartMultiplierTime(Date.now());
                     simulateMultiplierGrowth(Date.now(), 1.0);
                     setXValue(1.0);
+
+                    // Пытаемся разместить ставку из очереди
+                    const queueBetFromStorage = localStorage.getItem('queuedBet');
+                    if (queueBetFromStorage) {
+                        setTimeout(async () => {
+                            try {
+                                const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
+                                if (response.ok) {
+                                    setBet(parseInt(queueBetFromStorage));
+                                    localStorage.removeItem('queuedBet');
+                                    setQueuedBet(0);
+                                    toast.success('Queued bet placed successfully!');
+                                } else {
+                                    // Если не удалось поставить, пробуем еще раз через 1 секунду
+                                    setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
+                                }
+                            } catch (error) {
+                                console.error('Error placing queued bet:', error);
+                                setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
+                            }
+                        }, 1000);
+                    }
                 }
 
                 if (data.type === "cashout_result") {
