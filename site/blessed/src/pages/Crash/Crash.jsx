@@ -63,7 +63,7 @@ export const Crash = () => {
     }
 
     useEffect(() => {
-        if (gameActive && !isBettingClosed) {
+        if (!isBettingClosed) {
             const queueBetFromStorage = localStorage.getItem('queuedBet');
 
             if(queueBetFromStorage){
