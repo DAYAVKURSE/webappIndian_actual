@@ -233,6 +233,28 @@ export const Crash = () => {
                     // Убираем анимацию падения
                     setStarPosition({ x: 50, y: -40 });
                     
+                    // Проверяем наличие ставки в очереди и пытаемся разместить её
+                    const queueBetFromStorage = localStorage.getItem('queuedBet');
+                    if (queueBetFromStorage) {
+                        setTimeout(async () => {
+                            try {
+                                const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
+                                if (response.ok) {
+                                    setBet(parseInt(queueBetFromStorage));
+                                    localStorage.removeItem('queuedBet');
+                                    setQueuedBet(0);
+                                    toast.success('Queued bet placed successfully!');
+                                } else {
+                                    // Если не удалось поставить, пробуем еще раз через 1 секунду
+                                    setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
+                                }
+                            } catch (error) {
+                                console.error('Error placing queued bet:', error);
+                                setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
+                            }
+                        }, 1000);
+                    }
+                    
                     setTimeout(() => {
                         if (bet > 0) {
                             toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
