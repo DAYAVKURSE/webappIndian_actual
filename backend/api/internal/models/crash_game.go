@@ -169,12 +169,6 @@ func (CG *CrashGame) CalculateMultiplier() float64 {
     k := 0.01 // Rate of increase
     exponent := 1.8 // Exponent > 1 for slower start and faster later growth
     multiplier := 1.0 + k*math.Pow(elapsed, exponent)
-    
-    // Если множитель достиг точки краша, возвращаем её значение
-    if multiplier >= CG.CrashPointMultiplier {
-        return CG.CrashPointMultiplier
-    }
-    
     return multiplier
 }
 

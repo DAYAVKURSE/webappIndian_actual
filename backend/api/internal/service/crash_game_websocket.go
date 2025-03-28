@@ -247,17 +247,13 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
         currentMultiplier = currentGame.CalculateMultiplier()
 
         // 📌 Сглаживание множителя (экспоненциальное усреднение)
-        // Используем только если новый множитель больше или равен предыдущему
-        if currentMultiplier >= lastSentMultiplier {
-            smoothedMultiplier := (lastSentMultiplier*0.8 + currentMultiplier*0.2)
-            lastSentMultiplier = smoothedMultiplier
-        }
+        smoothedMultiplier := (lastSentMultiplier*0.8 + currentMultiplier*0.2)
 
-        // Отправляем данные раз в 250 мс
+        // Отправляем данные раз в 250 мс (а не 100 мс)
         if time.Since(lastSentTime) >= 250*time.Millisecond {
             multiplierInfo := gin.H{
                 "type":       "multiplier_update",
-                "multiplier": math.Min(lastSentMultiplier, currentGame.CrashPointMultiplier),
+                "multiplier": math.Min(smoothedMultiplier, currentGame.CrashPointMultiplier),
                 "timestamp":  time.Now().UnixNano() / int64(time.Millisecond),
                 "elapsed":    time.Since(startTime).Seconds(),
             }
@@ -276,21 +272,22 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
                 }
 
                 if bet, ok := ws.bets[userId]; ok {
-                    if bet.CashOutMultiplier != 0 && bet.Status == "active" && lastSentMultiplier >= bet.CashOutMultiplier {
-                        if err := crashGameCashout(nil, bet, lastSentMultiplier); err != nil {
+                    if bet.CashOutMultiplier != 0 && bet.Status == "active" && currentMultiplier >= bet.CashOutMultiplier {
+                        if err := crashGameCashout(nil, bet, currentMultiplier); err != nil {
                             logger.Error("Unable to auto cashout for user %d: %v", userId, err)
                             continue
                         }
-                        ws.ProcessCashout(userId, lastSentMultiplier, true)
+                        ws.ProcessCashout(userId, currentMultiplier, true)
                     }
                 }
             }
             ws.mu.Unlock()
 
+            lastSentMultiplier = smoothedMultiplier
             lastSentTime = time.Now()
         }
 
-        if lastSentMultiplier >= currentGame.CrashPointMultiplier && !crashPointReached {
+        if currentMultiplier >= currentGame.CrashPointMultiplier && !crashPointReached {
             crashPointReached = true
             ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
             break
