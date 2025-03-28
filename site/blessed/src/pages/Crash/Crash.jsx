@@ -217,6 +217,34 @@ export const Crash = () => {
                         setGameActive(false);
                         setOverlayText(`Game starts in ${data.remaining_time} seconds`);
                         console.log('Betting open - time remaining:', data.remaining_time);
+                    } else {
+                        // Когда таймер достиг нуля, размещаем ставку из очереди
+                        if (queuedBet > 0) {
+                            console.log('Attempting to place queued bet:', queuedBet);
+                            try {
+                                const response = await crashPlace(queuedBet, autoOutputCoefficient);
+                                if (response.ok) {
+                                    setBet(queuedBet);
+                                    toast.success('Queued bet placed!');
+                                    setQueuedBet(0);
+                                    localStorage.removeItem('queuedBet');
+                                    console.log('Queued bet placed successfully');
+                                } else {
+                                    const errorData = await response.json();
+                                    console.error('Failed to place queued bet:', errorData);
+                                    toast.error(errorData.error || 'Failed to place queued bet');
+                                    increaseBalanceRupee(queuedBet);
+                                    setQueuedBet(0);
+                                    localStorage.removeItem('queuedBet');
+                                }
+                            } catch (error) {
+                                console.error('Error placing queued bet:', error);
+                                toast.error('Failed to place queued bet');
+                                increaseBalanceRupee(queuedBet);
+                                setQueuedBet(0);
+                                localStorage.removeItem('queuedBet');
+                            }
+                        }
                     }
                 }
 
@@ -265,6 +293,10 @@ export const Crash = () => {
                                 // Перезапускаем симуляцию множителя после успешной ставки
                                 setStartMultiplierTime(Date.now());
                                 simulateMultiplierGrowth(Date.now(), 1.0);
+                                
+                                // Обновляем позицию звезды
+                                setStarPosition({ x: 50, y: -40 });
+                                setIsFalling(false);
                             } else {
                                 const errorData = await response.json();
                                 console.error('Failed to place queued bet:', errorData);
