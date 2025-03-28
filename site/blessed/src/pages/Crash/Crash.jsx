@@ -50,22 +50,40 @@ export const Crash = () => {
         return () => clearInterval(interval);
     }, []);
 
+    // Добавляем функцию placeBetQueue на уровень компонента
+    const placeBetQueue = async (amount) => {
+        try {
+            console.log('Attempting to place queued bet:', amount);
+            const response = await crashPlace(Number(amount), autoOutputCoefficient);
+
+            if (response.ok) {
+                setBet(Number(amount));
+                toast.success('Queued bet placed!');
+                localStorage.removeItem('queuedBet');
+                setQueuedBet(0);
+                console.log('Queued bet placed successfully');
+            } else {
+                const errorData = await response.json();
+                console.error('Failed to place queued bet:', errorData);
+                toast.error(errorData.error || 'Failed to place queued bet');
+                increaseBalanceRupee(Number(amount));
+                setQueuedBet(0);
+                localStorage.removeItem('queuedBet');
+            }
+        } catch (error) {
+            console.error('Error placing queued bet:', error);
+            toast.error('Failed to place queued bet');
+            increaseBalanceRupee(Number(amount));
+            setQueuedBet(0);
+            localStorage.removeItem('queuedBet');
+        }
+    };
+
     useEffect(() => {
         if (gameActive) {
             const queueBetFromStorage = localStorage.getItem('queuedBet');
-
-            if(queueBetFromStorage){
+            if (queueBetFromStorage) {
                 placeBetQueue(queueBetFromStorage);
-            }
-
-            const placeBetQueue = async (queueBetFromStorage) => {
-                const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
-
-                if (response.ok) {
-                    setBet(parseInt(queueBetFromStorage));
-                    localStorage.removeItem('queuedBet');
-                    setQueuedBet(0);
-                }
             }
         }
     }, [gameActive]);
