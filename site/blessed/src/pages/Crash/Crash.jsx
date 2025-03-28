@@ -44,9 +44,8 @@ export const Crash = () => {
 
     useEffect(() => {
         const interval = setInterval(() => {
-            if(valXValut.current > xValue){
-                setXValue(valXValut.current);
-            }
+            
+            setXValue(valXValut.current);
         }, 120);
     
         return () => clearInterval(interval);
