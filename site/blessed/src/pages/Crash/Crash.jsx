@@ -44,9 +44,8 @@ export const Crash = () => {
 
     useEffect(() => {
         const interval = setInterval(() => {
-            
             setXValue(valXValut.current);
-        }, 120);
+        }, 80);
     
         return () => clearInterval(interval);
     }, []);
@@ -201,7 +200,7 @@ export const Crash = () => {
 
                     // Обновляем позицию звезды только вверх
                     setStarPosition({
-                        x: Math.min(215, 50 + data.multiplier * 40 - 40), // Начинаем с 50 и двигаем вправо
+                        x: Math.min(115, 50 + data.multiplier * 40 - 40), // Начинаем с 50 и двигаем вправо
                         y: Math.max(-200, -data.multiplier * 40),
                     });
                     
