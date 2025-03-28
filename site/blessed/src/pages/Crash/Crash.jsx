@@ -38,8 +38,7 @@ export const Crash = () => {
     useEffect(() => {
         const queuedBetFromStorage = localStorage.getItem('queuedBet');
         if (queuedBetFromStorage) {
-            setBet(parseInt(queuedBetFromStorage));
-            localStorage.removeItem('queuedBet');
+            setQueuedBet(parseInt(queuedBetFromStorage));
         }
     }, []);
 
@@ -55,7 +54,8 @@ export const Crash = () => {
         if (gameActive) {
             const queueBetFromStorage = localStorage.getItem('queuedBet');
             if (queueBetFromStorage) {
-                setQueuedBet(parseInt(queueBetFromStorage));
+                setBet(parseInt(queueBetFromStorage));
+                localStorage.removeItem('queuedBet');
             }
         }
     }, [gameActive]);
