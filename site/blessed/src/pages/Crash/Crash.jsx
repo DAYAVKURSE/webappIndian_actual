@@ -56,6 +56,7 @@ export const Crash = () => {
             if (queueBetFromStorage) {
                 setBet(parseInt(queueBetFromStorage));
                 localStorage.removeItem('queuedBet');
+                setQueuedBet(0);
             }
         }
     }, [gameActive]);
