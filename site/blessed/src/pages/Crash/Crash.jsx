@@ -261,6 +261,10 @@ export const Crash = () => {
                                 setQueuedBet(0);
                                 localStorage.removeItem('queuedBet');
                                 console.log('Queued bet placed successfully');
+                                
+                                // Перезапускаем симуляцию множителя после успешной ставки
+                                setStartMultiplierTime(Date.now());
+                                simulateMultiplierGrowth(Date.now(), 1.0);
                             } else {
                                 const errorData = await response.json();
                                 console.error('Failed to place queued bet:', errorData);
