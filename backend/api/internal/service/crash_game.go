@@ -21,8 +21,8 @@ type CrashGameBetInput struct {
 }
 
 const (
-	crashGameInterval       = 15 * time.Second // Total interval between rounds
-	crashGameBettingWindow  = 13 * time.Second
+	crashGameInterval       = 7 * time.Second // Total interval between rounds
+	crashGameBettingWindow  = 5 * time.Second
 	NewCrashGameSignalDelay = 1 * time.Second
 )
 
@@ -74,7 +74,7 @@ func StartCrashGame() {
 		// Открываем окно для ставок
 		openCrashGameBetting()
 
-		// Ждем 13 секунд для приема ставок
+		// Ждем 5 секунд для приема ставок
 		for elapsedTime := time.Duration(0); elapsedTime < crashGameInterval; elapsedTime += time.Second {
 			if elapsedTime == crashGameBettingWindow {
 				closeCrashGameBetting()
@@ -257,24 +257,47 @@ func ManualCashout(c *gin.Context) {
 	}
 
 	crashGameBetMutex.RLock()
-	bettingOpen := isCrashGameBettingOpen
-	currentGame := currentCrashGame // Create a local copy
+	currentGame := currentCrashGame
 	crashGameBetMutex.RUnlock()
 
-	if bettingOpen {
-		c.JSON(403, gin.H{"error": "game has not started yet"})
-		return
-	}
-
 	if currentGame == nil {
-		c.JSON(500, gin.H{"error": "no active game"})
-		return
+		// Если нет активной игры, создаем новую
+		currentGame = &models.CrashGame{}
+		if err := db.DB.Create(currentGame).Error; err != nil {
+			logger.Error("Failed to create new game: %v", err)
+			c.Status(500)
+			return
+		}
+		currentGame.StartTime = time.Now()
+		if err := db.DB.Save(currentGame).Error; err != nil {
+			logger.Error("Failed to update game start time: %v", err)
+			c.Status(500)
+			return
+		}
+		crashGameBetMutex.Lock()
+		currentCrashGame = currentGame
+		crashGameBetMutex.Unlock()
 	}
 
 	currentMultiplier := currentGame.CalculateMultiplier()
 	if currentMultiplier >= currentGame.CrashPointMultiplier {
-		c.JSON(403, gin.H{"error": "game has already crashed"})
-		return
+		// Если игра уже крашнулась, создаем новую
+		currentGame = &models.CrashGame{}
+		if err := db.DB.Create(currentGame).Error; err != nil {
+			logger.Error("Failed to create new game: %v", err)
+			c.Status(500)
+			return
+		}
+		currentGame.StartTime = time.Now()
+		if err := db.DB.Save(currentGame).Error; err != nil {
+			logger.Error("Failed to update game start time: %v", err)
+			c.Status(500)
+			return
+		}
+		crashGameBetMutex.Lock()
+		currentCrashGame = currentGame
+		crashGameBetMutex.Unlock()
+		currentMultiplier = 1.0
 	}
 
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
@@ -295,9 +318,7 @@ func ManualCashout(c *gin.Context) {
 		crashGameCashout(tx, &bet, currentMultiplier)
 
 		// Update the bet in the WebSocket service
-
 		CrashGameWS.bets[userID] = &bet
-
 		CrashGameWS.ProcessCashout(userID, currentMultiplier, false)
 		return nil
 	})
@@ -315,7 +336,9 @@ func ManualCashout(c *gin.Context) {
 		return
 	}
 
-	// Process websocket outside of the database transaction
+	// Broadcast new game start
+	CrashGameWS.BroadcastGameStarted()
+	CrashGameWS.SendMultiplierToUser(currentGame)
 
 	c.JSON(200, gin.H{"status": "manual cashout successful", "multiplier": currentMultiplier})
 }

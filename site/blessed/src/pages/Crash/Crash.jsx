@@ -193,8 +193,9 @@ export const Crash = () => {
                     setGameActive(true);
                     setCollapsed(false);
 
+                    // Обновляем позицию звезды только вверх
                     setStarPosition({
-                        x: Math.min(300, data.multiplier * 50),
+                        x: 50,
                         y: Math.max(-200, -data.multiplier * 40),
                     });
                     
@@ -224,8 +225,8 @@ export const Crash = () => {
                     valXValut.current = parseFloat(data.crash_point).toFixed(2);
                     setXValue(parseFloat(data.crash_point).toFixed(2));
 
-                    setIsFalling(true);
-                    setStarPosition(prev => ({ x: Math.min(300, prev.x), y: Math.max(-200, prev.y) }));
+                    // Убираем анимацию падения
+                    setStarPosition({ x: 50, y: -40 });
                     
                     setTimeout(() => {
                         if (bet > 0) {
@@ -235,7 +236,6 @@ export const Crash = () => {
                         valXValut.current = 1.2;
                         setXValue(1.2);
                         setStarPosition({ x: 50, y: -40 });
-                        setIsFalling(false);
                     }, 3000);
                 }
 
@@ -243,7 +243,7 @@ export const Crash = () => {
                     setCollapsed(true);
                     console.log('Timer tick received:', data.remaining_time);
                     
-                    if (data.remaining_time > 13) {
+                    if (data.remaining_time > 5) {
                         setIsBettingClosed(true);
                         setGameActive(false);
                         setOverlayText('Game starts soon');
