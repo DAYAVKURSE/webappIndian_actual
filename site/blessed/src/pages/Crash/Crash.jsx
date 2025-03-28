@@ -53,6 +53,7 @@ export const Crash = () => {
     // Добавляем функцию placeBetQueue на уровень компонента
     const placeBetQueue = async (amount) => {
         try {
+            await new Promise(resolve => setTimeout(resolve, 1500));
             console.log('Attempting to place queued bet:', amount);
             const response = await crashPlace(Number(amount), autoOutputCoefficient);
 
@@ -81,6 +82,7 @@ export const Crash = () => {
 
     useEffect(() => {
         if (gameActive) {
+           
             const queueBetFromStorage = localStorage.getItem('queuedBet');
             if (queueBetFromStorage) {
                 placeBetQueue(queueBetFromStorage);
