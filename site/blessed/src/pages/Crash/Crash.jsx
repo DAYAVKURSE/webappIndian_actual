@@ -258,20 +258,23 @@ export const Crash = () => {
                             if (response.ok) {
                                 setBet(queuedBet);
                                 toast.success('Queued bet placed!');
-                                setQueuedBet(0); // Clear queue
+                                setQueuedBet(0);
+                                localStorage.removeItem('queuedBet');
                                 console.log('Queued bet placed successfully');
                             } else {
                                 const errorData = await response.json();
                                 console.error('Failed to place queued bet:', errorData);
                                 toast.error(errorData.error || 'Failed to place queued bet');
-                                increaseBalanceRupee(queuedBet); // Return money on error
+                                increaseBalanceRupee(queuedBet);
                                 setQueuedBet(0);
+                                localStorage.removeItem('queuedBet');
                             }
                         } catch (error) {
                             console.error('Error placing queued bet:', error);
                             toast.error('Failed to place queued bet');
-                            increaseBalanceRupee(queuedBet); // Return money on error
+                            increaseBalanceRupee(queuedBet);
                             setQueuedBet(0);
+                            localStorage.removeItem('queuedBet');
                         }
                     }
                 }
@@ -383,6 +386,8 @@ export const Crash = () => {
                 console.log('Server response to cashout:', data);
                 // Сбрасываем ставку сразу после успешного кэшаута
                 setBet(0);
+                setGameActive(false);
+                setIsCrashed(false);
                 toast.success(`Cashout request sent at multiplier ${xValue}x`);
             } else {
                 const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
