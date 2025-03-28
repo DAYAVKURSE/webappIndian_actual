@@ -364,6 +364,7 @@ export const Crash = () => {
                 localStorage.setItem('queuedBet', betAmount);
                 toast.success('Bet will be placed in the next game!');
                 console.log('Bet queued for next game');
+                setLoading(false);
                 return;
             }
 
@@ -555,7 +556,7 @@ export const Crash = () => {
                         <button className={styles.quickButton} onClick={() => handleMultiplyAmount(2)}>x2</button>
                     </div>
 
-                    {bet > 0 ? (
+                    {bet > 0 && !queuedBet ? (
                         <button 
                             className={`${styles.mainButton} ${(gameActive && !isCrashed) ? styles.activeButton : ''}`} 
                             onClick={handleCashout} 
