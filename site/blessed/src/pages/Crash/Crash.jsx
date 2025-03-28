@@ -53,8 +53,15 @@ export const Crash = () => {
     // Добавляем функцию placeBetQueue на уровень компонента
     const placeBetQueue = async (amount) => {
         try {
-            // Добавляем задержку перед размещением ставки
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Увеличиваем задержку до 2 секунд
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Проверяем состояние игры перед размещением ставки
+            if (isBettingClosed || !gameActive) {
+                console.log('Game state not ready for betting:', { isBettingClosed, gameActive });
+                return;
+            }
+
             console.log('Attempting to place queued bet:', amount);
             const response = await crashPlace(Number(amount), autoOutputCoefficient);
 
@@ -81,17 +88,6 @@ export const Crash = () => {
         }
     };
 
-    useEffect(() => {
-        if (gameActive && !isBettingClosed) {
-            const queueBetFromStorage = localStorage.getItem('queuedBet');
-            if (queueBetFromStorage) {
-                placeBetQueue(queueBetFromStorage);
-            }
-        }
-    }, [gameActive, isBettingClosed]);
-    
-
-    console.log(dimensions)
     // Getting game history on component load
     useEffect(() => {
         const fetchHistory = async () => {
@@ -176,7 +172,6 @@ export const Crash = () => {
                 console.log('WebSocket data received:', data);
                 
                 if (data.type === "multiplier_update") {
-                    // Updating game state
                     setIsBettingClosed(true);
                     setIsCrashed(false);
                     setGameActive(true);
@@ -245,7 +240,6 @@ export const Crash = () => {
                         setOverlayText(`Game starts in ${data.remaining_time} seconds`);
                         console.log('Betting open - time remaining:', data.remaining_time);
                     } else {
-                        // Когда таймер достиг нуля, начинаем новую игру
                         setIsBettingClosed(false);
                         setGameActive(true);
                         setOverlayText('Game started!');
@@ -280,9 +274,11 @@ export const Crash = () => {
                     setStartMultiplierTime(Date.now());
                     simulateMultiplierGrowth(Date.now(), 1.0);
 
-                    // Размещаем ставку из очереди при старте игры
+                    // Размещаем ставку из очереди при старте игры с дополнительной задержкой
                     if (queuedBet > 0) {
-                        await placeBetQueue(queuedBet);
+                        setTimeout(async () => {
+                            await placeBetQueue(queuedBet);
+                        }, 2000);
                     }
                 }
             } catch (error) {
