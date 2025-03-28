@@ -221,14 +221,11 @@ export const Crash = () => {
                 }
 
                 if (data.type === "cashout_result") {
-                    // Don't reset bet here to show the player they won
+                    // Показываем сообщение о выигрыше
                     toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${data.cashout_multiplier}x)`);
                     
-                    // Delay resetting the bet to give the user time to see the result
-                    setTimeout(() => {
-                        setBet(0);
-                        increaseBalanceRupee(data.win_amount);
-                    }, 2000);
+                    // Обновляем баланс
+                    increaseBalanceRupee(data.win_amount);
                 }
 
                 // Processing another player's cashout message
@@ -384,7 +381,8 @@ export const Crash = () => {
             if (response.ok) {
                 const data = await response.json();
                 console.log('Server response to cashout:', data);
-                // Don't reset bet here as it will happen when cashout_result is received via WebSocket
+                // Сбрасываем ставку сразу после успешного кэшаута
+                setBet(0);
                 toast.success(`Cashout request sent at multiplier ${xValue}x`);
             } else {
                 const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
