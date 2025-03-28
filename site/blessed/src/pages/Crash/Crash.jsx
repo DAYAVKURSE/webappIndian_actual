@@ -52,9 +52,22 @@ export const Crash = () => {
 
     const placeBetQueue = async (queueBetFromStorage) => {
         try {
+            // Проверяем, что ставка все еще в очереди
+            const currentQueuedBet = localStorage.getItem('queuedBet');
+            if (!currentQueuedBet || Number(currentQueuedBet) !== Number(queueBetFromStorage)) {
+                console.log('Queued bet was changed or removed');
+                return;
+            }
+
             // Добавляем небольшую задержку перед размещением ставки
             await new Promise(resolve => setTimeout(resolve, 1000));
             
+            // Проверяем состояние игры перед размещением ставки
+            if (gameActive || isCrashed) {
+                console.log('Game is not ready for placing bet');
+                return;
+            }
+
             const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
 
             if (response.ok) {
@@ -73,25 +86,25 @@ export const Crash = () => {
                 
                 toast.success('Queued bet placed successfully!');
             } else {
-                // Если не удалось поставить, оставляем в очереди
-                console.log('Failed to place queued bet, keeping in queue');
+                // Если не удалось поставить, пробуем еще раз через 1 секунду
+                console.log('Failed to place queued bet, retrying...');
+                setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
             }
         } catch (error) {
             console.error('Error placing queued bet:', error);
-            // В случае ошибки оставляем в очереди
-            console.log('Error placing queued bet, keeping in queue');
+            // В случае ошибки пробуем еще раз через 1 секунду
+            setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
         }
     }
 
     useEffect(() => {
-        if (!isBettingClosed) {
+        if (!isBettingClosed && !gameActive && !isCrashed) {
             const queueBetFromStorage = localStorage.getItem('queuedBet');
-
-            if(queueBetFromStorage){
+            if (queueBetFromStorage) {
                 placeBetQueue(queueBetFromStorage);
             }
         }
-    }, [gameActive, isBettingClosed]);
+    }, [isBettingClosed, gameActive, isCrashed]);
     
 
     console.log(dimensions)
@@ -263,12 +276,6 @@ export const Crash = () => {
                     setStartMultiplierTime(Date.now());
                     simulateMultiplierGrowth(Date.now(), 1.0);
                     setXValue(1.0);
-
-                    if (queuedBet > 0) {
-                        setTimeout(async () => {
-                            await placeBetQueue(queuedBet);
-                        }, 1000);
-                    }
                 }
 
                 if (data.type === "cashout_result") {
