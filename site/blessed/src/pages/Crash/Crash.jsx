@@ -200,7 +200,7 @@ export const Crash = () => {
 
                     // Обновляем позицию звезды только вверх
                     setStarPosition({
-                        x: Math.min(115, 50 + data.multiplier * 25), // Начинаем с 50 и двигаем вправо
+                        x: Math.min(115, 50 + data.multiplier * 40 - 40), // Начинаем с 50 и двигаем вправо
                         y: Math.max(-200, -data.multiplier * 40),
                     });
                     
