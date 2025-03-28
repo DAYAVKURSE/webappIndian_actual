@@ -52,10 +52,9 @@ export const Crash = () => {
 
     const placeBetQueue = async (queueBetFromStorage) => {
         try {
-            // Добавляем задержку перед размещением ставки
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            // Добавляем небольшую задержку перед размещением ставки
+            await new Promise(resolve => setTimeout(resolve, 1000));
             
-            console.log('Attempting to place queued bet:', queueBetFromStorage);
             const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
 
             if (response.ok) {
@@ -71,23 +70,16 @@ export const Crash = () => {
                 
                 // Обновляем позицию звезды
                 setStarPosition({ x: 50, y: -40 });
-                setIsFalling(false);
                 
                 toast.success('Queued bet placed successfully!');
             } else {
-                const errorData = await response.json();
-                console.error('Failed to place queued bet:', errorData);
-                toast.error(errorData.error || 'Failed to place queued bet');
-                increaseBalanceRupee(Number(queueBetFromStorage));
-                setQueuedBet(0);
-                localStorage.removeItem('queuedBet');
+                // Если не удалось поставить, оставляем в очереди
+                console.log('Failed to place queued bet, keeping in queue');
             }
         } catch (error) {
             console.error('Error placing queued bet:', error);
-            toast.error('Failed to place queued bet');
-            increaseBalanceRupee(Number(queueBetFromStorage));
-            setQueuedBet(0);
-            localStorage.removeItem('queuedBet');
+            // В случае ошибки оставляем в очереди
+            console.log('Error placing queued bet, keeping in queue');
         }
     }
 
@@ -329,51 +321,45 @@ export const Crash = () => {
             return;
         }
 
-        // Check if there's already a bet in queue
-        if (queuedBet > 0) {
-            toast.error('You already have a bet in queue');
-            return;
-        }
-
         try {
             setLoading(true);
-            console.log('Attempting to place bet:', betAmount, 'Betting closed:', isBettingClosed);
             
-            if (isBettingClosed) {
-                // If betting is closed, queue the bet
+            // Если игра активна или есть ставка в очереди, ставим в очередь
+            if (gameActive || queuedBet > 0) {
                 setQueuedBet(betAmount);
                 decreaseBalanceRupee(betAmount);
                 localStorage.setItem('queuedBet', betAmount);
                 toast.success('Bet will be placed in the next game!');
-                console.log('Bet queued for next game');
                 setLoading(false);
                 return;
             }
 
+            // Если игра не активна, пытаемся поставить сразу
             const response = await crashPlace(betAmount, autoOutputCoefficient);
             
             if (response.ok) {
-                const data = await response.json();
-                console.log('Server response to bet:', data);
                 setBet(betAmount);
                 decreaseBalanceRupee(betAmount);
                 toast.success('Bet accepted! Waiting for game to start');
-                
                 setCollapsed(true);
                 setOverlayText('Your bet is accepted! Waiting for game...');
                 setTimeout(() => {
                     setCollapsed(false);
                 }, 2000);
             } else {
-                const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
-                console.error('Bet error:', errorData);
-                toast.error(errorData.error || 'Error placing bet');
-                increaseBalanceRupee(betAmount); // Return money on error
+                // Если не удалось поставить, ставим в очередь
+                setQueuedBet(betAmount);
+                decreaseBalanceRupee(betAmount);
+                localStorage.setItem('queuedBet', betAmount);
+                toast.success('Bet will be placed in the next game!');
             }
         } catch (err) {
             console.error('Error placing bet:', err.message);
-            toast.error('Failed to place bet');
-            increaseBalanceRupee(betAmount); // Return money on error
+            // В случае ошибки тоже ставим в очередь
+            setQueuedBet(betAmount);
+            decreaseBalanceRupee(betAmount);
+            localStorage.setItem('queuedBet', betAmount);
+            toast.success('Bet will be placed in the next game!');
         } finally {
             setLoading(false);
         }
