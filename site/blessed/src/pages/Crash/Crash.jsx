@@ -80,7 +80,7 @@ export const Crash = () => {
     };
 
     useEffect(() => {
-        if (!gameActive) {
+        if (gameActive) {
             const queueBetFromStorage = localStorage.getItem('queuedBet');
             if (queueBetFromStorage) {
                 placeBetQueue(queueBetFromStorage);
@@ -181,17 +181,15 @@ export const Crash = () => {
                     setCollapsed(false);
 
                     setStarPosition({
-                        x: Math.min(300, data.multiplier * 50),  // Чем больше множитель, тем дальше вправо
-                        y: Math.max(-200, -data.multiplier * 40), // Чем больше множитель, тем выше
+                        x: Math.min(300, data.multiplier * 50),
+                        y: Math.max(-200, -data.multiplier * 40),
                     });
                     
-                    // If this is the first multiplier update, start simulation
                     if (!startMultiplierTime) {
                         setStartMultiplierTime(Date.now());
                         simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
                     }
                     
-                    // Automatic cashout when reaching the specified multiplier
                     if (isAutoEnabled && bet > 0 && parseFloat(data.multiplier) >= autoOutputCoefficient && autoOutputCoefficient > 0) {
                         handleCashout();
                         toast.success(`Auto cashout at ${data.multiplier}x`);
@@ -245,33 +243,10 @@ export const Crash = () => {
                         setOverlayText(`Game starts in ${data.remaining_time} seconds`);
                         console.log('Betting open - time remaining:', data.remaining_time);
                     } else {
-                        // Когда таймер достиг нуля, размещаем ставку из очереди
-                        if (queuedBet > 0) {
-                            console.log('Attempting to place queued bet:', queuedBet);
-                            try {
-                                const response = await crashPlace(queuedBet, autoOutputCoefficient);
-                                if (response.ok) {
-                                    setBet(queuedBet);
-                                    toast.success('Queued bet placed!');
-                                    setQueuedBet(0);
-                                    localStorage.removeItem('queuedBet');
-                                    console.log('Queued bet placed successfully');
-                                } else {
-                                    const errorData = await response.json();
-                                    console.error('Failed to place queued bet:', errorData);
-                                    toast.error(errorData.error || 'Failed to place queued bet');
-                                    increaseBalanceRupee(queuedBet);
-                                    setQueuedBet(0);
-                                    localStorage.removeItem('queuedBet');
-                                }
-                            } catch (error) {
-                                console.error('Error placing queued bet:', error);
-                                toast.error('Failed to place queued bet');
-                                increaseBalanceRupee(queuedBet);
-                                setQueuedBet(0);
-                                localStorage.removeItem('queuedBet');
-                            }
-                        }
+                        // Когда таймер достиг нуля, начинаем новую игру
+                        setIsBettingClosed(true);
+                        setGameActive(true);
+                        setOverlayText('Game started!');
                     }
                 }
 
@@ -293,7 +268,6 @@ export const Crash = () => {
                     toast.success(`${data.username} bet ₹${data.amount.toFixed(0)}`);
                 }
                 
-                // Displaying active game start
                 if (data.type === "game_started") {
                     toast.success('Game started!');
                     setIsBettingClosed(true);
@@ -301,44 +275,12 @@ export const Crash = () => {
                     setGameActive(true);
                     setCollapsed(false);
                     
-                    // Start multiplier growth simulation with initial value of 1.0
                     setStartMultiplierTime(Date.now());
                     simulateMultiplierGrowth(Date.now(), 1.0);
 
-                    // Place queued bet if exists
+                    // Размещаем ставку из очереди при старте игры
                     if (queuedBet > 0) {
-                        console.log('Attempting to place queued bet:', queuedBet);
-                        try {
-                            const response = await crashPlace(queuedBet, autoOutputCoefficient);
-                            if (response.ok) {
-                                setBet(queuedBet);
-                                toast.success('Queued bet placed!');
-                                setQueuedBet(0);
-                                localStorage.removeItem('queuedBet');
-                                console.log('Queued bet placed successfully');
-                                
-                                // Перезапускаем симуляцию множителя после успешной ставки
-                                setStartMultiplierTime(Date.now());
-                                simulateMultiplierGrowth(Date.now(), 1.0);
-                                
-                                // Обновляем позицию звезды
-                                setStarPosition({ x: 50, y: -40 });
-                                setIsFalling(false);
-                            } else {
-                                const errorData = await response.json();
-                                console.error('Failed to place queued bet:', errorData);
-                                toast.error(errorData.error || 'Failed to place queued bet');
-                                increaseBalanceRupee(queuedBet);
-                                setQueuedBet(0);
-                                localStorage.removeItem('queuedBet');
-                            }
-                        } catch (error) {
-                            console.error('Error placing queued bet:', error);
-                            toast.error('Failed to place queued bet');
-                            increaseBalanceRupee(queuedBet);
-                            setQueuedBet(0);
-                            localStorage.removeItem('queuedBet');
-                        }
+                        await placeBetQueue(queuedBet);
                     }
                 }
             } catch (error) {
