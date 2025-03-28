@@ -51,13 +51,43 @@ export const Crash = () => {
     }, []);
 
     const placeBetQueue = async (queueBetFromStorage) => {
+        try {
+            // Добавляем задержку перед размещением ставки
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            console.log('Attempting to place queued bet:', queueBetFromStorage);
+            const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
 
-        const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
-
-        if (response.ok) {
-            setBet(parseInt(queueBetFromStorage));
-            localStorage.removeItem('queuedBet');
+            if (response.ok) {
+                setBet(parseInt(queueBetFromStorage));
+                localStorage.removeItem('queuedBet');
+                setQueuedBet(0);
+                
+                // Сбрасываем множитель и перезапускаем симуляцию
+                valXValut.current = 1.0;
+                setXValue(1.0);
+                setStartMultiplierTime(Date.now());
+                simulateMultiplierGrowth(Date.now(), 1.0);
+                
+                // Обновляем позицию звезды
+                setStarPosition({ x: 50, y: -40 });
+                setIsFalling(false);
+                
+                toast.success('Queued bet placed successfully!');
+            } else {
+                const errorData = await response.json();
+                console.error('Failed to place queued bet:', errorData);
+                toast.error(errorData.error || 'Failed to place queued bet');
+                increaseBalanceRupee(Number(queueBetFromStorage));
+                setQueuedBet(0);
+                localStorage.removeItem('queuedBet');
+            }
+        } catch (error) {
+            console.error('Error placing queued bet:', error);
+            toast.error('Failed to place queued bet');
+            increaseBalanceRupee(Number(queueBetFromStorage));
             setQueuedBet(0);
+            localStorage.removeItem('queuedBet');
         }
     }
 
