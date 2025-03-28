@@ -80,7 +80,7 @@ export const Crash = () => {
     };
 
     useEffect(() => {
-        if (gameActive) {
+        if (!gameActive) {
             const queueBetFromStorage = localStorage.getItem('queuedBet');
             if (queueBetFromStorage) {
                 placeBetQueue(queueBetFromStorage);
