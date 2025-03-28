@@ -53,10 +53,19 @@ export const Crash = () => {
     useEffect(() => {
         if (gameActive) {
             const queueBetFromStorage = localStorage.getItem('queuedBet');
-            if (queueBetFromStorage) {
-                setBet(parseInt(queueBetFromStorage));
-                localStorage.removeItem('queuedBet');
-                setQueuedBet(0);
+
+            if(queueBetFromStorage){
+                placeBetQueue(queueBetFromStorage);
+            }
+
+            const placeBetQueue = async (queueBetFromStorage) => {
+                const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
+
+                if (response.ok) {
+                    setBet(parseInt(queueBetFromStorage));
+                    localStorage.removeItem('queuedBet');
+                    setQueuedBet(0);
+                }
             }
         }
     }, [gameActive]);
@@ -560,15 +569,18 @@ export const Crash = () => {
                         <button 
                             className={`${styles.mainButton} ${(gameActive && !isCrashed) ? styles.activeButton : ''}`} 
                             onClick={handleCashout} 
-                            disabled={!gameActive || loading || isCrashed}
+                            disabled={!gameActive || loading || isCrashed || !bet}
                         >
-                            {loading ? 'Loading...' : 'Cashout'}
+                            {loading ? 'Loading...' : 
+                             !gameActive ? 'Waiting for game...' :
+                             isCrashed ? 'Game finished' :
+                             'Cashout'}
                         </button>
                     ) : (
                         <button 
                             className={`${styles.mainButton} ${isBettingClosed ? styles.queuedButton : ''}`}
                             onClick={handleBet} 
-                            disabled={loading || queuedBet > 0}
+                            disabled={loading || queuedBet > 0 || (gameActive && bet > 0)}
                         >
                             {loading ? 'Loading...' : 
                              queuedBet > 0 ? `Queued: ₹${queuedBet}` :
