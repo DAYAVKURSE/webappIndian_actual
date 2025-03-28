@@ -144,8 +144,8 @@ export const Crash = () => {
             const elapsedSeconds = (Date.now() - startTime) / 1000;
             const newMultiplier = Math.exp(elapsedSeconds * growthFactor);
     
-            // 📌 Экспоненциальное усреднение только вверх
-            const smoothedMultiplier = Math.max(lastValue, (lastValue * 0.8 + newMultiplier * 0.2)).toFixed(2);
+            // 📌 Экспоненциальное усреднение
+            const smoothedMultiplier = (lastValue * 0.8 + newMultiplier * 0.2).toFixed(2);
             lastValue = smoothedMultiplier;
             
             valXValut.current = parseFloat(smoothedMultiplier);
@@ -198,14 +198,10 @@ export const Crash = () => {
                     setGameActive(true);
                     setCollapsed(false);
 
-                    // Обновляем позицию звезды вверх и вправо
-                    const maxX = 300; // Максимальное смещение вправо
-                    const maxY = -200; // Максимальное смещение вверх
-                    const multiplier = parseFloat(data.multiplier);
-                    
+                    // Обновляем позицию звезды только вверх
                     setStarPosition({
-                        x: Math.min(maxX, 50 + multiplier * 25), // Начинаем с 50 и двигаем вправо
-                        y: Math.max(maxY, -40 - multiplier * 40), // Начинаем с -40 и двигаем вверх
+                        x: 50,
+                        y: Math.max(-200, -data.multiplier * 40),
                     });
                     
                     if (!startMultiplierTime) {
@@ -234,7 +230,7 @@ export const Crash = () => {
                     valXValut.current = parseFloat(data.crash_point).toFixed(2);
                     setXValue(parseFloat(data.crash_point).toFixed(2));
 
-                    // Возвращаем звезду в начальную позицию
+                    // Убираем анимацию падения
                     setStarPosition({ x: 50, y: -40 });
                     
                     // Проверяем наличие ставки в очереди и пытаемся разместить её
@@ -249,6 +245,7 @@ export const Crash = () => {
                                     setQueuedBet(0);
                                     toast.success('Queued bet placed successfully!');
                                 } else {
+                                    // Если не удалось поставить, пробуем еще раз через 1 секунду
                                     setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
                                 }
                             } catch (error) {
