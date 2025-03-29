@@ -95,7 +95,7 @@ func CreatePaymentPage(c *gin.Context) {
     }
 
     req.Header.Set("Content-Type", "application/json")
-    req.Header.Set("Apikey", apiKey)
+    req.Header.Set("apikey", apiKey)
 
     // Отправляем запрос
     client := &http.Client{
