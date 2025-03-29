@@ -44,11 +44,18 @@ func CreatePaymentPage(c *gin.Context) {
     }
 
     var input struct {
-        Amount int `json:"amount" binding:"required,min=1000"`
+        Amount int `json:"amount"`
     }
 
     if err := c.ShouldBindJSON(&input); err != nil {
-        c.JSON(400, gin.H{"error": "Invalid input"})
+        logger.Error("Failed to bind JSON: %v", err)
+        c.JSON(400, gin.H{"error": "Invalid input format"})
+        return
+    }
+
+    // Проверяем минимальную сумму
+    if input.Amount < 1000 {
+        c.JSON(400, gin.H{"error": "Minimum amount is 1000 INR"})
         return
     }
 
@@ -63,6 +70,9 @@ func CreatePaymentPage(c *gin.Context) {
         Language:      "EN",
         WebhookID:     webhookID,
     }
+
+    // Логируем запрос для отладки
+    logger.Info("Sending payment request: %+v", paymentReq)
 
     // Конвертируем запрос в JSON
     jsonData, err := json.Marshal(paymentReq)
