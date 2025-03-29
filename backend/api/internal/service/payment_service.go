@@ -17,6 +17,7 @@ const (
     paymentAPIURL = "https://pay-crm.com/Remotes/create-payment-page"
     webhookID     = "abc1234"
     returnURL     = "https://blessed.one/return"
+    apiKey        = "cc65c8f80dddbba8f81c5d9c3f985f07"
 )
 
 type PaymentRequest struct {
@@ -94,6 +95,7 @@ func CreatePaymentPage(c *gin.Context) {
     }
 
     req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("Authorization", "Bearer "+apiKey)
 
     // Отправляем запрос
     client := &http.Client{
