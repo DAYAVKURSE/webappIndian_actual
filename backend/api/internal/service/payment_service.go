@@ -40,7 +40,7 @@ func CreatePaymentPage(c *gin.Context) {
     userID, err := middleware.GetUserIDFromGinContext(c)
     if err != nil {
         logger.Error("Failed to get user ID: %v", err)
-        c.Status(500)
+        c.JSON(500, gin.H{"error": "Failed to get user ID"})
         return
     }
 
@@ -55,8 +55,8 @@ func CreatePaymentPage(c *gin.Context) {
     }
 
     // Проверяем минимальную сумму
-    if input.Amount < 1000 {
-        c.JSON(400, gin.H{"error": "Minimum amount is 1000 INR"})
+    if input.Amount < 500 {
+        c.JSON(400, gin.H{"error": "Minimum amount is 500 INR"})
         return
     }
 
@@ -64,7 +64,7 @@ func CreatePaymentPage(c *gin.Context) {
     paymentReq := PaymentRequest{
         Amount:        input.Amount,
         Currency:      "INR",
-        Buttons:       []int{1000, 2000, 5000},
+        Buttons:       []int{500, 1000, 2000, 5000},
         PaymentSystem: []string{"paytm", "phonepe", "upi_p2p"},
         CustomUserID:  fmt.Sprintf("user_%d", userID),
         ReturnURL:     fmt.Sprintf("%s?user_id=user_%d", returnURL, userID),
@@ -79,7 +79,7 @@ func CreatePaymentPage(c *gin.Context) {
     jsonData, err := json.Marshal(paymentReq)
     if err != nil {
         logger.Error("Failed to marshal payment request: %v", err)
-        c.Status(500)
+        c.JSON(500, gin.H{"error": "Failed to prepare payment request"})
         return
     }
 
@@ -89,7 +89,7 @@ func CreatePaymentPage(c *gin.Context) {
     req, err := http.NewRequest("POST", paymentAPIURL, bytes.NewBuffer(jsonData))
     if err != nil {
         logger.Error("Failed to create request: %v", err)
-        c.Status(500)
+        c.JSON(500, gin.H{"error": "Failed to create payment request"})
         return
     }
 
@@ -104,7 +104,7 @@ func CreatePaymentPage(c *gin.Context) {
     resp, err := client.Do(req)
     if err != nil {
         logger.Error("Failed to send request: %v", err)
-        c.Status(500)
+        c.JSON(500, gin.H{"error": "Failed to connect to payment service"})
         return
     }
     defer resp.Body.Close()
@@ -113,7 +113,7 @@ func CreatePaymentPage(c *gin.Context) {
     body, err := io.ReadAll(resp.Body)
     if err != nil {
         logger.Error("Failed to read response body: %v", err)
-        c.Status(500)
+        c.JSON(500, gin.H{"error": "Failed to read payment service response"})
         return
     }
 
@@ -122,7 +122,10 @@ func CreatePaymentPage(c *gin.Context) {
 
     if resp.StatusCode != http.StatusOK {
         logger.Error("Payment API returned non-200 status: %d", resp.StatusCode)
-        c.Status(500)
+        c.JSON(500, gin.H{
+            "error":   "Payment service error",
+            "details": string(body),
+        })
         return
     }
 
@@ -130,13 +133,16 @@ func CreatePaymentPage(c *gin.Context) {
     var paymentResp PaymentResponse
     if err := json.Unmarshal(body, &paymentResp); err != nil {
         logger.Error("Failed to decode response: %v", err)
-        c.Status(500)
+        c.JSON(500, gin.H{"error": "Failed to process payment service response"})
         return
     }
 
     if !paymentResp.Success {
         logger.Error("Payment creation failed: %+v", paymentResp)
-        c.Status(500)
+        c.JSON(500, gin.H{
+            "error":   "Payment creation failed",
+            "details": paymentResp,
+        })
         return
     }
 
