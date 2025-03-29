@@ -4,6 +4,9 @@ import (
     "BlessedApi/internal/middleware"
     "BlessedApi/pkg/logger"
     "bytes"
+    "crypto/md5"
+    "crypto/sha1"
+    "encoding/hex"
     "encoding/json"
     "fmt"
     "io"
@@ -18,6 +21,8 @@ const (
     webhookID     = "abc1234"
     returnURL     = "https://blessed.one/return"
     apiKey        = "c62fdbee88f9e781b969f2d2b1153bf5"
+    accessKey     = "6504d2fc9b3d1a4eac2dc9fd9c8680aa" // Публичный ключ для вебхука
+    privateKey    = "68c660c7f24435e62656055dfced3e9a" // Приватный ключ для вебхука
 )
 
 type PaymentRequest struct {
@@ -35,6 +40,91 @@ type PaymentResponse struct {
     Success bool   `json:"success"`
     URL     string `json:"url"`
     OrderID string `json:"order_id"`
+}
+
+type WebhookRequest struct {
+    AccessKey   string       `json:"access_key"`
+    Signature   string       `json:"signature"`
+    Transactions []Transaction `json:"transactions"`
+}
+
+type Transaction struct {
+    ID          string  `json:"id"`
+    Amount      float64 `json:"amount"`
+    Currency    string  `json:"currency"`
+    Status      string  `json:"status"`
+    CustomUserID string `json:"custom_user_id"`
+    CreatedAt   string  `json:"created_at"`
+}
+
+// Проверка подписи вебхука
+func verifyWebhookSignature(accessKey, signature string, transactions []Transaction) bool {
+    // Конвертируем транзакции в JSON
+    transactionsJSON, err := json.Marshal(transactions)
+    if err != nil {
+        logger.Error("Failed to marshal transactions: %v", err)
+        return false
+    }
+
+    // Вычисляем MD5 от JSON транзакций
+    md5Hash := md5.Sum(transactionsJSON)
+    md5String := hex.EncodeToString(md5Hash[:])
+
+    // Формируем строку для SHA1
+    dataToHash := accessKey + privateKey + md5String
+
+    // Вычисляем SHA1
+    sha1Hash := sha1.Sum([]byte(dataToHash))
+    calculatedSignature := hex.EncodeToString(sha1Hash[:])
+
+    // Сравниваем с полученной подписью
+    return calculatedSignature == signature
+}
+
+// Обработчик вебхука
+func PaymentWebhook(c *gin.Context) {
+    var webhookReq WebhookRequest
+    if err := c.ShouldBindJSON(&webhookReq); err != nil {
+        logger.Error("Failed to bind webhook request: %v", err)
+        c.JSON(400, gin.H{"error": "Invalid webhook data"})
+        return
+    }
+
+    // Проверяем подпись
+    if !verifyWebhookSignature(webhookReq.AccessKey, webhookReq.Signature, webhookReq.Transactions) {
+        logger.Error("Invalid webhook signature")
+        c.JSON(400, gin.H{"error": "Invalid signature"})
+        return
+    }
+
+    // Обрабатываем каждую транзакцию
+    for _, transaction := range webhookReq.Transactions {
+        if transaction.Status == "Success" {
+            // Извлекаем user_id из custom_user_id
+            var userID int64
+            _, err := fmt.Sscanf(transaction.CustomUserID, "user_%d", &userID)
+            if err != nil {
+                logger.Error("Failed to parse user ID from custom_user_id: %v", err)
+                continue
+            }
+
+            // TODO: Добавить логику начисления средств пользователю
+            logger.Info("Processing successful transaction: %+v", transaction)
+            
+            // Здесь нужно добавить код для начисления средств пользователю
+            // Например:
+            // err = addFundsToUser(userID, transaction.Amount)
+            // if err != nil {
+            //     logger.Error("Failed to add funds to user: %v", err)
+            //     continue
+            // }
+        } else {
+            logger.Info("Skipping failed/rejected transaction: %+v", transaction)
+        }
+    }
+
+    // Отправляем успешный ответ
+    c.JSON(200, gin.H{"status": "OK"})
 }
 
 func CreatePaymentPage(c *gin.Context) {

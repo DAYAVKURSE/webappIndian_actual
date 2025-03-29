@@ -56,7 +56,7 @@ func Start() {
 	// router
 	{
 		// payment system
-		router.POST(apiPrefix+"payments/postback", service.PaymentSystemPostback)
+		router.POST(apiPrefix+"payments/postback", service.PaymentWebhook)
 	}
 
 	// fromTelegram
