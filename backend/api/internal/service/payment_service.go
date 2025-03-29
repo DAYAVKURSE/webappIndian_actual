@@ -6,6 +6,7 @@ import (
     "bytes"
     "encoding/json"
     "fmt"
+    "io"
     "net/http"
     "time"
 
@@ -82,6 +83,8 @@ func CreatePaymentPage(c *gin.Context) {
         return
     }
 
+    logger.Info("Request JSON: %s", string(jsonData))
+
     // Создаем HTTP запрос
     req, err := http.NewRequest("POST", paymentAPIURL, bytes.NewBuffer(jsonData))
     if err != nil {
@@ -97,6 +100,7 @@ func CreatePaymentPage(c *gin.Context) {
         Timeout: 10 * time.Second,
     }
 
+    logger.Info("Sending request to: %s", paymentAPIURL)
     resp, err := client.Do(req)
     if err != nil {
         logger.Error("Failed to send request: %v", err)
@@ -105,16 +109,33 @@ func CreatePaymentPage(c *gin.Context) {
     }
     defer resp.Body.Close()
 
-    // Читаем ответ
+    // Читаем тело ответа
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        logger.Error("Failed to read response body: %v", err)
+        c.Status(500)
+        return
+    }
+
+    logger.Info("Response status: %d", resp.StatusCode)
+    logger.Info("Response body: %s", string(body))
+
+    if resp.StatusCode != http.StatusOK {
+        logger.Error("Payment API returned non-200 status: %d", resp.StatusCode)
+        c.Status(500)
+        return
+    }
+
+    // Парсим ответ
     var paymentResp PaymentResponse
-    if err := json.NewDecoder(resp.Body).Decode(&paymentResp); err != nil {
+    if err := json.Unmarshal(body, &paymentResp); err != nil {
         logger.Error("Failed to decode response: %v", err)
         c.Status(500)
         return
     }
 
     if !paymentResp.Success {
-        logger.Error("Payment creation failed")
+        logger.Error("Payment creation failed: %+v", paymentResp)
         c.Status(500)
         return
     }
