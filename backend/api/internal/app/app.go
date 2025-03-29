@@ -100,7 +100,7 @@ func Start() {
 		authorized.GET(apiPrefix+"users/referrals", service.GetUserReferrals)
 
 		// deposits
-		authorized.POST(apiPrefix+"payments/create", service.CreatePaymentPageHandler)
+		authorized.POST(apiPrefix+"payments/create", service.CreatePaymentPage)
 		authorized.GET(apiPrefix+"users/deposits", service.GetUserDeposits)
 
 		// clicker
