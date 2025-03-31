@@ -242,4 +242,46 @@ func CreatePaymentPage(c *gin.Context) {
     c.JSON(200, gin.H{
         "url": paymentResp.URL,
     })
+}
+
+func CreateWithdrawRequest(c *gin.Context) {
+    userID, err := middleware.GetUserIDFromGinContext(c)
+    if err != nil {
+        logger.Error("Failed to get user ID: %v", err)
+        c.JSON(500, gin.H{"error": "Failed to get user ID"})
+        return
+    }
+
+    var input struct {
+        Amount int `json:"amount"`
+    }
+
+    if err := c.ShouldBindJSON(&input); err != nil {
+        logger.Error("Failed to bind JSON: %v", err)
+        c.JSON(400, gin.H{"error": "Invalid input format"})
+        return
+    }
+
+    // Проверяем минимальную сумму
+    if input.Amount < 500 {
+        c.JSON(400, gin.H{"error": "Minimum amount is 500 INR"})
+        return
+    }
+
+    // Формируем сообщение для Telegram
+    message := fmt.Sprintf("🔄 New Withdraw Request\n\nUser ID: %d\nAmount: %d INR\nTime: %s", 
+        userID, 
+        input.Amount,
+        time.Now().Format("2006-01-02 15:04:05"))
+
+    // Отправляем уведомление в Telegram
+    if err := SendTelegramMessage(message); err != nil {
+        logger.Error("Failed to send telegram notification: %v", err)
+        // Продолжаем выполнение, даже если не удалось отправить уведомление
+    }
+
+    // Возвращаем сообщение пользователю
+    c.JSON(200, gin.H{
+        "message": "Your withdraw application has been created! Please contact our support team to confirm your application.",
+    })
 } 
