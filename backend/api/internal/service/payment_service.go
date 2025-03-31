@@ -298,4 +298,14 @@ func CreateWithdrawRequest(c *gin.Context) {
     c.JSON(200, gin.H{
         "message": "Your withdraw application has been created! Please contact our support team to confirm your application.",
     })
+}
+
+// GetUserBalance получает баланс пользователя
+func GetUserBalance(userID int64) (int, error) {
+    var balance int
+    err := db.QueryRow("SELECT balance FROM users WHERE id = $1", userID).Scan(&balance)
+    if err != nil {
+        return 0, fmt.Errorf("failed to get user balance: %v", err)
+    }
+    return balance, nil
 } 
