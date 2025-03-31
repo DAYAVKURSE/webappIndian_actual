@@ -3,7 +3,7 @@ package main
 import (
 	"BlessedApi/internal/app"
 	"BlessedApi/internal/service"
-	"BlessedApi/internal/logger"
+	"BlessedApi/pkg/logger"
 	"database/sql"
 )
 
