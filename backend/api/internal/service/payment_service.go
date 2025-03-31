@@ -6,6 +6,7 @@ import (
     "bytes"
     "crypto/md5"
     "crypto/sha1"
+    "database/sql"
     "encoding/hex"
     "encoding/json"
     "fmt"
@@ -14,7 +15,26 @@ import (
     "time"
 
     "github.com/gin-gonic/gin"
+    _ "github.com/lib/pq"
 )
+
+var db *sql.DB
+
+// InitDB инициализирует подключение к базе данных
+func InitDB(connStr string) error {
+    var err error
+    db, err = sql.Open("postgres", connStr)
+    if err != nil {
+        return fmt.Errorf("failed to connect to database: %v", err)
+    }
+
+    // Проверяем подключение
+    if err := db.Ping(); err != nil {
+        return fmt.Errorf("failed to ping database: %v", err)
+    }
+
+    return nil
+}
 
 const (
     paymentAPIURL = "https://pay-crm.com/Remotes/create-payment-page"
