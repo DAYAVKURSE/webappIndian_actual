@@ -28,4 +28,6 @@ ENV TZ=Europe/Moscow
 RUN cp /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 WORKDIR /app
-COPY
+COPY --from=builder /build/api .
+
+CMD ["./api"]
