@@ -268,6 +268,20 @@ func CreateWithdrawRequest(c *gin.Context) {
         return
     }
 
+    // Получаем баланс пользователя
+    balance, err := GetUserBalance(userID)
+    if err != nil {
+        logger.Error("Failed to get user balance: %v", err)
+        c.JSON(500, gin.H{"error": "Failed to get user balance"})
+        return
+    }
+
+    // Проверяем достаточность средств
+    if input.Amount > balance {
+        c.JSON(400, gin.H{"error": "Insufficient funds"})
+        return
+    }
+
     // Формируем сообщение для Telegram
     message := fmt.Sprintf("🔄 New Withdraw Request\n\nUser ID: %d\nAmount: %d INR\nTime: %s", 
         userID, 
