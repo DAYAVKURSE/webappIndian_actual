@@ -41,7 +41,7 @@ export const Other = () => {
             
             <div className={styles.links}>
                 <Link to={'/other/faq'}>FAQ</Link>
-                <Link to={"https://t.me/BiTRavesupport"}>Support</Link>
+                <Link to={"https://t.me/rupexsupport"}>Support</Link>
             </div>
             
             <div className={styles.other_dev} onClick={() => copyLink()} />
