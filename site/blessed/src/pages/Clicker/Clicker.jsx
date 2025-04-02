@@ -51,7 +51,7 @@ export const Clicker = () => {
             <h3 className={styles.subtitle}>Join Now! </h3>
             <p className={styles.description}>Make a minimum deposit to participate in the giveaway of 3 Ducati motorbikes! Dont miss your chance!</p>
 
-            <img className={styles.banner} src={'./banner.png'}></img>
+            <img className={styles.banner} src={'./banner.jpg'}></img>
             <div className={styles.games}>
                 <h3>Top-3 Games</h3>
                 <ul className={styles.games__list}>
