@@ -79,7 +79,7 @@ export const Crash = () => {
                 valXValut.current = 1.0;
                 setXValue(1.0);
                 setStartMultiplierTime(Date.now());
-                simulateMultiplierGrowth(Date.now(), 1.0);
+                simulateMultiplierGrowth();
                 
                 // Обновляем позицию звезды
                 setStarPosition({ x: 50, y: -40 });
@@ -128,29 +128,36 @@ export const Crash = () => {
     }, []);
 
     // Function to simulate multiplier growth on frontend
-    const simulateMultiplierGrowth = (startTime, initialMultiplier = 1.0) => {
-        if (multiplierTimerRef.current) {
-            clearInterval(multiplierTimerRef.current);
+    const simulateMultiplierGrowth = () => {
+        if (!gameActive) return;
+
+        const currentMultiplier = valXValut.current;
+        const growthFactor = 0.03;
+        const randomFactor = 0.01 * (Math.random() - 0.5);
+        const newMultiplier = currentMultiplier * (1 + growthFactor + randomFactor);
+
+        // Добавляем ограничение на максимальное значение множителя
+        const maxMultiplier = 1000; // Максимальное значение множителя
+        if (newMultiplier >= maxMultiplier) {
+            // Если достигли максимального значения, останавливаем игру
+            setGameActive(false);
+            setIsBettingClosed(true);
+            setXValue(maxMultiplier.toFixed(1));
+            valXValut.current = maxMultiplier;
+            setStarPosition({ x: 50, y: -40 - (maxMultiplier - 1) * 20 });
+            return;
         }
-    
-        valXValut.current = initialMultiplier;
-        
-        const updateInterval = 100; 
-        const growthFactor = 0.03; 
-    
-        let lastValue = initialMultiplier;
-        
-        multiplierTimerRef.current = setInterval(() => {
-            const elapsedSeconds = (Date.now() - startTime) / 1000;
-            const newMultiplier = Math.exp(elapsedSeconds * growthFactor);
-    
-            // 📌 Экспоненциальное усреднение
-            const smoothedMultiplier = (lastValue * 0.8 + newMultiplier * 0.2).toFixed(2);
-            lastValue = smoothedMultiplier;
-            
-            valXValut.current = parseFloat(smoothedMultiplier);
-            setXValue(parseFloat(smoothedMultiplier));
-        }, updateInterval);
+
+        // Обновляем значение множителя
+        valXValut.current = newMultiplier;
+        setXValue(newMultiplier.toFixed(1));
+
+        // Обновляем позицию звезды
+        const starOffset = Math.min(-200, -40 - (newMultiplier - 1) * 20);
+        setStarPosition({ x: 50, y: starOffset });
+
+        // Продолжаем анимацию
+        requestAnimationFrame(simulateMultiplierGrowth);
     };
     
 
@@ -206,7 +213,7 @@ export const Crash = () => {
                     
                     if (!startMultiplierTime) {
                         setStartMultiplierTime(Date.now());
-                        simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
+                        simulateMultiplierGrowth();
                     }
                     
                     if (isAutoEnabled && bet > 0 && parseFloat(data.multiplier) >= autoOutputCoefficient && autoOutputCoefficient > 0) {
@@ -296,7 +303,7 @@ export const Crash = () => {
                     setCollapsed(false);
                     
                     setStartMultiplierTime(Date.now());
-                    simulateMultiplierGrowth(Date.now(), 1.0);
+                    simulateMultiplierGrowth();
                     setXValue(1.0);
 
                     // Пытаемся разместить ставку из очереди
