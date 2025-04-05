@@ -6,6 +6,7 @@ import (
 	"BlessedApi/internal/models"
 	"BlessedApi/pkg/logger"
 	"errors"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -205,25 +206,26 @@ func (w *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cra
 	}
 
 	startTime := time.Now()
-	lastMultiplier := 1.0
+	baseMultiplier := 1.0
 	lastUpdateTime := time.Now()
 
-	// Отправляем обновление множителя каждые 50мс
-	ticker := time.NewTicker(50 * time.Millisecond)
+	// Отправляем обновление множителя каждые 16мс (примерно 60 FPS)
+	ticker := time.NewTicker(16 * time.Millisecond)
 	defer ticker.Stop()
 
 	for range ticker.C {
 		elapsed := time.Since(startTime).Seconds()
-		currentMultiplier := currentGame.CalculateMultiplier()
 		
-		// Плавное увеличение множителя
-		timeSinceLastUpdate := time.Since(lastUpdateTime).Seconds()
-		multiplierIncrement := (currentMultiplier - lastMultiplier) * timeSinceLastUpdate * 2
-		smoothedMultiplier := lastMultiplier + multiplierIncrement
+		// Базовое увеличение множителя
+		baseMultiplier = 1.0 + (elapsed * 0.1)
+		
+		// Добавляем случайную составляющую для более естественного движения
+		randomFactor := 1.0 + (rand.Float64() * 0.01)
+		currentMultiplier := baseMultiplier * randomFactor
 		
 		multiplierUpdate := gin.H{
 			"type":      "multiplier_update",
-			"multiplier": smoothedMultiplier,
+			"multiplier": currentMultiplier,
 			"timestamp": time.Now().UnixNano() / int64(time.Millisecond),
 			"elapsed":   elapsed,
 		}
@@ -241,11 +243,10 @@ func (w *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cra
 		}
 		w.mu.Unlock()
 
-		lastMultiplier = smoothedMultiplier
 		lastUpdateTime = time.Now()
 
 		// Проверяем, достиг ли множитель точки краша
-		if smoothedMultiplier >= currentGame.CrashPointMultiplier {
+		if currentMultiplier >= currentGame.CrashPointMultiplier {
 			w.BroadcastGameCrash(currentGame.CrashPointMultiplier)
 			break
 		}
