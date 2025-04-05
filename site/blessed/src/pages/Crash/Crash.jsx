@@ -187,6 +187,32 @@ export const Crash = () => {
             toast.error('Connection error. Please reload the page.');
         };
 
+        ws.onclose = () => {
+            console.log('WebSocket connection closed, reconnecting...');
+            
+            // Stop multiplier simulation
+            if (multiplierTimerRef.current) {
+                clearInterval(multiplierTimerRef.current);
+                multiplierTimerRef.current = null;
+            }
+            
+            // Reset game state
+            setGameActive(false);
+            setIsCrashed(false);
+            setIsBettingClosed(true);
+            setOverlayText('Connection lost. Reconnecting...');
+            
+            // Reconnect after 1 second
+            setTimeout(() => {
+                const newWs = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
+                wsRef.current = newWs;
+                newWs.onopen = ws.onopen;
+                newWs.onerror = ws.onerror;
+                newWs.onclose = ws.onclose;
+                newWs.onmessage = ws.onmessage;
+            }, 1000);
+        };
+
         ws.onmessage = async (event) => {
             try {
                 const data = JSON.parse(event.data);
