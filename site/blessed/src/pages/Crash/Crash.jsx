@@ -155,7 +155,34 @@ export const Crash = () => {
             setXValue(parseFloat(smoothedMultiplier));
         }, updateInterval);
     };
+    
+      
 
+    // Setting up dimensions and WebSocket connection
+    useEffect(() => {
+        const updateDimensions = () => {
+            if (crashRef.current) {
+                setDimensions({
+                    width: crashRef.current.offsetWidth,
+                    height: crashRef.current.offsetHeight,
+                });
+            }
+        };
+
+        updateDimensions();
+        window.addEventListener('resize', updateDimensions);
+
+        // Checking for initData before creating WebSocket connection
+        if (!initData) {
+            toast.error('Authorization error. Please restart the application.');
+            return;
+        }
+
+        const encoded_init_data = encodeURIComponent(initData);
+        const ws = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
+        wsRef.current = ws;
+
+        
     const startReconnection = () => {
         if (reconnectAttempts.current < 5) { // Максимум 5 попыток
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000); // Экспоненциальная задержка до 30 сек
@@ -182,75 +209,15 @@ export const Crash = () => {
         }
       };
       
-      // Не забудьте очистить таймаут при размонтировании:
-      return () => {
-        if (reconnectTimeout.current) {
-          clearTimeout(reconnectTimeout.current);
-        }
-        // ... остальной cleanup код
-      };
-    }
-    
-
-    // Setting up dimensions and WebSocket connection
-    useEffect(() => {
-        const updateDimensions = () => {
-            if (crashRef.current) {
-                setDimensions({
-                    width: crashRef.current.offsetWidth,
-                    height: crashRef.current.offsetHeight,
-                });
-            }
-        };
-
-        updateDimensions();
-        window.addEventListener('resize', updateDimensions);
-
-        // Checking for initData before creating WebSocket connection
-        if (!initData) {
-            toast.error('Authorization error. Please restart the application.');
-            return;
-        }
-
-        const encoded_init_data = encodeURIComponent(initData);
-        const ws = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
-        wsRef.current = ws;
-
         ws.onopen = () => {
             console.log('WebSocket connection established');
         };
 
         ws.onerror = (error) => {
             console.error('WebSocket error:', error);
-            toast.error('Connection error. Please reload the page.');
             startReconnection();
-        };
-
-        ws.onclose = () => {
-            console.log('WebSocket connection closed, reconnecting...');
-            
-            // Stop multiplier simulation
-            if (multiplierTimerRef.current) {
-                clearInterval(multiplierTimerRef.current);
-                multiplierTimerRef.current = null;
-            }
-            
-            // Reset game state
-            setGameActive(false);
-            setIsCrashed(false);
-            setIsBettingClosed(true);
-            setOverlayText('Connection lost. Reconnecting...');
-            
-            // Reconnect after 1 second
-            setTimeout(() => {
-                const newWs = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
-                wsRef.current = newWs;
-                newWs.onopen = ws.onopen;
-                newWs.onerror = ws.onerror;
-                newWs.onclose = ws.onclose;
-                newWs.onmessage = ws.onmessage;
-            }, 1000);
-        };
+          };
+          
 
         ws.onmessage = async (event) => {
             try {
