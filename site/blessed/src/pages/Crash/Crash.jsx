@@ -254,60 +254,98 @@ export const Crash = () => {
         updateDimensions();
         window.addEventListener('resize', updateDimensions);
 
-        // Инициализируем WebSocket соединение
+        // Checking for initData before creating WebSocket connection
+        if (!initData) {
+            toast.error('Authorization error. Please restart the application.');
+            return;
+        }
+
+        const connectWebSocket = () => {
+            const encoded_init_data = encodeURIComponent(initData);
+            const ws = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
+            wsRef.current = ws;
+
+            ws.onopen = () => {
+                console.log('WebSocket connection established');
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket connection closed, reconnecting...');
+                
+                // Stop multiplier simulation
+                if (multiplierTimerRef.current) {
+                    clearInterval(multiplierTimerRef.current);
+                    multiplierTimerRef.current = null;
+                }
+                
+                // Reset game state
+                setGameActive(false);
+                setIsCrashed(false);
+                setIsBettingClosed(true);
+                setOverlayText('Connection lost. Reconnecting...');
+                
+                // Reconnect after 1 second
+                setTimeout(connectWebSocket, 1000);
+            };
+
+            ws.onmessage = async (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    console.log('WebSocket data received:', data);
+                    
+                    switch (data.type) {
+                        case "multiplier_update":
+                            handleMultiplierUpdate(data);
+                            break;
+                        case "game_crash":
+                            handleGameCrash(data);
+                            break;
+                        case "timer_tick":
+                            handleTimerTick(data);
+                            break;
+                        case "game_started":
+                            handleGameStarted();
+                            break;
+                        case "cashout_result":
+                            handleCashoutResult(data);
+                            break;
+                        case "other_cashout":
+                            handleOtherCashout(data);
+                            break;
+                        case "new_bet":
+                            handleNewBet(data);
+                            break;
+                        default:
+                            console.warn('Unknown message type:', data.type);
+                    }
+                } catch (error) {
+                    logError(error, 'processing WebSocket message');
+                }
+            };
+        };
+
+        // Initial connection
         connectWebSocket();
 
         return () => {
             window.removeEventListener('resize', updateDimensions);
-            if (wsRef.current) {
-                wsRef.current.close();
-            }
             if (multiplierTimerRef.current) {
                 clearInterval(multiplierTimerRef.current);
             }
+            if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+                wsRef.current.close();
+            }
         };
-    }, [initData, bet, autoOutputCoefficient, isAutoEnabled]);
+    }, [increaseBalanceRupee, bet, autoOutputCoefficient, isAutoEnabled]);
 
     // Добавляем функцию для логирования
     const logError = (error, context) => {
         console.error(`[${context}] Error:`, error);
         toast.error(`Error in ${context}. Please try again.`);
-    };
-
-    // Добавляем функцию для обработки сообщений WebSocket
-    const handleWebSocketMessage = async (event) => {
-        try {
-            const data = JSON.parse(event.data);
-            console.log('WebSocket data received:', data);
-            
-            switch (data.type) {
-                case "multiplier_update":
-                    handleMultiplierUpdate(data);
-                    break;
-                case "game_crash":
-                    handleGameCrash(data);
-                    break;
-                case "timer_tick":
-                    handleTimerTick(data);
-                    break;
-                case "game_started":
-                    handleGameStarted();
-                    break;
-                case "cashout_result":
-                    handleCashoutResult(data);
-                    break;
-                case "other_cashout":
-                    handleOtherCashout(data);
-                    break;
-                case "new_bet":
-                    handleNewBet(data);
-                    break;
-                default:
-                    console.warn('Unknown message type:', data.type);
-            }
-        } catch (error) {
-            logError(error, 'processing WebSocket message');
-        }
     };
 
     // Добавляем обработчики для каждого типа сообщения
@@ -368,6 +406,12 @@ export const Crash = () => {
 
         setStarPosition({ x: 50, y: -40 });
         
+        // Сбрасываем текущую ставку
+        if (bet > 0) {
+            toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
+            setBet(0);
+        }
+        
         // Обработка ставки в очереди
         const queueBetFromStorage = localStorage.getItem('queuedBet');
         if (queueBetFromStorage) {
@@ -389,11 +433,8 @@ export const Crash = () => {
             }, 1000);
         }
         
+        // Сбрасываем значения через 3 секунды
         setTimeout(() => {
-            if (bet > 0) {
-                toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
-                setBet(0);
-            }
             valXValut.current = 1.2;
             setXValue(1.2);
             setStarPosition({ x: 50, y: -40 });
@@ -560,6 +601,11 @@ export const Crash = () => {
                 setGameActive(false);
                 setIsCrashed(false);
                 toast.success(`Cashout request sent at multiplier ${xValue}x`);
+                
+                // Сбрасываем значения
+                valXValut.current = 1.2;
+                setXValue(1.2);
+                setStarPosition({ x: 50, y: -40 });
             } else {
                 const errorData = await response.json().catch(() => ({ error: 'Failed to cash out' }));
                 logError(errorData.error, 'cashing out');
@@ -636,85 +682,6 @@ export const Crash = () => {
                 {connectionStatus.toUpperCase()}
             </div>
         );
-    };
-
-    // Модифицируем функцию connectWebSocket
-    const connectWebSocket = () => {
-        if (!initData) {
-            toast.error('Authorization error. Please restart the application.');
-            return;
-        }
-
-        const encoded_init_data = encodeURIComponent(initData);
-        const ws = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
-        wsRef.current = ws;
-
-        // Пинг для поддержания соединения
-        const pingInterval = setInterval(() => {
-            if (ws.readyState === WebSocket.OPEN) {
-                try {
-                    ws.send('ping');
-                } catch (error) {
-                    console.error('Error sending ping:', error);
-                    ws.close();
-                }
-            }
-        }, 30000);
-
-        ws.onopen = () => {
-            console.log('WebSocket connection established');
-            setConnectionStatus('connected');
-            setIsReconnecting(false);
-            reconnectAttempts.current = 0;
-        };
-
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            setConnectionStatus('error');
-            toast.error('Connection error. Please reload the page.');
-        };
-
-        ws.onmessage = handleWebSocketMessage;
-
-        ws.onclose = (event) => {
-            console.log('WebSocket connection closed:', event.code, event.reason);
-            clearInterval(pingInterval);
-            
-            if (multiplierTimerRef.current) {
-                clearInterval(multiplierTimerRef.current);
-            }
-            setGameActive(false);
-            setIsBettingClosed(true);
-            
-            // Определяем, нужно ли пытаться переподключиться
-            const shouldReconnect = ![
-                NETWORK_ERROR_CODES.NORMAL_CLOSURE,
-                NETWORK_ERROR_CODES.GOING_AWAY,
-                NETWORK_ERROR_CODES.PROTOCOL_ERROR,
-                NETWORK_ERROR_CODES.UNSUPPORTED_DATA
-            ].includes(event.code);
-
-            if (shouldReconnect && !isReconnecting && reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
-                setIsReconnecting(true);
-                reconnectAttempts.current += 1;
-                const delay = RECONNECT_DELAY * Math.min(reconnectAttempts.current, 5);
-                console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttempts.current})`);
-                
-                setTimeout(() => {
-                    connectWebSocket();
-                }, delay);
-            } else if (reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) {
-                setConnectionStatus('disconnected');
-                toast.error('Failed to reconnect. Please refresh the page.');
-            }
-        };
-
-        return () => {
-            clearInterval(pingInterval);
-            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-                ws.close();
-            }
-        };
     };
 
     return (
