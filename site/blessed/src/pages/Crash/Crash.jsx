@@ -200,16 +200,30 @@ export const Crash = () => {
                 console.log('WebSocket data received:', data);
                 
                 if (data.type === "multiplier_update") {
+                    // Добавляем проверку на зависание
+                    if (data.multiplier === valXValut.current) {
+                        // Если множитель не меняется в течение 5 секунд
+                        if (!stuckTimeout) {
+                            stuckTimeout = setTimeout(() => {
+                                // Перезапускаем игру
+                                setGameActive(false);
+                                setIsBettingClosed(true);
+                                ws.close(); // Это вызовет переподключение
+                            }, 5000);
+                        }
+                    } else {
+                        if (stuckTimeout) {
+                            clearTimeout(stuckTimeout);
+                            stuckTimeout = null;
+                        }
+                    }
+                    
                     setIsBettingClosed(true);
                     setIsCrashed(false);
                     setGameActive(true);
                     setCollapsed(false);
-
-                    // Обновляем позицию звезды только вверх
-                    setStarPosition({
-                        x: Math.min(200, 50 + data.multiplier * 40 - 40), // Начинаем с 50 и двигаем вправо
-                        y: Math.max(-200, -data.multiplier * 40),
-                    });
+                    valXValut.current = data.multiplier;
+                    setXValue(data.multiplier.toFixed(2));
                     
                     if (!startMultiplierTime) {
                         setStartMultiplierTime(Date.now());
@@ -349,6 +363,16 @@ export const Crash = () => {
             } catch (error) {
                 console.error('Error processing WebSocket message:', error);
             }
+        };
+
+        ws.onclose = () => {
+            console.log('WebSocket connection closed');
+            setTimeout(() => {
+                // Попытка переподключения
+                const newWs = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
+                wsRef.current = newWs;
+                // ... настройка обработчиков для нового соединения
+            }, 1000);
         };
 
         return () => {
