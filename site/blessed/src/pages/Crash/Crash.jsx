@@ -29,6 +29,9 @@ export const Crash = () => {
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);
     const [startMultiplierTime, setStartMultiplierTime] = useState(null);
+    const reconnectAttemptsRef = useRef(0);
+    const MAX_RECONNECT_ATTEMPTS = 5;
+    const RECONNECT_DELAY = 3000;
 
     const valXValut = useRef(1);
 
@@ -154,21 +157,8 @@ export const Crash = () => {
     };
     
 
-    // Setting up dimensions and WebSocket connection
-    useEffect(() => {
-        const updateDimensions = () => {
-            if (crashRef.current) {
-                setDimensions({
-                    width: crashRef.current.offsetWidth,
-                    height: crashRef.current.offsetHeight,
-                });
-            }
-        };
-
-        updateDimensions();
-        window.addEventListener('resize', updateDimensions);
-
-        // Checking for initData before creating WebSocket connection
+    // Function to establish WebSocket connection
+    const connectWebSocket = () => {
         if (!initData) {
             toast.error('Authorization error. Please restart the application.');
             return;
@@ -180,11 +170,39 @@ export const Crash = () => {
 
         ws.onopen = () => {
             console.log('WebSocket connection established');
+            reconnectAttemptsRef.current = 0; // Reset reconnect attempts on successful connection
         };
 
         ws.onerror = (error) => {
             console.error('WebSocket error:', error);
             toast.error('Connection error. Please reload the page.');
+        };
+
+        ws.onclose = (event) => {
+            console.log('WebSocket connection closed:', event);
+            
+            // Stop multiplier simulation
+            if (multiplierTimerRef.current) {
+                clearInterval(multiplierTimerRef.current);
+                multiplierTimerRef.current = null;
+            }
+            
+            // Reset game state
+            setGameActive(false);
+            setIsCrashed(false);
+            setIsBettingClosed(true);
+            setOverlayText('Connection lost. Reconnecting...');
+            
+            // Attempt to reconnect
+            if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+                reconnectAttemptsRef.current += 1;
+                setTimeout(() => {
+                    console.log(`Attempting to reconnect (${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS})...`);
+                    connectWebSocket();
+                }, RECONNECT_DELAY);
+            } else {
+                toast.error('Failed to reconnect. Please reload the page.');
+            }
         };
 
         ws.onmessage = async (event) => {
@@ -343,14 +361,32 @@ export const Crash = () => {
                 console.error('Error processing WebSocket message:', error);
             }
         };
+    };
+
+    // Setting up dimensions and WebSocket connection
+    useEffect(() => {
+        const updateDimensions = () => {
+            if (crashRef.current) {
+                setDimensions({
+                    width: crashRef.current.offsetWidth,
+                    height: crashRef.current.offsetHeight,
+                });
+            }
+        };
+
+        updateDimensions();
+        window.addEventListener('resize', updateDimensions);
+
+        // Initial WebSocket connection
+        connectWebSocket();
 
         return () => {
             window.removeEventListener('resize', updateDimensions);
             if (multiplierTimerRef.current) {
                 clearInterval(multiplierTimerRef.current);
             }
-            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-                ws.close();
+            if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
+                wsRef.current.close();
             }
         };
     }, [increaseBalanceRupee, bet, autoOutputCoefficient, isAutoEnabled]);
