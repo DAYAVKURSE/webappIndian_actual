@@ -193,6 +193,9 @@ func (w *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cra
 	w.gameState = currentGame
 	w.mu.Unlock()
 
+	// Инициализируем генератор случайных чисел
+	rand.Seed(time.Now().UnixNano())
+
 	// Создаем копию подключений для безопасной отправки
 	w.mu.Lock()
 	connections := make(map[int64]*websocket.Conn)
@@ -207,7 +210,6 @@ func (w *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cra
 
 	startTime := time.Now()
 	baseMultiplier := 1.0
-	lastUpdateTime := time.Now()
 
 	// Отправляем обновление множителя каждые 16мс (примерно 60 FPS)
 	ticker := time.NewTicker(16 * time.Millisecond)
@@ -242,8 +244,6 @@ func (w *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cra
 			}
 		}
 		w.mu.Unlock()
-
-		lastUpdateTime = time.Now()
 
 		// Проверяем, достиг ли множитель точки краша
 		if currentMultiplier >= currentGame.CrashPointMultiplier {
