@@ -25,6 +25,9 @@ export const Crash = () => {
     const [starPosition, setStarPosition] = useState({ x: 50, y: -40 });
     const [isFalling, setIsFalling] = useState(false);
 
+    const reconnectAttempts = useRef(0);
+    const reconnectTimeout = useRef(null);
+
     
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);
@@ -152,6 +155,41 @@ export const Crash = () => {
             setXValue(parseFloat(smoothedMultiplier));
         }, updateInterval);
     };
+
+    const startReconnection = () => {
+        if (reconnectAttempts.current < 5) { // Максимум 5 попыток
+          const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000); // Экспоненциальная задержка до 30 сек
+          reconnectAttempts.current += 1;
+          
+          console.log(`Reconnecting in ${delay}ms...`);
+          toast.error(`Connection lost. Reconnecting (${reconnectAttempts.current}/5)...`);
+          
+          reconnectTimeout.current = setTimeout(() => {
+            // Создаем новое соединение
+            const encoded_init_data = encodeURIComponent(initData);
+            const newWs = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
+            
+            // Переносим обработчики
+            newWs.onopen = ws.onopen;
+            newWs.onmessage = ws.onmessage;
+            newWs.onerror = ws.onerror;
+            newWs.onclose = ws.onclose;
+            
+            wsRef.current = newWs;
+          }, delay);
+        } else {
+          toast.error('Failed to reconnect. Please reload the page.');
+        }
+      };
+      
+      // Не забудьте очистить таймаут при размонтировании:
+      return () => {
+        if (reconnectTimeout.current) {
+          clearTimeout(reconnectTimeout.current);
+        }
+        // ... остальной cleanup код
+      };
+    }
     
 
     // Setting up dimensions and WebSocket connection
@@ -185,6 +223,7 @@ export const Crash = () => {
         ws.onerror = (error) => {
             console.error('WebSocket error:', error);
             toast.error('Connection error. Please reload the page.');
+            startReconnection();
         };
 
         ws.onclose = () => {
