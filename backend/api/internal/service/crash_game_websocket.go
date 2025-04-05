@@ -105,7 +105,6 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 	w.connections[userId] = conn
 	w.lastActivityTime[userId] = time.Now()
 	w.betCount++
-	currentBet := w.betCount
 	w.mu.Unlock()
 
 	// Отправляем текущее состояние игры новому клиенту
