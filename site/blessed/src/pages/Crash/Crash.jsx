@@ -130,35 +130,35 @@ export const Crash = () => {
     // Function to simulate multiplier growth on frontend
     const simulateMultiplierGrowth = () => {
         if (!gameActive) return;
-
+      
         const currentMultiplier = valXValut.current;
         const growthFactor = 0.03;
         const randomFactor = 0.01 * (Math.random() - 0.5);
         const newMultiplier = currentMultiplier * (1 + growthFactor + randomFactor);
-
+      
         // Добавляем ограничение на максимальное значение множителя
         const maxMultiplier = 1000; // Максимальное значение множителя
         if (newMultiplier >= maxMultiplier) {
-            // Если достигли максимального значения, останавливаем игру
-            setGameActive(false);
-            setIsBettingClosed(true);
-            setXValue(maxMultiplier.toFixed(1));
-            valXValut.current = maxMultiplier;
-            setStarPosition({ x: 50, y: -40 - (maxMultiplier - 1) * 20 });
-            return;
+          // Если достигли максимального значения, останавливаем игру
+          setGameActive(false);
+          setIsBettingClosed(true);
+          setXValue(maxMultiplier.toFixed(1));
+          valXValut.current = maxMultiplier;
+          setStarPosition({ x: 50, y: -40 - (maxMultiplier - 1) * 20 });
+          return;
         }
-
+      
         // Обновляем значение множителя
         valXValut.current = newMultiplier;
         setXValue(newMultiplier.toFixed(1));
-
+      
         // Обновляем позицию звезды
         const starOffset = Math.min(-200, -40 - (newMultiplier - 1) * 20);
         setStarPosition({ x: 50, y: starOffset });
-
+      
         // Продолжаем анимацию
         requestAnimationFrame(simulateMultiplierGrowth);
-    };
+      };
     
 
     // Setting up dimensions and WebSocket connection
