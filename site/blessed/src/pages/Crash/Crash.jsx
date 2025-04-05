@@ -368,6 +368,12 @@ export const Crash = () => {
 
         setStarPosition({ x: 50, y: -40 });
         
+        // Сбрасываем текущую ставку
+        if (bet > 0) {
+            toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
+            setBet(0);
+        }
+        
         // Обработка ставки в очереди
         const queueBetFromStorage = localStorage.getItem('queuedBet');
         if (queueBetFromStorage) {
@@ -389,11 +395,8 @@ export const Crash = () => {
             }, 1000);
         }
         
+        // Сбрасываем значения через 3 секунды
         setTimeout(() => {
-            if (bet > 0) {
-                toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
-                setBet(0);
-            }
             valXValut.current = 1.2;
             setXValue(1.2);
             setStarPosition({ x: 50, y: -40 });
@@ -560,6 +563,11 @@ export const Crash = () => {
                 setGameActive(false);
                 setIsCrashed(false);
                 toast.success(`Cashout request sent at multiplier ${xValue}x`);
+                
+                // Сбрасываем значения
+                valXValut.current = 1.2;
+                setXValue(1.2);
+                setStarPosition({ x: 50, y: -40 });
             } else {
                 const errorData = await response.json().catch(() => ({ error: 'Failed to cash out' }));
                 logError(errorData.error, 'cashing out');
