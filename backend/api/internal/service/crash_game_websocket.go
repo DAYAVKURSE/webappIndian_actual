@@ -200,21 +200,47 @@ func (w *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cra
 	w.gameState = currentGame
 	w.mu.Unlock()
 
-	multiplierUpdate := gin.H{
-		"type":      "multiplier_update",
-		"multiplier": currentGame.CrashPointMultiplier,
+	// Создаем копию подключений для безопасной отправки
+	w.mu.Lock()
+	connections := make(map[int64]*websocket.Conn)
+	for userId, conn := range w.connections {
+		connections[userId] = conn
+	}
+	w.mu.Unlock()
+
+	if len(connections) == 0 {
+		return
 	}
 
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	// Отправляем обновление множителя каждые 100мс
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
 
-	for userId, conn := range w.connections {
-		err := conn.WriteJSON(multiplierUpdate)
-		if err != nil {
-			logger.Error("Failed to send multiplier update to user %d: %v", userId, err)
-			conn.Close()
-			delete(w.connections, userId)
-			delete(w.lastActivityTime, userId)
+	for range ticker.C {
+		currentMultiplier := currentGame.CalculateMultiplier()
+		
+		multiplierUpdate := gin.H{
+			"type":      "multiplier_update",
+			"multiplier": currentMultiplier,
+		}
+
+		w.mu.Lock()
+		for userId, conn := range connections {
+			err := conn.WriteJSON(multiplierUpdate)
+			if err != nil {
+				logger.Error("Failed to send multiplier update to user %d: %v", userId, err)
+				conn.Close()
+				delete(connections, userId)
+				delete(w.connections, userId)
+				delete(w.lastActivityTime, userId)
+			}
+		}
+		w.mu.Unlock()
+
+		// Проверяем, достиг ли множитель точки краша
+		if currentMultiplier >= currentGame.CrashPointMultiplier {
+			w.BroadcastGameCrash(currentGame.CrashPointMultiplier)
+			break
 		}
 	}
 }
