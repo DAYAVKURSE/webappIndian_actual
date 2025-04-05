@@ -132,13 +132,6 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		}
 		w.mu.Lock()
 		w.lastActivityTime[userId] = time.Now()
-		if crashMultiplier, exists := crashPoints[currentBet]; exists {
-			logger.Info("Crash event at bet %d with multiplier %.1fx", currentBet, crashMultiplier)
-			conn.WriteJSON(gin.H{
-				"type":        "game_crash",
-				"crash_point": crashMultiplier,
-			})
-		}
 		w.mu.Unlock()
 	}
 }
@@ -212,16 +205,28 @@ func (w *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cra
 		return
 	}
 
-	// Отправляем обновление множителя каждые 100мс
-	ticker := time.NewTicker(100 * time.Millisecond)
+	startTime := time.Now()
+	lastMultiplier := 1.0
+	lastUpdateTime := time.Now()
+
+	// Отправляем обновление множителя каждые 50мс
+	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
 
 	for range ticker.C {
+		elapsed := time.Since(startTime).Seconds()
 		currentMultiplier := currentGame.CalculateMultiplier()
+		
+		// Плавное увеличение множителя
+		timeSinceLastUpdate := time.Since(lastUpdateTime).Seconds()
+		multiplierIncrement := (currentMultiplier - lastMultiplier) * timeSinceLastUpdate * 2
+		smoothedMultiplier := lastMultiplier + multiplierIncrement
 		
 		multiplierUpdate := gin.H{
 			"type":      "multiplier_update",
-			"multiplier": currentMultiplier,
+			"multiplier": smoothedMultiplier,
+			"timestamp": time.Now().UnixNano() / int64(time.Millisecond),
+			"elapsed":   elapsed,
 		}
 
 		w.mu.Lock()
@@ -237,8 +242,11 @@ func (w *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cra
 		}
 		w.mu.Unlock()
 
+		lastMultiplier = smoothedMultiplier
+		lastUpdateTime = time.Now()
+
 		// Проверяем, достиг ли множитель точки краша
-		if currentMultiplier >= currentGame.CrashPointMultiplier {
+		if smoothedMultiplier >= currentGame.CrashPointMultiplier {
 			w.BroadcastGameCrash(currentGame.CrashPointMultiplier)
 			break
 		}
