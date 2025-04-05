@@ -23,7 +23,6 @@ export const Crash = () => {
     const [gameActive, setGameActive] = useState(false);
 
     const [starPosition, setStarPosition] = useState({ x: 50, y: -40 });
-    const [isFalling, setIsFalling] = useState(false);
 
     
     const wsRef = useRef(null);
@@ -34,6 +33,33 @@ export const Crash = () => {
 
     // Добавляем новое состояние для отслеживания ставки в очереди
     const [queuedBet, setQueuedBet] = useState(0);
+
+    const lastUpdateRef = useRef(null);
+
+    const [connectionStatus, setConnectionStatus] = useState('connecting');
+    const [isReconnecting, setIsReconnecting] = useState(false);
+    const reconnectAttempts = useRef(0);
+    const MAX_RECONNECT_ATTEMPTS = 5;
+    const RECONNECT_DELAY = 1000;
+
+    // Добавляем константы для управления переподключением
+    const NETWORK_ERROR_CODES = {
+        NORMAL_CLOSURE: 1000,
+        GOING_AWAY: 1001,
+        PROTOCOL_ERROR: 1002,
+        UNSUPPORTED_DATA: 1003,
+        NO_STATUS_RECEIVED: 1005,
+        ABNORMAL_CLOSURE: 1006,
+        INVALID_FRAME_PAYLOAD_DATA: 1007,
+        POLICY_VIOLATION: 1008,
+        MESSAGE_TOO_BIG: 1009,
+        MISSING_EXTENSION: 1010,
+        INTERNAL_ERROR: 1011,
+        SERVICE_RESTART: 1012,
+        TRY_AGAIN_LATER: 1013,
+        BAD_GATEWAY: 1014,
+        TLS_HANDSHAKE: 1015
+    };
 
     useEffect(() => {
         const queuedBetFromStorage = localStorage.getItem('queuedBet');
@@ -127,29 +153,89 @@ export const Crash = () => {
         fetchHistory();
     }, []);
 
-    // Function to simulate multiplier growth on frontend
+    // Добавляем функцию для проверки состояния игры
+    const checkGameState = () => {
+        const now = Date.now();
+        if (gameActive && lastUpdateRef.current && now - lastUpdateRef.current > 3000) {
+            console.log('Game appears to be stalled, attempting recovery...');
+            setGameActive(false);
+            setIsBettingClosed(true);
+            if (multiplierTimerRef.current) {
+                clearInterval(multiplierTimerRef.current);
+            }
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                wsRef.current.close();
+            }
+            return true;
+        }
+        return false;
+    };
+
+    // Добавляем интервал для проверки состояния игры
+    useEffect(() => {
+        const gameStateCheckInterval = setInterval(() => {
+            if (gameActive) {
+                checkGameState();
+            }
+        }, 1000);
+
+        return () => {
+            clearInterval(gameStateCheckInterval);
+        };
+    }, [gameActive]);
+
+    // Модифицируем функцию simulateMultiplierGrowth
     const simulateMultiplierGrowth = (startTime, initialMultiplier = 1.0) => {
         if (multiplierTimerRef.current) {
             clearInterval(multiplierTimerRef.current);
         }
-    
+
         valXValut.current = initialMultiplier;
+        const updateInterval = 100;
+        const growthFactor = 0.03;
+        const maxMultiplier = 100;
         
-        const updateInterval = 100; 
-        const growthFactor = 0.03; 
-    
         let lastValue = initialMultiplier;
+        let lastUpdateTime = Date.now();
+        let stallCount = 0;
         
         multiplierTimerRef.current = setInterval(() => {
-            const elapsedSeconds = (Date.now() - startTime) / 1000;
-            const newMultiplier = Math.exp(elapsedSeconds * growthFactor);
-    
-            // 📌 Экспоненциальное усреднение
-            const smoothedMultiplier = (lastValue * 0.8 + newMultiplier * 0.2).toFixed(2);
-            lastValue = smoothedMultiplier;
+            const now = Date.now();
             
-            valXValut.current = parseFloat(smoothedMultiplier);
-            setXValue(parseFloat(smoothedMultiplier));
+            // Проверка на зависание
+            if (now - lastUpdateTime > 1000) {
+                stallCount++;
+                if (stallCount >= 3) {
+                    console.log('Game multiplier stalled multiple times, resetting...');
+                    clearInterval(multiplierTimerRef.current);
+                    setGameActive(false);
+                    setIsBettingClosed(true);
+                    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                        wsRef.current.close();
+                    }
+                    return;
+                }
+            } else {
+                stallCount = 0;
+            }
+            
+            const elapsedSeconds = (now - startTime) / 1000;
+            const newMultiplier = Math.min(Math.exp(elapsedSeconds * growthFactor), maxMultiplier);
+            
+            // Сглаживание
+            const smoothedMultiplier = (lastValue * 0.8 + newMultiplier * 0.2).toFixed(2);
+            lastValue = parseFloat(smoothedMultiplier);
+            lastUpdateTime = now;
+            
+            if (lastValue >= maxMultiplier) {
+                clearInterval(multiplierTimerRef.current);
+                setGameActive(false);
+                setIsBettingClosed(true);
+                return;
+            }
+            
+            valXValut.current = lastValue;
+            setXValue(lastValue);
         }, updateInterval);
     };
     
@@ -168,194 +254,226 @@ export const Crash = () => {
         updateDimensions();
         window.addEventListener('resize', updateDimensions);
 
-        // Checking for initData before creating WebSocket connection
-        if (!initData) {
-            toast.error('Authorization error. Please restart the application.');
-            return;
-        }
-
-        const encoded_init_data = encodeURIComponent(initData);
-        const ws = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
-        wsRef.current = ws;
-
-        ws.onopen = () => {
-            console.log('WebSocket connection established');
-        };
-
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            toast.error('Connection error. Please reload the page.');
-        };
-
-        ws.onmessage = async (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                console.log('WebSocket data received:', data);
-                
-                if (data.type === "multiplier_update") {
-                    setIsBettingClosed(true);
-                    setIsCrashed(false);
-                    setGameActive(true);
-                    setCollapsed(false);
-
-                    // Обновляем позицию звезды только вверх
-                    setStarPosition({
-                        x: Math.min(200, 50 + data.multiplier * 40 - 40), // Начинаем с 50 и двигаем вправо
-                        y: Math.max(-200, -data.multiplier * 40),
-                    });
-                    
-                    if (!startMultiplierTime) {
-                        setStartMultiplierTime(Date.now());
-                        simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
-                    }
-                    
-                    if (isAutoEnabled && bet > 0 && parseFloat(data.multiplier) >= autoOutputCoefficient && autoOutputCoefficient > 0) {
-                        handleCashout();
-                        toast.success(`Auto cashout at ${data.multiplier}x`);
-                    }
-                }
-
-                if (data.type === "game_crash") {
-                    if (multiplierTimerRef.current) {
-                        clearInterval(multiplierTimerRef.current);
-                        multiplierTimerRef.current = null;
-                    }
-                    setStartMultiplierTime(null);
-                    
-                    setIsCrashed(true);
-                    setGameActive(false);
-                    setIsBettingClosed(true);
-                    setOverlayText(`Crashed at ${data.crash_point.toFixed(2)}x`);
-                    setCollapsed(true);
-                    valXValut.current = parseFloat(data.crash_point).toFixed(2);
-                    setXValue(parseFloat(data.crash_point).toFixed(2));
-
-                    // Убираем анимацию падения
-                    setStarPosition({ x: 50, y: -40 });
-                    
-                    // Проверяем наличие ставки в очереди и пытаемся разместить её
-                    const queueBetFromStorage = localStorage.getItem('queuedBet');
-                    if (queueBetFromStorage) {
-                        setTimeout(async () => {
-                            try {
-                                const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
-                                if (response.ok) {
-                                    setBet(parseInt(queueBetFromStorage));
-                                    localStorage.removeItem('queuedBet');
-                                    setQueuedBet(0);
-                                    toast.success('Queued bet placed successfully!');
-                                } else {
-                                    // Если не удалось поставить, пробуем еще раз через 1 секунду
-                                    setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
-                                }
-                            } catch (error) {
-                                console.error('Error placing queued bet:', error);
-                                setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
-                            }
-                        }, 1000);
-                    }
-                    
-                    setTimeout(() => {
-                        if (bet > 0) {
-                            toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
-                            setBet(0);
-                        }
-                        valXValut.current = 1.2;
-                        setXValue(1.2);
-                        setStarPosition({ x: 50, y: -40 });
-                    }, 3000);
-                }
-
-                if (data.type === "timer_tick") {
-                    setCollapsed(true);
-                    console.log('Timer tick received:', data.remaining_time);
-                    
-                    if (data.remaining_time > 5) {
-                        setIsBettingClosed(true);
-                        setGameActive(false);
-                        setOverlayText('Game starts soon');
-                        console.log('Betting closed - waiting for game');
-                    } else if (data.remaining_time > 0) {
-                        setIsBettingClosed(false);
-                        setIsCrashed(false);
-                        setGameActive(false);
-                        setOverlayText(`Game starts in ${data.remaining_time} seconds`);
-                        console.log('Betting open - time remaining:', data.remaining_time);
-                    } else {
-                        setIsBettingClosed(false);
-                        setGameActive(true);
-                        setOverlayText('Game started!');
-                    }
-                }
-
-                if (data.type === "game_started") {
-                    toast.success('Game started!');
-                    setIsBettingClosed(false);
-                    setIsCrashed(false);
-                    setGameActive(true);
-                    setCollapsed(false);
-                    
-                    setStartMultiplierTime(Date.now());
-                    simulateMultiplierGrowth(Date.now(), 1.0);
-                    setXValue(1.0);
-
-                    // Пытаемся разместить ставку из очереди
-                    const queueBetFromStorage = localStorage.getItem('queuedBet');
-                    if (queueBetFromStorage) {
-                        setTimeout(async () => {
-                            try {
-                                const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
-                                if (response.ok) {
-                                    setBet(parseInt(queueBetFromStorage));
-                                    localStorage.removeItem('queuedBet');
-                                    setQueuedBet(0);
-                                    toast.success('Queued bet placed successfully!');
-                                } else {
-                                    // Если не удалось поставить, пробуем еще раз через 1 секунду
-                                    setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
-                                }
-                            } catch (error) {
-                                console.error('Error placing queued bet:', error);
-                                setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
-                            }
-                        }, 1000);
-                    }
-                }
-
-                if (data.type === "cashout_result") {
-                    // Показываем сообщение о выигрыше
-                    toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${data.cashout_multiplier}x)`);
-                    
-                    // Обновляем баланс
-                    increaseBalanceRupee(data.win_amount);
-                }
-
-                // Processing another player's cashout message
-                if (data.type === "other_cashout") {
-                    toast.success(`${data.username} won ₹${data.win_amount.toFixed(0)} at ${data.cashout_multiplier}x!`);
-                }
-
-                // Processing another player's bet message
-                if (data.type === "new_bet") {
-                    toast.success(`${data.username} bet ₹${data.amount.toFixed(0)}`);
-                }
-            } catch (error) {
-                console.error('Error processing WebSocket message:', error);
-            }
-        };
+        // Инициализируем WebSocket соединение
+        connectWebSocket();
 
         return () => {
             window.removeEventListener('resize', updateDimensions);
+            if (wsRef.current) {
+                wsRef.current.close();
+            }
             if (multiplierTimerRef.current) {
                 clearInterval(multiplierTimerRef.current);
             }
-            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-                ws.close();
-            }
         };
-    }, [increaseBalanceRupee, bet, autoOutputCoefficient, isAutoEnabled]);
+    }, [initData, bet, autoOutputCoefficient, isAutoEnabled]);
 
-    // Handling bet
+    // Добавляем функцию для логирования
+    const logError = (error, context) => {
+        console.error(`[${context}] Error:`, error);
+        toast.error(`Error in ${context}. Please try again.`);
+    };
+
+    // Добавляем функцию для обработки сообщений WebSocket
+    const handleWebSocketMessage = async (event) => {
+        try {
+            const data = JSON.parse(event.data);
+            console.log('WebSocket data received:', data);
+            
+            switch (data.type) {
+                case "multiplier_update":
+                    handleMultiplierUpdate(data);
+                    break;
+                case "game_crash":
+                    handleGameCrash(data);
+                    break;
+                case "timer_tick":
+                    handleTimerTick(data);
+                    break;
+                case "game_started":
+                    handleGameStarted();
+                    break;
+                case "cashout_result":
+                    handleCashoutResult(data);
+                    break;
+                case "other_cashout":
+                    handleOtherCashout(data);
+                    break;
+                case "new_bet":
+                    handleNewBet(data);
+                    break;
+                default:
+                    console.warn('Unknown message type:', data.type);
+            }
+        } catch (error) {
+            logError(error, 'processing WebSocket message');
+        }
+    };
+
+    // Добавляем обработчики для каждого типа сообщения
+    const handleMultiplierUpdate = (data) => {
+        const currentTime = Date.now();
+        
+        // Проверка на зависание
+        if (lastUpdateRef.current && currentTime - lastUpdateRef.current > 3000) {
+            console.log('Game stalled, resetting...');
+            setGameActive(false);
+            setIsBettingClosed(true);
+            if (multiplierTimerRef.current) {
+                clearInterval(multiplierTimerRef.current);
+            }
+            if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                wsRef.current.close();
+            }
+            return;
+        }
+        
+        lastUpdateRef.current = currentTime;
+        
+        setIsBettingClosed(true);
+        setIsCrashed(false);
+        setGameActive(true);
+        setCollapsed(false);
+
+        setStarPosition({
+            x: Math.min(200, 50 + data.multiplier * 40 - 40),
+            y: Math.max(-200, -data.multiplier * 40),
+        });
+        
+        if (!startMultiplierTime) {
+            setStartMultiplierTime(Date.now());
+            simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
+        }
+        
+        if (isAutoEnabled && bet > 0 && parseFloat(data.multiplier) >= autoOutputCoefficient && autoOutputCoefficient > 0) {
+            handleCashout();
+            toast.success(`Auto cashout at ${data.multiplier}x`);
+        }
+    };
+
+    const handleGameCrash = (data) => {
+        if (multiplierTimerRef.current) {
+            clearInterval(multiplierTimerRef.current);
+            multiplierTimerRef.current = null;
+        }
+        setStartMultiplierTime(null);
+        
+        setIsCrashed(true);
+        setGameActive(false);
+        setIsBettingClosed(true);
+        setOverlayText(`Crashed at ${data.crash_point.toFixed(2)}x`);
+        setCollapsed(true);
+        valXValut.current = parseFloat(data.crash_point).toFixed(2);
+        setXValue(parseFloat(data.crash_point).toFixed(2));
+
+        setStarPosition({ x: 50, y: -40 });
+        
+        // Обработка ставки в очереди
+        const queueBetFromStorage = localStorage.getItem('queuedBet');
+        if (queueBetFromStorage) {
+            setTimeout(async () => {
+                try {
+                    const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
+                    if (response.ok) {
+                        setBet(parseInt(queueBetFromStorage));
+                        localStorage.removeItem('queuedBet');
+                        setQueuedBet(0);
+                        toast.success('Queued bet placed successfully!');
+                    } else {
+                        setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
+                    }
+                } catch (error) {
+                    logError(error, 'placing queued bet');
+                    setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
+                }
+            }, 1000);
+        }
+        
+        setTimeout(() => {
+            if (bet > 0) {
+                toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
+                setBet(0);
+            }
+            valXValut.current = 1.2;
+            setXValue(1.2);
+            setStarPosition({ x: 50, y: -40 });
+        }, 3000);
+    };
+
+    const handleTimerTick = (data) => {
+        setCollapsed(true);
+        console.log('Timer tick received:', data.remaining_time);
+        
+        if (data.remaining_time > 5) {
+            setIsBettingClosed(true);
+            setGameActive(false);
+            setOverlayText('Game starts soon');
+        } else if (data.remaining_time > 0) {
+            setIsBettingClosed(false);
+            setIsCrashed(false);
+            setGameActive(false);
+            setOverlayText(`Game starts in ${data.remaining_time} seconds`);
+        } else {
+            setIsBettingClosed(false);
+            setGameActive(true);
+            setOverlayText('Game started!');
+        }
+    };
+
+    const handleGameStarted = () => {
+        try {
+            toast.success('Game started!');
+            setIsBettingClosed(false);
+            setIsCrashed(false);
+            setGameActive(true);
+            setCollapsed(false);
+            
+            setStartMultiplierTime(Date.now());
+            simulateMultiplierGrowth(Date.now(), 1.0);
+            setXValue(1.0);
+
+            const queueBetFromStorage = localStorage.getItem('queuedBet');
+            if (queueBetFromStorage) {
+                setTimeout(async () => {
+                    try {
+                        const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
+                        if (response.ok) {
+                            setBet(parseInt(queueBetFromStorage));
+                            localStorage.removeItem('queuedBet');
+                            setQueuedBet(0);
+                            toast.success('Queued bet placed successfully!');
+                        } else {
+                            const errorData = await response.json().catch(() => ({ error: 'Failed to place queued bet' }));
+                            logError(errorData.error, 'placing queued bet');
+                            setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
+                        }
+                    } catch (error) {
+                        logError(error, 'placing queued bet');
+                        setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
+                    }
+                }, 1000);
+            }
+        } catch (error) {
+            logError(error, 'starting game');
+            setGameActive(false);
+            setIsBettingClosed(true);
+        }
+    };
+
+    const handleCashoutResult = (data) => {
+        toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${data.cashout_multiplier}x)`);
+        increaseBalanceRupee(data.win_amount);
+    };
+
+    const handleOtherCashout = (data) => {
+        toast.success(`${data.username} won ₹${data.win_amount.toFixed(0)} at ${data.cashout_multiplier}x!`);
+    };
+
+    const handleNewBet = (data) => {
+        toast.success(`${data.username} bet ₹${data.amount.toFixed(0)}`);
+    };
+
+    // Модифицируем функцию handleBet
     const handleBet = async () => {
         if (!initData) {
             toast.error('Authorization error. Please restart the application.');
@@ -375,7 +493,6 @@ export const Crash = () => {
         try {
             setLoading(true);
             
-            // Если игра активна или есть ставка в очереди, ставим в очередь
             if (gameActive || queuedBet > 0) {
                 setQueuedBet(betAmount);
                 decreaseBalanceRupee(betAmount);
@@ -385,7 +502,6 @@ export const Crash = () => {
                 return;
             }
 
-            // Если игра не активна, пытаемся поставить сразу
             const response = await crashPlace(betAmount, autoOutputCoefficient);
             
             if (response.ok) {
@@ -398,15 +514,15 @@ export const Crash = () => {
                     setCollapsed(false);
                 }, 2000);
             } else {
-                // Если не удалось поставить, ставим в очередь
+                const errorData = await response.json().catch(() => ({ error: 'Failed to place bet' }));
+                logError(errorData.error, 'placing bet');
                 setQueuedBet(betAmount);
                 decreaseBalanceRupee(betAmount);
                 localStorage.setItem('queuedBet', betAmount);
                 toast.success('Bet will be placed in the next game!');
             }
         } catch (err) {
-            console.error('Error placing bet:', err.message);
-            // В случае ошибки тоже ставим в очередь
+            logError(err, 'placing bet');
             setQueuedBet(betAmount);
             decreaseBalanceRupee(betAmount);
             localStorage.setItem('queuedBet', betAmount);
@@ -414,9 +530,9 @@ export const Crash = () => {
         } finally {
             setLoading(false);
         }
-    }
+    };
 
-    // Handling cashout
+    // Модифицируем функцию handleCashout
     const handleCashout = async () => {
         if (!initData) {
             toast.error('Authorization error. Please restart the application.');
@@ -440,23 +556,20 @@ export const Crash = () => {
             if (response.ok) {
                 const data = await response.json();
                 console.log('Server response to cashout:', data);
-                // Сбрасываем ставку сразу после успешного кэшаута
                 setBet(0);
                 setGameActive(false);
                 setIsCrashed(false);
                 toast.success(`Cashout request sent at multiplier ${xValue}x`);
             } else {
-                const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
-                console.error('Cashout error:', errorData);
-                toast.error(errorData.error || 'Error cashing out');
+                const errorData = await response.json().catch(() => ({ error: 'Failed to cash out' }));
+                logError(errorData.error, 'cashing out');
             }
         } catch (err) {
-            console.error('Exception during cashout:', err.message);
-            toast.error('Failed to cash out');
+            logError(err, 'cashing out');
         } finally {
             setLoading(false);
         }
-    }
+    };
 
     // Toggling auto-cashout
     const toggleAutoCashout = () => {
@@ -492,8 +605,121 @@ export const Crash = () => {
         });
     };
 
+    // Добавляем компонент для отображения статуса соединения
+    const ConnectionStatus = () => {
+        const getStatusColor = () => {
+            switch (connectionStatus) {
+                case 'connected':
+                    return 'green';
+                case 'connecting':
+                    return 'orange';
+                case 'error':
+                case 'disconnected':
+                    return 'red';
+                default:
+                    return 'gray';
+            }
+        };
+
+        return (
+            <div style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                padding: '5px 10px',
+                borderRadius: '5px',
+                backgroundColor: getStatusColor(),
+                color: 'white',
+                fontSize: '12px',
+                zIndex: 1000
+            }}>
+                {connectionStatus.toUpperCase()}
+            </div>
+        );
+    };
+
+    // Модифицируем функцию connectWebSocket
+    const connectWebSocket = () => {
+        if (!initData) {
+            toast.error('Authorization error. Please restart the application.');
+            return;
+        }
+
+        const encoded_init_data = encodeURIComponent(initData);
+        const ws = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
+        wsRef.current = ws;
+
+        // Пинг для поддержания соединения
+        const pingInterval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+                try {
+                    ws.send('ping');
+                } catch (error) {
+                    console.error('Error sending ping:', error);
+                    ws.close();
+                }
+            }
+        }, 30000);
+
+        ws.onopen = () => {
+            console.log('WebSocket connection established');
+            setConnectionStatus('connected');
+            setIsReconnecting(false);
+            reconnectAttempts.current = 0;
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            setConnectionStatus('error');
+            toast.error('Connection error. Please reload the page.');
+        };
+
+        ws.onmessage = handleWebSocketMessage;
+
+        ws.onclose = (event) => {
+            console.log('WebSocket connection closed:', event.code, event.reason);
+            clearInterval(pingInterval);
+            
+            if (multiplierTimerRef.current) {
+                clearInterval(multiplierTimerRef.current);
+            }
+            setGameActive(false);
+            setIsBettingClosed(true);
+            
+            // Определяем, нужно ли пытаться переподключиться
+            const shouldReconnect = ![
+                NETWORK_ERROR_CODES.NORMAL_CLOSURE,
+                NETWORK_ERROR_CODES.GOING_AWAY,
+                NETWORK_ERROR_CODES.PROTOCOL_ERROR,
+                NETWORK_ERROR_CODES.UNSUPPORTED_DATA
+            ].includes(event.code);
+
+            if (shouldReconnect && !isReconnecting && reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
+                setIsReconnecting(true);
+                reconnectAttempts.current += 1;
+                const delay = RECONNECT_DELAY * Math.min(reconnectAttempts.current, 5);
+                console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttempts.current})`);
+                
+                setTimeout(() => {
+                    connectWebSocket();
+                }, delay);
+            } else if (reconnectAttempts.current >= MAX_RECONNECT_ATTEMPTS) {
+                setConnectionStatus('disconnected');
+                toast.error('Failed to reconnect. Please refresh the page.');
+            }
+        };
+
+        return () => {
+            clearInterval(pingInterval);
+            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                ws.close();
+            }
+        };
+    };
+
     return (
         <div className={styles.crash}>
+            <ConnectionStatus />
             {/* User balance */}
             <div className={styles.balance}>
                 <div className={styles.balanceIcon}>₹</div>
@@ -508,7 +734,7 @@ export const Crash = () => {
                 
                 {/* Star animation */}
                 <div 
-                    className={`${styles.star} ${isFalling ? styles.falling : ''}`} 
+                    className={`${styles.star} ${isCrashed ? styles.falling : ''}`} 
                     style={{
                         transform: `translate(${starPosition.x}px, ${starPosition.y}px)`,
                     }}
