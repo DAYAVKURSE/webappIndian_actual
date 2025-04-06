@@ -68,7 +68,7 @@ export const Crash = () => {
                 return;
             }
 
-            const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
+            const response = await crashPlace(Number(queueBetFromStorage));
 
             if (response.ok) {
                 setBet(parseInt(queueBetFromStorage));
@@ -238,7 +238,7 @@ export const Crash = () => {
                     if (queueBetFromStorage) {
                         setTimeout(async () => {
                             try {
-                                const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
+                                const response = await crashPlace(Number(queueBetFromStorage));
                                 if (response.ok) {
                                     setBet(parseInt(queueBetFromStorage));
                                     localStorage.removeItem('queuedBet');
@@ -304,7 +304,7 @@ export const Crash = () => {
                     if (queueBetFromStorage) {
                         setTimeout(async () => {
                             try {
-                                const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
+                                const response = await crashPlace(Number(queueBetFromStorage));
                                 if (response.ok) {
                                     setBet(parseInt(queueBetFromStorage));
                                     localStorage.removeItem('queuedBet');
@@ -386,7 +386,7 @@ export const Crash = () => {
             }
 
             // Если игра не активна, пытаемся поставить сразу
-            const response = await crashPlace(betAmount, autoOutputCoefficient);
+            const response = await crashPlace(betAmount);
             
             if (response.ok) {
                 setBet(betAmount);
