@@ -2,7 +2,6 @@ package service
 
 import (
 	"BlessedApi/cmd/db"
-	"BlessedApi/internal/middleware"
 	"BlessedApi/internal/models"
 	"BlessedApi/pkg/logger"
 	"errors"

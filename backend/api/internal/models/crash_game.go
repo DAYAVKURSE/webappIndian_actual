@@ -15,6 +15,7 @@ type CrashGame struct {
     CrashPointMultiplier float64
     StartTime          time.Time
     EndTime            time.Time
+    Status            string    `gorm:"default:'running'"` // "running", "completed"
 }
 
 type CrashGameBet struct {
