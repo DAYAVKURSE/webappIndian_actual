@@ -72,7 +72,7 @@ export const Crash = () => {
                 return;
             }
 
-            const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
+            const response = await crashPlace(Number(queueBetFromStorage));
 
             if (response.ok) {
                 setBet(parseInt(queueBetFromStorage));

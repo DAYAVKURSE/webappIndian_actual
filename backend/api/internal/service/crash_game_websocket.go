@@ -221,12 +221,23 @@ func (w *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cra
 	for range ticker.C {
 		elapsed := time.Since(startTime).Seconds()
 		
-		// Базовое увеличение множителя
-		baseMultiplier = 1.0 + (elapsed * 0.1)
+		// Ограничиваем максимальное время для предотвращения слишком больших значений
+		if elapsed > 30 { // максимум 30 секунд
+			w.BroadcastGameCrash(crashPoint)
+			break
+		}
 		
-		// Добавляем случайную составляющую для более естественного движения
+		// Базовое увеличение множителя с замедлением
+		baseMultiplier = 1.0 + (elapsed * 0.1 * (1.0 - elapsed/60.0))
+		
+		// Добавляем небольшую случайную составляющую
 		randomFactor := 1.0 + (rand.Float64() * 0.01)
 		currentMultiplier := baseMultiplier * randomFactor
+		
+		// Ограничиваем максимальное значение множителя
+		if currentMultiplier > crashPoint * 1.1 { // максимум на 10% больше точки краша
+			currentMultiplier = crashPoint * 1.1
+		}
 		
 		multiplierUpdate := gin.H{
 			"type":      "multiplier_update",
