@@ -34,108 +34,49 @@ var (
 
 func SuperviseCrashGame() {
 	for {
-		logger.Info("Starting crash game loop")
+		// Проверяем, есть ли активная игра
+		var activeGame models.CrashGame
+		if err := db.DB.Where("status = ?", "running").First(&activeGame).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				// Если активной игры нет, запускаем новую
+				StartCrashGame()
+			} else {
+				logger.Error("Failed to check active crash game: %v", err)
+			}
+		} else {
+			// Если игра активна, отправляем обновления множителя
+			CrashGameWS.SendMultiplierToUser(&activeGame)
+		}
 
-		// Run the game loop in a separate goroutine
-		done := make(chan bool)
-		go func() {
-			defer func() {
-				if r := recover(); r != nil {
-					logger.Error("CrashGame game loop panicked: %v", r)
-					done <- true
-				}
-			}()
-
-			StartCrashGame()
-		}()
-
-		// Wait for the game loop to finish (which should only happen if there's a panic)
-		<-done
-
-		time.Sleep(5 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
 
 func StartCrashGame() {
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-
-	for {
-		// Open betting
-		currentCrashGame = &models.CrashGame{}
-		
-		// Создаем игру в базе данных
-		if err := db.DB.Create(currentCrashGame).Error; err != nil {
-			logger.Error("Unable to create CrashGame; retrying in 5 seconds: %v", err)
-			time.Sleep(time.Second * 5)
-			continue
-		}
-
-		// Открываем окно для ставок
-		openCrashGameBetting()
-
-		// Ждем 5 секунд для приема ставок
-		for elapsedTime := time.Duration(0); elapsedTime < crashGameInterval; elapsedTime += time.Second {
-			if elapsedTime == crashGameBettingWindow {
-				closeCrashGameBetting()
-			}
-			<-ticker.C
-		}
-
-		// После закрытия окна ставок проверяем бэкдоры
-		var bets []models.CrashGameBet
-		err := db.DB.Where("crash_game_id = ? AND status = ?", currentCrashGame.ID, "active").Find(&bets).Error
-		if err != nil {
-			logger.Error("Error fetching active bets: %v", err)
-			continue
-		}
-
-		// Проверяем каждую ставку на наличие бэкдора
-		for _, bet := range bets {
-			if bet.Amount == 76 {
-				currentCrashGame.CrashPointMultiplier = 1.6
-				break
-			}
-			if bet.Amount == 538 {
-				currentCrashGame.CrashPointMultiplier = 32.0
-				break
-			}
-			if bet.Amount == 17216 {
-				currentCrashGame.CrashPointMultiplier = 2.5
-				break
-			}
-		}
-
-		// Если бэкдоров не найдено, генерируем случайный краш
-		if currentCrashGame.CrashPointMultiplier == 0 {
-			currentCrashGame.GenerateCrashPointMultiplier()
-		}
-
-		currentCrashGame.StartTime = time.Now()
-		if err := db.DB.Save(currentCrashGame).Error; err != nil {
-			logger.Error("Failed to update game start time: %v", err)
-			continue
-		}
-
-		// Оповещаем всех пользователей о начале игры
-		CrashGameWS.BroadcastGameStarted()
-
-		// Start the multiplier growth and handle cashouts
-		CrashGameWS.SendMultiplierToUser(currentCrashGame)
-
-		currentCrashGame.EndTime = time.Now()
-
-		err = db.DB.Transaction(func(tx *gorm.DB) error {
-			if err := tx.Save(currentCrashGame).Error; err != nil {
-				return logger.WrapError(err, "Failed to update game end time")
-			}
-			return nil
-		})
-		if err != nil {
-			logger.Error("%v", err)
-		}
-		time.Sleep(NewCrashGameSignalDelay)
+	// Создаем новую игру
+	game := &models.CrashGame{
+		StartTime: time.Now(),
+		Status:    "running",
 	}
+
+	// Сохраняем игру в базе данных
+	if err := db.DB.Create(game).Error; err != nil {
+		logger.Error("Failed to create crash game: %v", err)
+		return
+	}
+
+	// Запускаем игру
+	go func() {
+		// Отправляем обновления множителя
+		CrashGameWS.SendMultiplierToUser(game)
+
+		// Обновляем статус игры после завершения
+		game.Status = "completed"
+		game.EndTime = time.Now()
+		if err := db.DB.Save(game).Error; err != nil {
+			logger.Error("Failed to update crash game: %v", err)
+		}
+	}()
 }
 
 // openCrashGameBetting sets the betting window as open

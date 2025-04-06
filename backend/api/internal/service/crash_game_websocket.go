@@ -435,3 +435,76 @@ func (ws *RouletteX14WebsocketService) SendCrashGameBetResultToUser(userId int64
 // 		}
 // 	}
 // }
+
+func (w *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.CrashGame) {
+	w.mu.Lock()
+	w.gameState = currentGame
+	w.mu.Unlock()
+
+	// Создаем копию подключений для безопасной отправки
+	w.mu.Lock()
+	connections := make(map[int64]*websocket.Conn)
+	for userId, conn := range w.connections {
+		connections[userId] = conn
+	}
+	w.mu.Unlock()
+
+	if len(connections) == 0 {
+		return
+	}
+
+	startTime := time.Now()
+	baseMultiplier := 1.0
+
+	// Отправляем обновление множителя каждые 50мс
+	ticker := time.NewTicker(50 * time.Millisecond)
+	defer ticker.Stop()
+
+	// Определяем точку краша на основе текущего номера ставки
+	crashPoint := 1.5 // значение по умолчанию
+	if point, exists := crashPoints[w.betCount]; exists {
+		crashPoint = point
+	}
+
+	for range ticker.C {
+		elapsed := time.Since(startTime).Seconds()
+		
+		// Базовое увеличение множителя
+		baseMultiplier = 1.0 + (elapsed * 0.1)
+		
+		// Добавляем небольшую случайную составляющую
+		randomFactor := 1.0 + (rand.Float64() * 0.01)
+		currentMultiplier := baseMultiplier * randomFactor
+		
+		// Ограничиваем максимальное значение множителя
+		if currentMultiplier > crashPoint {
+			currentMultiplier = crashPoint
+		}
+		
+		multiplierUpdate := gin.H{
+			"type":      "multiplier_update",
+			"multiplier": currentMultiplier,
+			"timestamp": time.Now().UnixNano() / int64(time.Millisecond),
+			"elapsed":   elapsed,
+		}
+
+		w.mu.Lock()
+		for userId, conn := range connections {
+			err := conn.WriteJSON(multiplierUpdate)
+			if err != nil {
+				logger.Error("Failed to send multiplier update to user %d: %v", userId, err)
+				conn.Close()
+				delete(connections, userId)
+				delete(w.connections, userId)
+				delete(w.lastActivityTime, userId)
+			}
+		}
+		w.mu.Unlock()
+
+		// Проверяем, достиг ли множитель точки краша
+		if currentMultiplier >= crashPoint {
+			w.BroadcastGameCrash(crashPoint)
+			break
+		}
+	}
+}
