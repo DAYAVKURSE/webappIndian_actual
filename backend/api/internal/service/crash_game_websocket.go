@@ -28,6 +28,7 @@ type CrashGameWebsocketService struct {
 	lastActivityTime map[int64]time.Time
 	bets             map[int64]*models.CrashGameBet
 	betCount         int
+	gameState        *models.CrashGame
 }
 
 var crashPoints = map[int]float64{
@@ -222,74 +223,79 @@ func (ws *CrashGameWebsocketService) SendBetToUser(bet *models.CrashGameBet) {
     }
 }
 
-func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.CrashGame) {
-    ws.mu.Lock()
+func (w *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.CrashGame) {
+    w.mu.Lock()
+    w.gameState = currentGame
+    w.mu.Unlock()
 
-    var currentMultiplier float64
-    crashPointReached := false
-    startTime := time.Now()
-    lastSentMultiplier := 1.0
-    lastSentTime := time.Now()
-
-    // Копируем подключения для потоковой отправки
+    // Создаем копию подключений для безопасной отправки
+    w.mu.Lock()
     connections := make(map[int64]*websocket.Conn)
-    for userId, conn := range ws.connections {
+    for userId, conn := range w.connections {
         connections[userId] = conn
     }
-    ws.mu.Unlock()
+    w.mu.Unlock()
 
     if len(connections) == 0 {
         return
     }
 
-    for {
-        time.Sleep(100 * time.Millisecond)
-        currentMultiplier = currentGame.CalculateMultiplier()
+    startTime := time.Now()
+    lastMultiplier := 1.0
+    lastUpdateTime := time.Now()
 
-        // 📌 Сглаживание множителя (экспоненциальное усреднение)
-        smoothedMultiplier := (lastSentMultiplier*0.8 + currentMultiplier*0.2)
+    // Определяем точку краша на основе текущего номера ставки
+    crashPoint := 1.5 // значение по умолчанию
+    if point, exists := crashPoints[w.betCount]; exists {
+        crashPoint = point
+    }
 
-        // Отправляем данные раз в 250 мс (а не 100 мс)
-        if time.Since(lastSentTime) >= 250*time.Millisecond {
-            multiplierInfo := gin.H{
-                "type":       "multiplier_update",
-                "multiplier": math.Min(smoothedMultiplier, currentGame.CrashPointMultiplier),
-                "timestamp":  time.Now().UnixNano() / int64(time.Millisecond),
-                "elapsed":    time.Since(startTime).Seconds(),
-            }
+    // Отправляем обновление множителя каждые 50мс
+    ticker := time.NewTicker(50 * time.Millisecond)
+    defer ticker.Stop()
 
-            ws.mu.Lock()
-            for userId, conn := range connections {
-                if !crashPointReached {
-                    err := conn.WriteJSON(multiplierInfo)
-                    if err != nil {
-                        logger.Error("Failed to send multiplier to user %d: %v", userId, err)
-                        conn.Close()
-                        delete(connections, userId)
-                        delete(ws.connections, userId)
-                        continue
-                    }
-                }
-
-                if bet, ok := ws.bets[userId]; ok {
-                    if bet.CashOutMultiplier != 0 && bet.Status == "active" && currentMultiplier >= bet.CashOutMultiplier {
-                        if err := crashGameCashout(nil, bet, currentMultiplier); err != nil {
-                            logger.Error("Unable to auto cashout for user %d: %v", userId, err)
-                            continue
-                        }
-                        ws.ProcessCashout(userId, currentMultiplier, true)
-                    }
-                }
-            }
-            ws.mu.Unlock()
-
-            lastSentMultiplier = smoothedMultiplier
-            lastSentTime = time.Now()
+    for range ticker.C {
+        elapsed := time.Since(startTime).Seconds()
+        
+        // Базовое увеличение множителя
+        baseMultiplier := 1.0 + (elapsed * 0.1)
+        
+        // Плавное увеличение с учетом времени между обновлениями
+        timeSinceLastUpdate := time.Since(lastUpdateTime).Seconds()
+        multiplierIncrement := (baseMultiplier - lastMultiplier) * timeSinceLastUpdate * 2
+        currentMultiplier := lastMultiplier + multiplierIncrement
+        
+        // Ограничиваем максимальное значение множителя
+        if currentMultiplier > crashPoint {
+            currentMultiplier = crashPoint
+        }
+        
+        multiplierUpdate := gin.H{
+            "type":      "multiplier_update",
+            "multiplier": currentMultiplier,
+            "timestamp": time.Now().UnixNano() / int64(time.Millisecond),
+            "elapsed":   elapsed,
         }
 
-        if currentMultiplier >= currentGame.CrashPointMultiplier && !crashPointReached {
-            crashPointReached = true
-            ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
+        w.mu.Lock()
+        for userId, conn := range connections {
+            err := conn.WriteJSON(multiplierUpdate)
+            if err != nil {
+                logger.Error("Failed to send multiplier update to user %d: %v", userId, err)
+                conn.Close()
+                delete(connections, userId)
+                delete(w.connections, userId)
+                delete(w.lastActivityTime, userId)
+            }
+        }
+        w.mu.Unlock()
+
+        lastMultiplier = currentMultiplier
+        lastUpdateTime = time.Now()
+
+        // Проверяем, достиг ли множитель точки краша
+        if currentMultiplier >= crashPoint {
+            w.BroadcastGameCrash(crashPoint)
             break
         }
     }
