@@ -29,9 +29,6 @@ export const Crash = () => {
     const wsRef = useRef(null);
     const multiplierTimerRef = useRef(null);
     const [startMultiplierTime, setStartMultiplierTime] = useState(null);
-    const reconnectAttempts = useRef(0);
-    const maxReconnectAttempts = 5;
-    const reconnectTimeout = useRef(null);
 
     const valXValut = useRef(1);
 
@@ -178,36 +175,11 @@ export const Crash = () => {
 
         ws.onopen = () => {
             console.log('WebSocket connection established');
-            reconnectAttempts.current = 0;
-            toast.success('Connected to game server');
         };
 
         ws.onerror = (error) => {
             console.error('WebSocket error:', error);
-            toast.error('Connection error. Attempting to reconnect...');
-            
-            if (reconnectAttempts.current < maxReconnectAttempts) {
-                reconnectTimeout.current = setTimeout(() => {
-                    reconnectAttempts.current++;
-                    console.log(`Reconnection attempt ${reconnectAttempts.current}`);
-                    connectWebSocket();
-                }, 5000 * reconnectAttempts.current);
-            } else {
-                toast.error('Failed to connect after multiple attempts. Please reload the page.');
-            }
-        };
-
-        ws.onclose = (event) => {
-            console.log('WebSocket connection closed:', event.code, event.reason);
-            if (event.code !== 1000) { // 1000 is normal closure
-                if (reconnectAttempts.current < maxReconnectAttempts) {
-                    reconnectTimeout.current = setTimeout(() => {
-                        reconnectAttempts.current++;
-                        console.log(`Reconnection attempt ${reconnectAttempts.current}`);
-                        connectWebSocket();
-                    }, 5000 * reconnectAttempts.current);
-                }
-            }
+            toast.error('Connection error. Please reload the page.');
         };
 
         ws.onmessage = async (event) => {
@@ -516,94 +488,6 @@ export const Crash = () => {
             return newAmount > 0 ? newAmount : prevAmount;
         });
     };
-
-    const connectWebSocket = () => {
-        if (!initData) {
-            toast.error('Authorization error. Please restart the application.');
-            return;
-        }
-
-        const encoded_init_data = encodeURIComponent(initData);
-        const ws = new WebSocket(`wss://${API_BASE_URL}/ws/crashgame/live?init_data=${encoded_init_data}`);
-        wsRef.current = ws;
-
-        ws.onopen = () => {
-            console.log('WebSocket connection established');
-            reconnectAttempts.current = 0;
-            toast.success('Connected to game server');
-        };
-
-        ws.onerror = (error) => {
-            console.error('WebSocket error:', error);
-            toast.error('Connection error. Attempting to reconnect...');
-            
-            if (reconnectAttempts.current < maxReconnectAttempts) {
-                reconnectTimeout.current = setTimeout(() => {
-                    reconnectAttempts.current++;
-                    console.log(`Reconnection attempt ${reconnectAttempts.current}`);
-                    connectWebSocket();
-                }, 5000 * reconnectAttempts.current);
-            } else {
-                toast.error('Failed to connect after multiple attempts. Please reload the page.');
-            }
-        };
-
-        ws.onclose = (event) => {
-            console.log('WebSocket connection closed:', event.code, event.reason);
-            if (event.code !== 1000) { // 1000 is normal closure
-                if (reconnectAttempts.current < maxReconnectAttempts) {
-                    reconnectTimeout.current = setTimeout(() => {
-                        reconnectAttempts.current++;
-                        console.log(`Reconnection attempt ${reconnectAttempts.current}`);
-                        connectWebSocket();
-                    }, 5000 * reconnectAttempts.current);
-                }
-            }
-        };
-
-        ws.onmessage = async (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                console.log('WebSocket data received:', data);
-                
-                if (data.type === "multiplier_update") {
-                    setIsBettingClosed(true);
-                    setIsCrashed(false);
-                    setGameActive(true);
-                    setCollapsed(false);
-
-                    setStarPosition({
-                        x: Math.min(200, 50 + data.multiplier * 40 - 40),
-                        y: Math.max(-200, -data.multiplier * 40),
-                    });
-                    
-                    if (!startMultiplierTime) {
-                        setStartMultiplierTime(Date.now());
-                        simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
-                    }
-                }
-                // ... existing code ...
-            } catch (error) {
-                console.error('Error processing WebSocket message:', error);
-            }
-        };
-    };
-
-    useEffect(() => {
-        connectWebSocket();
-
-        return () => {
-            if (reconnectTimeout.current) {
-                clearTimeout(reconnectTimeout.current);
-            }
-            if (multiplierTimerRef.current) {
-                clearInterval(multiplierTimerRef.current);
-            }
-            if (wsRef.current && (wsRef.current.readyState === WebSocket.OPEN || wsRef.current.readyState === WebSocket.CONNECTING)) {
-                wsRef.current.close();
-            }
-        };
-    }, []);
 
     return (
         <div className={styles.crash}>
