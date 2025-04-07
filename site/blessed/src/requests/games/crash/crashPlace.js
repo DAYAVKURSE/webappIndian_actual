@@ -2,6 +2,7 @@ import { API_BASE_URL } from '@/config';
 const initData = window.Telegram?.WebApp?.initData || '';
 
 export async function crashPlace(Amount, CashOutMultiplier) {
+    console.log('STABKAAAAAAAAAA', Amount, CashOutMultiplier);
     if (!initData) {
         console.error('Telegram WebApp initData is missing');
         return { 
