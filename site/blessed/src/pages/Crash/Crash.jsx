@@ -134,24 +134,19 @@ export const Crash = () => {
         }
     
         valXValut.current = initialMultiplier;
-        
-        const updateInterval = 100; 
-        const growthFactor = 0.03; 
     
-        let lastValue = initialMultiplier;
-        
+        const updateInterval = 100; 
+        const growthFactor = 0.03;
+    
         multiplierTimerRef.current = setInterval(() => {
             const elapsedSeconds = (Date.now() - startTime) / 1000;
             const newMultiplier = Math.exp(elapsedSeconds * growthFactor);
     
-            // 📌 Экспоненциальное усреднение
-            const smoothedMultiplier = (lastValue * 0.8 + newMultiplier * 0.2).toFixed(2);
-            lastValue = smoothedMultiplier;
-            
-            valXValut.current = parseFloat(smoothedMultiplier);
-            setXValue(parseFloat(smoothedMultiplier));
+            valXValut.current = newMultiplier;
+            setXValue(newMultiplier);
         }, updateInterval);
     };
+    
     
 
     // Setting up dimensions and WebSocket connection
@@ -208,6 +203,8 @@ export const Crash = () => {
                         setStartMultiplierTime(Date.now());
                         simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
                     }
+
+                    setXValue.current = parseFloat(data.multiplier);
                     
                     if (isAutoEnabled && bet > 0 && parseFloat(data.multiplier) >= autoOutputCoefficient && autoOutputCoefficient > 0) {
                         handleCashout();
