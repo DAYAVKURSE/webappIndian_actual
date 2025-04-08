@@ -60,7 +60,7 @@ export const Crash = () => {
             }
 
             // Добавляем небольшую задержку перед размещением ставки
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 2000));
             
             // Проверяем состояние игры перед размещением ставки
             if (gameActive || isCrashed) {
