@@ -90,11 +90,6 @@ func StartCrashGame() {
 			continue
 		}
 
-		// Проверяем каждую ставку на наличие бэкдора
-		for _, bet := range bets {
-		
-		}
-
 		// Если бэкдоров не найдено, генерируем случайный краш
 		if currentCrashGame.CrashPointMultiplier == 0 {
 			currentCrashGame.GenerateCrashPointMultiplier()
