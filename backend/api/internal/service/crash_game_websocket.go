@@ -213,9 +213,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 
     var currentMultiplier float64
     crashPointReached := false
-    startTime := time.Now()
     lastSentMultiplier := 1.0
-    lastSentTime := time.Now()
 
     // Копируем подключения для потоковой отправки
     connections := make(map[int64]*websocket.Conn)
@@ -270,7 +268,6 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
             ws.mu.Unlock()
 
             lastSentMultiplier = currentMultiplier
-            lastSentTime = time.Now()
         }
     }
 
