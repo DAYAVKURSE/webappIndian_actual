@@ -30,24 +30,6 @@ type CrashGameWebsocketService struct {
 	betCount         int
 }
 
-var crashPoints = map[int]float64{
-	76:     1.5,
-	538:    32.0,
-	17216:  2.5,
-	372:    1.5,
-	1186:   14.0,
-	16604:  4.0,
-	614:    1.5,
-	2307:   13.0,
-	29991:  3.0,
-	1476:   1.5,
-	5738:   7.0,
-	40166:  3.0,
-	3258:   1.5,
-	11629:  4.0,
-	46516:  4.5,
-}
-
 func NewCrashGameWebsocketService() *CrashGameWebsocketService {
 	service := &CrashGameWebsocketService{
 		connections:      make(map[int64]*websocket.Conn),
