@@ -80,6 +80,8 @@ func (w *CrashGameWebsocketService) cleanupInactiveConnections() {
 }
 
 func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context) {
+	logger.Info("New WebSocket connection attempt from IP: %s", c.ClientIP())
+	
 	userId, err := middleware.GetUserIDFromGinContext(c)
 	if err != nil {
 		logger.Error("Error retrieving user ID: %v", err)
@@ -93,20 +95,31 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		return
 	}
 
-	logger.Info("User %d connected to WebSocket", userId)
+	logger.Info("User %d authenticated successfully", userId)
 
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		logger.Error("WebSocket upgrade failed: %v", err)
+		logger.Error("WebSocket upgrade failed for user %d: %v", userId, err)
 		return
 	}
 
 	w.mu.Lock()
+	if existingConn, ok := w.connections[userId]; ok {
+		logger.Info("Closing existing connection for user %d", userId)
+		existingConn.Close()
+	}
 	w.connections[userId] = conn
 	w.lastActivityTime[userId] = time.Now()
 	w.betCount++
-	currentBet := w.betCount
 	w.mu.Unlock()
+
+	logger.Info("User %d connected to WebSocket successfully", userId)
+
+	// Send initial connection success message
+	conn.WriteJSON(gin.H{
+		"type": "connection_success",
+		"message": "Connected to game server",
+	})
 
 	defer func() {
 		w.mu.Lock()
@@ -118,20 +131,22 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 	}()
 
 	for {
-		_, _, err := conn.ReadMessage()
+		_, message, err := conn.ReadMessage()
 		if err != nil {
+			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				logger.Error("WebSocket read error for user %d: %v", userId, err)
+			}
 			break
 		}
+
 		w.mu.Lock()
 		w.lastActivityTime[userId] = time.Now()
-		if crashMultiplier, exists := crashPoints[currentBet]; exists {
-			logger.Info("Crash event at bet %d with multiplier %.1fx", currentBet, crashMultiplier)
-			conn.WriteJSON(gin.H{
-				"type":        "game_crash",
-				"crash_point": crashMultiplier,
-			})
-		}
 		w.mu.Unlock()
+		
+		// Обрабатываем полученное сообщение, если необходимо
+		if len(message) > 0 {
+			logger.Info("Received message from user %d: %s", userId, string(message))
+		}
 	}
 }
 
