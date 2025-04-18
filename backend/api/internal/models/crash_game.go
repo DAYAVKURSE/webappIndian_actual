@@ -103,25 +103,6 @@ func (CG *CrashGame) generateRandomCrashPoint() float64 {
 }
 
 
-// Выносим генерацию случайного краша в отдельную функцию
-func (CG *CrashGame) generateRandomCrashPoint() float64 {
-    p := 0.2 // Probability of crash at 1.0x
-    alpha := 2.5 // Shape parameter for Pareto distribution
-    U1 := rand.Float64()
-    var crashPoint float64
-
-    if U1 <= p {
-        crashPoint = 1.0
-    } else {
-        U2 := rand.Float64()
-        crashPoint = math.Pow(1.0/U2, 1.0/alpha)
-    }
-    
-    logger.Info("Using random crash point: %f", crashPoint)
-    CG.CrashPointMultiplier = crashPoint
-    return crashPoint
-}
-
 func (CG *CrashGame) CalculateMultiplier() float64 {
     elapsed := time.Since(CG.StartTime).Seconds()
     k := 0.01 // Rate of increase
