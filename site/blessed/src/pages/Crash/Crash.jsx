@@ -470,11 +470,21 @@ export const Crash = () => {
 
     // Changing auto-cashout coefficient
     const handleCoefficientChange = (e) => {
-        const value = parseFloat(e.target.value);
-        if (!isNaN(value) && value >= 1) {
-            setAutoOutputCoefficient(value);
+        const raw = e.target.value;
+      
+        // Если пользователь очистил поле — ставим 0
+        if (raw === '') {
+          setAutoOutputCoefficient(0);
+          return;
         }
-    };
+      
+        // Иначе пробуем распарсить число
+        const value = parseFloat(raw);
+        if (!isNaN(value) && value >= 1) {
+          setAutoOutputCoefficient(value);
+        }
+      };
+      
 
     // Changing bet amount
     const handleAmountChange = (delta) => {
@@ -492,7 +502,7 @@ export const Crash = () => {
         });
     };
 
-    
+
     return (
         <div className={styles.crash}>
             {/* User balance */}
@@ -544,14 +554,15 @@ export const Crash = () => {
                     </div>
                     
                     <div className={styles.coefficientInput}>
-                        <input 
-                            type="number" 
-                            min="1.0" 
-                            step="0.1"
-                            value={autoOutputCoefficient} 
-                            onChange={handleCoefficientChange}
-                            className={styles.autoInput}
-                            placeholder="Example: 2.0"
+                    <input
+                        type="number"
+                        min="1.0"
+                        step="0.1"
+                        // если в состоянии 0 — показываем пустую строку, иначе — само число
+                        value={autoOutputCoefficient === 0 ? '' : autoOutputCoefficient}
+                        onChange={handleCoefficientChange}
+                        className={styles.autoInput}
+                        placeholder="Example: 2.0"
                         />
                         <span className={styles.inputLabel}>x</span>
                     </div>
