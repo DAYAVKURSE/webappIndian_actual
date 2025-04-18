@@ -492,6 +492,81 @@ export const Crash = () => {
         });
     };
 
+    const connectWebSocket = () => {
+        if (!initData) {
+            console.error('Telegram WebApp initData is missing');
+            return;
+        }
+
+        const wsUrl = `wss://${API_BASE_URL}/games/crashgame/ws?init_data=${encodeURIComponent(initData)}`;
+        console.log('Connecting to WebSocket:', wsUrl);
+
+        wsRef.current = new WebSocket(wsUrl);
+
+        wsRef.current.onopen = () => {
+            console.log('WebSocket connection established');
+            setLoading(false);
+        };
+
+        ws.onclose = (event) => {
+            console.log('WebSocket connection closed:', event);
+            setLoading(true);
+            
+            // Пытаемся переподключиться через 2 секунды
+            setTimeout(() => {
+                console.log('Attempting to reconnect...');
+                connectWebSocket();
+            }, 2000);
+        };
+
+        wsRef.current.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            setLoading(true);
+        };
+
+        wsRef.current.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                console.log('Received WebSocket message:', data);
+
+                switch (data.type) {
+                    case 'multiplier_update':
+                        setXValue(data.multiplier);
+                        valXValut.current = data.multiplier;
+                        break;
+                    case 'game_crash':
+                        handleGameCrash(data);
+                        break;
+                    case 'game_started':
+                        handleGameStart();
+                        break;
+                    case 'connection_success':
+                        console.log('Successfully connected to game server');
+                        break;
+                    default:
+                        console.log('Unknown message type:', data.type);
+                }
+            } catch (error) {
+                console.error('Error processing WebSocket message:', error);
+            }
+        };
+    };
+
+    // Добавляем обработчик для восстановления соединения
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible' && (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN)) {
+                console.log('Page became visible, reconnecting WebSocket...');
+                connectWebSocket();
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
     return (
         <div className={styles.crash}>
             {/* User balance */}

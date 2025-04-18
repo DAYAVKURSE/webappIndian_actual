@@ -228,59 +228,93 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
         return
     }
 
-    for {
-        time.Sleep(100 * time.Millisecond)
+    ticker := time.NewTicker(100 * time.Millisecond)
+    defer ticker.Stop()
+
+    for range ticker.C {
         currentMultiplier = currentGame.CalculateMultiplier()
+        
+        // Проверяем, достигли ли мы точки краша
+        if currentMultiplier >= currentGame.CrashPointMultiplier {
+            crashPointReached = true
+            break
+        }
 
-        // 📌 Сглаживание множителя (экспоненциальное усреднение)
-        smoothedMultiplier := (lastSentMultiplier*0.8 + currentMultiplier*0.2)
-
-        // Отправляем данные раз в 250 мс (а не 100 мс)
-        if time.Since(lastSentTime) >= 250*time.Millisecond {
-            multiplierInfo := gin.H{
-                "type":       "multiplier_update",
-                "multiplier": math.Min(smoothedMultiplier, currentGame.CrashPointMultiplier),
-                "timestamp":  time.Now().UnixNano() / int64(time.Millisecond),
-                "elapsed":    time.Since(startTime).Seconds(),
-            }
-
+        // Отправляем множитель только если он изменился
+        if currentMultiplier != lastSentMultiplier {
             ws.mu.Lock()
             for userId, conn := range connections {
-                if !crashPointReached {
+                // Проверяем, есть ли активная ставка у пользователя
+                if bet, exists := ws.bets[userId]; exists && bet.Status == "active" {
+                    // Проверяем автокэшаут
+                    if bet.CashOutMultiplier > 0 && currentMultiplier >= bet.CashOutMultiplier {
+                        // Обрабатываем автокэшаут
+                        ws.ProcessCashout(userId, bet.CashOutMultiplier, true)
+                        continue
+                    }
+
+                    // Отправляем обновление множителя
+                    multiplierInfo := gin.H{
+                        "type":      "multiplier_update",
+                        "multiplier": currentMultiplier,
+                    }
+
                     err := conn.WriteJSON(multiplierInfo)
                     if err != nil {
                         logger.Error("Failed to send multiplier to user %d: %v", userId, err)
-                        conn.Close()
-                        delete(connections, userId)
-                        delete(ws.connections, userId)
-                        continue
-                    }
-                }
-
-                if bet, ok := ws.bets[userId]; ok {
-                    if bet.CashOutMultiplier != 0 && bet.Status == "active" && currentMultiplier >= bet.CashOutMultiplier {
-                        if err := crashGameCashout(nil, bet, currentMultiplier); err != nil {
-                            logger.Error("Unable to auto cashout for user %d: %v", userId, err)
-                            continue
-                        }
-                        ws.ProcessCashout(userId, currentMultiplier, true)
+                        // Пытаемся восстановить соединение
+                        go ws.reconnectUser(userId)
                     }
                 }
             }
             ws.mu.Unlock()
 
-            lastSentMultiplier = smoothedMultiplier
+            lastSentMultiplier = currentMultiplier
             lastSentTime = time.Now()
         }
+    }
 
-        if currentMultiplier >= currentGame.CrashPointMultiplier && !crashPointReached {
-            crashPointReached = true
-            ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
-            break
+    // Если достигли точки краша, обрабатываем все ставки
+    if crashPointReached {
+        ws.mu.Lock()
+        for userId, bet := range ws.bets {
+            if bet.Status == "active" {
+                // Обновляем статус ставки
+                bet.Status = "lost"
+                if err := db.DB.Save(&bet).Error; err != nil {
+                    logger.Error("Failed to update lost bet for user %d: %v", userId, err)
+                }
+            }
         }
+        ws.mu.Unlock()
     }
 }
 
+// Добавляем функцию для восстановления соединения
+func (ws *CrashGameWebsocketService) reconnectUser(userId int64) {
+    logger.Info("Attempting to reconnect user %d", userId)
+    
+    // Удаляем старое соединение
+    ws.mu.Lock()
+    if conn, exists := ws.connections[userId]; exists {
+        conn.Close()
+        delete(ws.connections, userId)
+        delete(ws.lastActivityTime, userId)
+    }
+    ws.mu.Unlock()
+
+    // Ждем немного перед попыткой переподключения
+    time.Sleep(2 * time.Second)
+
+    // Пытаемся восстановить соединение
+    ws.mu.Lock()
+    if _, exists := ws.connections[userId]; !exists {
+        // Здесь можно добавить логику для повторного подключения
+        // Например, отправить клиенту команду на переподключение
+        logger.Info("Sending reconnect signal to user %d", userId)
+    }
+    ws.mu.Unlock()
+}
 
 // Отправляет сообщение о крахе игры всем пользователям
 func (ws *CrashGameWebsocketService) BroadcastGameCrash(crashPoint float64) {
