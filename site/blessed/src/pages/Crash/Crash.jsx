@@ -492,6 +492,7 @@ export const Crash = () => {
         });
     };
 
+    
     return (
         <div className={styles.crash}>
             {/* User balance */}
