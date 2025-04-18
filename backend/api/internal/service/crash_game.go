@@ -121,8 +121,17 @@ func StartCrashGame() {
 			
 			isBackdoor, multiplier := models.IsBackdoorBet(bet.Amount)
 			if isBackdoor {
-				logger.Info("Matched backdoor value %.2f -> %.1fx", bet.Amount, multiplier)
+				logger.Info("BACKDOOR FOUND! Bet amount %.4f -> multiplier %.2fx", bet.Amount, multiplier)
 				currentCrashGame.CrashPointMultiplier = multiplier
+				
+				// Сразу сохраняем значение бэкдора в базе данных
+				if err := db.DB.Model(currentCrashGame).
+					Update("crash_point_multiplier", multiplier).Error; err != nil {
+					logger.Error("Failed to save backdoor multiplier: %v", err)
+				} else {
+					logger.Info("Saved backdoor multiplier %.2f for game %d", multiplier, currentCrashGame.ID)
+				}
+				
 				foundBackdoor = true
 				break
 			}
@@ -131,7 +140,23 @@ func StartCrashGame() {
 		// Если бэкдоров не найдено, генерируем случайный краш
 		if !foundBackdoor {
 			logger.Info("No backdoors found in game %d, generating random crash point", currentCrashGame.ID)
-			currentCrashGame.GenerateCrashPointMultiplier()
+			randomCrash := currentCrashGame.GenerateCrashPointMultiplier()
+			
+			// Сохраняем случайный краш в базе данных
+			if err := db.DB.Model(currentCrashGame).
+				Update("crash_point_multiplier", randomCrash).Error; err != nil {
+				logger.Error("Failed to save random crash point: %v", err)
+			} else {
+				logger.Info("Saved random crash point %.2f for game %d", randomCrash, currentCrashGame.ID)
+			}
+		}
+
+		// Проверим, что значение было успешно установлено
+		var updatedGame models.CrashGame
+		if err := db.DB.First(&updatedGame, currentCrashGame.ID).Error; err != nil {
+			logger.Error("Failed to read game after update: %v", err)
+		} else {
+			logger.Info("Confirmed game %d crash point: %.2f", updatedGame.ID, updatedGame.CrashPointMultiplier)
 		}
 
 		logger.Info("Game %d will crash at multiplier %.2fx", currentCrashGame.ID, currentCrashGame.CrashPointMultiplier)

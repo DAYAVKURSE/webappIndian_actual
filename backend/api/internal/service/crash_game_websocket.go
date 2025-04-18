@@ -182,6 +182,24 @@ func (ws *CrashGameWebsocketService) SendBetToUser(bet *models.CrashGameBet) {
 }
 
 func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.CrashGame) {
+	logger.Info("Starting multiplier updates for game %d with crash point %.2f", 
+		currentGame.ID, currentGame.CrashPointMultiplier)
+	
+	// Еще раз проверяем значение в базе данных
+	var gameFromDB models.CrashGame
+	if err := db.DB.First(&gameFromDB, currentGame.ID).Error; err != nil {
+		logger.Error("Failed to re-read game %d before sending multipliers: %v", currentGame.ID, err)
+	} else {
+		logger.Info("Game %d crash point from DB: %.2f", gameFromDB.ID, gameFromDB.CrashPointMultiplier)
+		
+		// Если значение в базе отличается от значения в памяти, обновляем
+		if gameFromDB.CrashPointMultiplier != currentGame.CrashPointMultiplier {
+			logger.Info("Updating crash point in memory: %.2f -> %.2f", 
+				currentGame.CrashPointMultiplier, gameFromDB.CrashPointMultiplier)
+			currentGame.CrashPointMultiplier = gameFromDB.CrashPointMultiplier
+		}
+	}
+	
 	ws.mu.Lock()
 
 	var currentMultiplier float64
@@ -197,9 +215,13 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 	ws.mu.Unlock()
 
 	if len(connections) == 0 {
+		logger.Info("No connections for game %d, skipping multiplier updates", currentGame.ID)
 		return
 	}
 
+	logger.Info("Sending multiplier updates to %d connections, target crash: %.2f", 
+		len(connections), currentGame.CrashPointMultiplier)
+	
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 
@@ -211,6 +233,8 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 		
 		// Проверяем, достигли ли мы точки краша
 		if smoothedMultiplier >= currentGame.CrashPointMultiplier {
+			logger.Info("Game %d reached crash point: %.2f >= %.2f", 
+				currentGame.ID, smoothedMultiplier, currentGame.CrashPointMultiplier)
 			crashPointReached = true
 			ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
 			break
@@ -231,6 +255,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 				if bet, exists := ws.bets[userId]; exists && bet.Status == "active" {
 					// Проверяем автокэшаут
 					if bet.CashOutMultiplier > 0 && smoothedMultiplier >= bet.CashOutMultiplier {
+						logger.Info("Auto cashout for user %d at %.2fx", userId, smoothedMultiplier)
 						// Обрабатываем автокэшаут
 						if err := crashGameCashout(nil, bet, smoothedMultiplier); err != nil {
 							logger.Error("Unable to auto cashout for user %d: %v", userId, err)
@@ -273,9 +298,11 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 
 	// Если достигли точки краша, обрабатываем все ставки
 	if crashPointReached {
+		logger.Info("Game %d crashed, processing all active bets", currentGame.ID)
 		ws.mu.Lock()
 		for userId, bet := range ws.bets {
 			if bet.Status == "active" {
+				logger.Info("Marking bet as lost for user %d", userId)
 				// Обновляем статус ставки
 				bet.Status = "lost"
 				if err := db.DB.Save(&bet).Error; err != nil {
