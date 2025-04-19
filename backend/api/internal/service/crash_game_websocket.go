@@ -631,7 +631,7 @@ func (ws *CrashGameWebsocketService) ProcessCashout(userId int64, multiplier flo
 		"cashout_multiplier": multiplier,
 		"win_amount":         bet.WinAmount,
 		"is_auto":            isAuto,
-		"userId":             userId,
+		"user_id":            userId,
 		"username":           user.Nickname,
 	}
 
