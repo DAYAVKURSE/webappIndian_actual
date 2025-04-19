@@ -511,7 +511,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 				for userId, conn := range connections {
 					err := conn.WriteJSON(multiplierInfo)
 					if err != nil {
-						logger.Error("Failed to send forced multiplier update: %v", err)
+						logger.Error("Failed to send forced multiplier update to user %d: %v", userId, err)
 					}
 				}
 				ws.mu.Unlock()
