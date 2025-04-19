@@ -369,6 +369,24 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 	lastUpdateTime := time.Now()
 	stuckDetectionThreshold := 2.0 * time.Second
 	
+	// Добавляем счетчик зависаний и определяем более агрессивный рост для критических бэкдоров
+	stuckCounter := 0
+	maxStuckCount := 3
+	
+	// Сохраняем исходную точку краша для проверки прогресса
+	targetCrashPoint := currentGame.CrashPointMultiplier
+	
+	// Для критических бэкдоров увеличиваем скорость роста
+	if isCriticalBackdoor && targetCrashPoint > 10.0 {
+		// Для критически важных бэкдоров с большим множителем 
+		// устанавливаем специальные параметры
+		logger.Info("Setting special acceleration for critical high-value backdoor %s", backdoorType)
+		growthFactor = 0.7   // Максимально быстрый рост
+		tickerInterval = 20 * time.Millisecond  // Максимально быстрые обновления
+		ticker.Stop()
+		ticker = time.NewTicker(tickerInterval)
+	}
+	
 	multiplierUpdateLoop:
 	for {
 		select {
@@ -382,7 +400,29 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 			// Ускорение роста в зависимости от типа бэкдора
 			if isCriticalBackdoor {
 				// Максимальное ускорение для 538 и подобных
-				currentMultiplier = currentMultiplier * 1.15
+				if backdoorType == "538" {
+					// Особая обработка для 538, чтобы избежать зависания 
+					// и гарантировать достижение 32.0
+					if lastSentMultiplier < 10.0 {
+						// Быстрый рост в начале
+						currentMultiplier = currentMultiplier * 1.3
+					} else if lastSentMultiplier < 20.0 {
+						// Очень быстрый рост в середине
+						currentMultiplier = currentMultiplier * 1.5
+					} else {
+						// Максимальное ускорение ближе к цели
+						currentMultiplier = currentMultiplier * 2.0
+					}
+					
+					// Дополнительно просто добавляем значительный инкремент
+					if lastSentMultiplier > 3.0 && lastSentMultiplier < targetCrashPoint * 0.9 {
+						// Гарантированное минимальное увеличение для избежания зависаний
+						currentMultiplier += 0.5
+					}
+				} else {
+					// Для других критических бэкдоров
+					currentMultiplier = currentMultiplier * 1.15
+				}
 			} else if backdoorExists {
 				// Умеренное ускорение для обычных бэкдоров
 				currentMultiplier = currentMultiplier * 1.1
@@ -407,6 +447,16 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 					currentGame.ID, smoothedMultiplier, currentGame.CrashPointMultiplier)
 				crashPointReached = true
 				ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
+				break multiplierUpdateLoop
+			}
+			
+			// Проверка на зависание - принудительное завершение игры при длительном отсутствии изменений
+			// для критических бэкдоров
+			if isCriticalBackdoor && backdoorType == "538" && time.Since(startTime) > 30*time.Second {
+				logger.Warn("Forcing completion of 538 backdoor after 30 seconds (current=%.2f, target=%.2f)", 
+					smoothedMultiplier, targetCrashPoint)
+				crashPointReached = true
+				ws.BroadcastGameCrash(targetCrashPoint)
 				break multiplierUpdateLoop
 			}
 			
@@ -487,15 +537,62 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 		case <-stuckTimer.C:
 			// Проверка на зависание - если не было обновлений больше threshold, принудительно увеличиваем множитель
 			if time.Since(lastUpdateTime) > stuckDetectionThreshold {
-				logger.Warn("Detected possible stuck multiplier at %.2f, forcing increment", lastSentMultiplier)
-				// Принудительно увеличиваем множитель на 0.05
-				lastSentMultiplier += 0.05
+				stuckCounter++
+				logger.Warn("Detected possible stuck multiplier at %.2f (attempt %d/%d), forcing increment", 
+					lastSentMultiplier, stuckCounter, maxStuckCount)
 				
-				// Если множитель близок к краш-поинту, завершаем игру
-				if lastSentMultiplier >= currentGame.CrashPointMultiplier * 0.95 {
-					logger.Info("Forced multiplier increment reached crash threshold, ending game")
-					crashPointReached = true
-					ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
+				// Принудительно увеличиваем множитель с учетом текущей точки краша и счетчика зависаний
+				var increment float64
+				
+				// Для критических бэкдоров с высоким множителем используем более агрессивное ускорение
+				if isCriticalBackdoor && targetCrashPoint > 10.0 {
+					// Для бэкдора 538 (32.0) нужно агрессивное ускорение
+					if backdoorType == "538" {
+						// Экспоненциальное ускорение в зависимости от счетчика зависаний
+						// и расстояния до целевой точки
+						increment = (targetCrashPoint - lastSentMultiplier) * 0.1 * float64(stuckCounter)
+						
+						// Минимальный шаг всегда должен быть значительным
+						if increment < 0.5 {
+							increment = 0.5
+						}
+						
+						// Для серьезных зависаний делаем большой скачок
+						if stuckCounter >= maxStuckCount {
+							increment = (targetCrashPoint - lastSentMultiplier) * 0.5
+						}
+						
+						logger.Info("Using aggressive increment of %.2f for critical backdoor 538", increment)
+					} else {
+						increment = 0.5 * float64(stuckCounter)
+					}
+				} else {
+					// Для обычных ситуаций
+					increment = 0.05 * float64(stuckCounter)
+				}
+				
+				// Минимальное значение
+				if increment < 0.05 {
+					increment = 0.05
+				}
+				
+				// Применяем увеличение
+				lastSentMultiplier += increment
+				
+				// Если множитель близок к краш-поинту или слишком много зависаний, завершаем игру
+				if lastSentMultiplier >= currentGame.CrashPointMultiplier * 0.95 || stuckCounter >= maxStuckCount * 2 {
+					logger.Info("Force ending game after stuck detection: multiplier=%.2f, target=%.2f, attempts=%d", 
+						lastSentMultiplier, currentGame.CrashPointMultiplier, stuckCounter)
+					
+					// При сильном зависании для критического бэкдора 538, просто завершаем с целевым множителем
+					if backdoorType == "538" && stuckCounter >= maxStuckCount {
+						logger.Info("Critical backdoor 538 stuck detected, force ending with target multiplier %.2f", 
+							targetCrashPoint)
+						ws.BroadcastGameCrash(targetCrashPoint)
+					} else {
+						crashPointReached = true
+						ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
+					}
 					break multiplierUpdateLoop
 				}
 				
@@ -515,10 +612,22 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 					}
 				}
 				ws.mu.Unlock()
+				
+				// Сбрасываем таймер обнаружения зависаний
+				lastUpdateTime = time.Now()
 			}
 			
-			// Перезапускаем таймер
-			stuckTimer.Reset(500 * time.Millisecond)
+			// Перезапускаем таймер, с уменьшением интервала для критических ситуаций
+			var nextCheckInterval time.Duration = 500 * time.Millisecond
+			if stuckCounter > 0 {
+				// Уменьшаем интервал проверки, если уже были зависания
+				nextCheckInterval = 300 * time.Millisecond
+			}
+			if isCriticalBackdoor && stuckCounter > 0 {
+				// Еще быстрее для критических бэкдоров с обнаруженными зависаниями
+				nextCheckInterval = 200 * time.Millisecond
+			}
+			stuckTimer.Reset(nextCheckInterval)
 			
 		case <-lowMultiplierTimer.C:
 			// Специальная проверка для игр с низким множителем

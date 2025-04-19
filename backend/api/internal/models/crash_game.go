@@ -81,7 +81,7 @@ func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
 func GetCrashPoints() map[int]float64 {
     return map[int]float64{
         76:     1.5,
-        538:    32.0,
+        538:    32.0,  // Устанавливаем точное значение 32.0 для бэкдора 538
         17216:  2.5,
         372:    1.5,
         1186:   14.0,

