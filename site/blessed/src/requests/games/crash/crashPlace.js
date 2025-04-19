@@ -14,7 +14,7 @@ export async function crashPlace(Amount, CashOutMultiplier) {
     try {
         const requestBody = { 
             Amount: Number(Amount),
-            CashOutMultiplier: CashOutMultiplier > 1 ? Number(CashOutMultiplier) : undefined
+            CashOutMultiplier: CashOutMultiplier !== undefined ? Number(CashOutMultiplier) : undefined
         };
 
         console.log('Sending bet request:', requestBody);
