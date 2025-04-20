@@ -182,12 +182,94 @@ func (ws *CrashGameWebsocketService) SendBetToUser(bet *models.CrashGameBet) {
 	}
 }
 
+// Глобальные переменные для отслеживания зависаний
+var (
+	lastGlobalMultiplier float64 = 0.0
+	stuckGameCount       int     = 0
+	lastGameTime         time.Time
+	isRecoveringFromStuck bool = false
+)
+
+// ForceRestartGame принудительно завершает текущую игру и запускает новую
+func (ws *CrashGameWebsocketService) ForceRestartGame(currentGame *models.CrashGame) {
+	logger.Warn("🚨 ПРИНУДИТЕЛЬНЫЙ ПЕРЕЗАПУСК ЗАВИСШЕЙ ИГРЫ 🚨")
+	
+	// Завершаем текущую игру с текущим множителем
+	ws.BroadcastGameCrash(lastGlobalMultiplier)
+	
+	// Обновляем статус всех активных ставок
+	ws.mu.Lock()
+	for userId, bet := range ws.bets {
+		if bet.Status == "active" {
+			logger.Info("Принудительно закрываем ставку пользователя %d в зависшей игре", userId)
+			bet.Status = "lost"
+			db.DB.Save(bet)
+			// Очищаем список ставок
+			delete(ws.bets, userId)
+		}
+	}
+	ws.mu.Unlock()
+	
+	// Устанавливаем флаг восстановления, чтобы ускорить следующую игру
+	isRecoveringFromStuck = true
+	stuckGameCount++
+	
+	// Уведомляем пользователей о сбросе игры
+	ws.mu.Lock()
+	resetMessage := gin.H{
+		"type": "game_reset",
+		"message": "Игра была сброшена из-за технических проблем",
+		"restart_count": stuckGameCount,
+	}
+	
+	for userId, conn := range ws.connections {
+		err := conn.WriteJSON(resetMessage)
+		if err != nil {
+			logger.Error("Не удалось отправить сообщение о сбросе пользователю %d: %v", userId, err)
+			conn.Close()
+			delete(ws.connections, userId)
+		}
+	}
+	ws.mu.Unlock()
+	
+	// Запускаем новую игру через небольшую задержку
+	go func() {
+		time.Sleep(2 * time.Second)
+		CrashGame.StartNewCrashGame()
+	}()
+}
+
 func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.CrashGame) {
 	logger.Info("Starting multiplier updates for game %d with crash point %.2f", 
 		currentGame.ID, currentGame.CrashPointMultiplier)
 	
+	// Устанавливаем время начала новой игры
+	lastGameTime = time.Now()
+	
 	// Глобальная переменная для отслеживания последних бэкдор-игр
 	static_backdoorCount := 0
+	
+	// После зависания ускоряем обработку следующей игры
+	if isRecoveringFromStuck {
+		logger.Info("🔄 Восстановление после зависания, используем ускоренный режим")
+		isRecoveringFromStuck = false
+	}
+	
+	// Сброс глобального множителя в начале игры
+	lastGlobalMultiplier = 1.0
+	
+	// Устанавливаем сторожевой таймер для всей игры
+	gameWatchdog := time.NewTimer(2 * time.Minute)
+	defer gameWatchdog.Stop()
+	
+	go func() {
+		select {
+		case <-gameWatchdog.C:
+			// Если таймер сработал, значит игра зависла полностью
+			logger.Error("🚨 КРИТИЧЕСКОЕ ЗАВИСАНИЕ: игра %d не завершилась за 2 минуты 🚨", currentGame.ID)
+			ws.ForceRestartGame(currentGame)
+		}
+	}()
 	
 	// Проверка валидности crash point
 	if currentGame.CrashPointMultiplier <= 0 {
@@ -417,6 +499,64 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 	
 	// Сохраняем исходную точку краша для проверки прогресса
 	targetCrashPoint := currentGame.CrashPointMultiplier
+	
+	// Если было зависание, используем максимальную скорость
+	if stuckGameCount > 0 {
+		logger.Info("После зависания: использую максимальную скорость. Счетчик зависаний: %d", stuckGameCount)
+		growthFactor = 0.9
+		tickerInterval = 10 * time.Millisecond
+		ticker.Stop()
+		ticker = time.NewTicker(tickerInterval)
+		
+		// Сбрасываем счетчик через 3 игры
+		if stuckGameCount > 0 {
+			stuckGameCount--
+		}
+	}
+	
+	// Добавляем новый таймер для отслеживания прогресса множителя
+	progressCheckInterval := 3 * time.Second
+	if backdoorExists {
+		// Для бэкдоров проверяем чаще
+		progressCheckInterval = 2 * time.Second
+	}
+	progressCheckTimer := time.NewTimer(progressCheckInterval)
+	defer progressCheckTimer.Stop()
+	
+	// Счетчик для отслеживания отсутствия прогресса
+	noProgressCounter := 0
+	lastCheckedMultiplier := 0.0
+	
+	// Если много последовательных бэкдоров, уменьшаем порог для обнаружения зависаний
+	if static_backdoorCount > 2 {
+		stuckDetectionThreshold = 1.0 * time.Second
+	}
+	
+	// Добавляем счетчик зависаний и определяем более агрессивный рост для критических бэкдоров
+	stuckCounter := 0
+	maxStuckCount := 3
+	
+	// После серии бэкдоров уменьшаем порог срабатывания
+	if static_backdoorCount > 3 {
+		maxStuckCount = 2
+	}
+	
+	// Сохраняем исходную точку краша для проверки прогресса
+	targetCrashPoint := currentGame.CrashPointMultiplier
+	
+	// Если было зависание, используем максимальную скорость
+	if stuckGameCount > 0 {
+		logger.Info("После зависания: использую максимальную скорость. Счетчик зависаний: %d", stuckGameCount)
+		growthFactor = 0.9
+		tickerInterval = 10 * time.Millisecond
+		ticker.Stop()
+		ticker = time.NewTicker(tickerInterval)
+		
+		// Сбрасываем счетчик через 3 игры
+		if stuckGameCount > 0 {
+			stuckGameCount--
+		}
+	}
 	
 	// Для критических бэкдоров увеличиваем скорость роста
 	if isCriticalBackdoor && targetCrashPoint > 10.0 {
@@ -701,6 +841,59 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 			crashPointReached = true
 			ws.BroadcastGameCrash(currentGame.CrashPointMultiplier)
 			break multiplierUpdateLoop
+		case <-progressCheckTimer.C:
+			// Проверка на отсутствие прогресса в игре
+			if math.Abs(lastSentMultiplier - lastCheckedMultiplier) < 0.01 {
+				noProgressCounter++
+				logger.Warn("Обнаружено отсутствие прогресса: %.2f -> %.2f, попытка %d/3", 
+					lastCheckedMultiplier, lastSentMultiplier, noProgressCounter)
+				
+				// Принудительное увеличение множителя
+				lastSentMultiplier += 0.2 * float64(noProgressCounter)
+				
+				// Отправляем обновленный множитель всем
+				multiplierInfo := gin.H{
+					"type":       "multiplier_update",
+					"multiplier": lastSentMultiplier,
+					"timestamp":  time.Now().UnixNano() / int64(time.Millisecond),
+					"elapsed":    time.Since(startTime).Seconds(),
+				}
+				
+				ws.mu.Lock()
+				for userId, conn := range connections {
+					err := conn.WriteJSON(multiplierInfo)
+					if err != nil {
+						logger.Error("Failed to send forced progress update to user %d: %v", userId, err)
+					}
+				}
+				ws.mu.Unlock()
+				
+				// Сохраняем глобально для отслеживания
+				lastGlobalMultiplier = lastSentMultiplier
+				
+				// Если нет прогресса в течение долгого времени, перезапускаем игру
+				if noProgressCounter >= 3 {
+					logger.Error("⚠️ КРИТИЧЕСКОЕ ЗАВИСАНИЕ МНОЖИТЕЛЯ: принудительный перезапуск игры")
+					// Отправляем крашпоинт (текущий множитель)
+					crashPointReached = true
+					ws.BroadcastGameCrash(lastSentMultiplier)
+					
+					// Помечаем игру как восстанавливаемую
+					isRecoveringFromStuck = true
+					stuckGameCount += 2 // Увеличиваем счетчик для следующих игр
+					
+					break multiplierUpdateLoop
+				}
+			} else {
+				// Сбрасываем счетчик, если был прогресс
+				noProgressCounter = 0
+			}
+			
+			// Обновляем проверочное значение
+			lastCheckedMultiplier = lastSentMultiplier
+			
+			// Перезапускаем таймер
+			progressCheckTimer.Reset(progressCheckInterval)
 		}
 	}
 
