@@ -235,7 +235,8 @@ func (ws *CrashGameWebsocketService) ForceRestartGame(currentGame *models.CrashG
 	// Запускаем новую игру через небольшую задержку
 	go func() {
 		time.Sleep(2 * time.Second)
-		CrashGame.StartNewCrashGame()
+		// Исправление: вызываем функцию StartCrashGame напрямую
+		go StartCrashGame()
 	}()
 }
 
@@ -533,8 +534,8 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 	}
 	
 	// Добавляем счетчик зависаний и определяем более агрессивный рост для критических бэкдоров
-	stuckCounter := 0
-	maxStuckCount := 3
+	stuckCounter = 0
+	maxStuckCount = 3
 	
 	// После серии бэкдоров уменьшаем порог срабатывания
 	if static_backdoorCount > 3 {
@@ -542,7 +543,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 	}
 	
 	// Сохраняем исходную точку краша для проверки прогресса
-	targetCrashPoint := currentGame.CrashPointMultiplier
+	targetCrashPoint = currentGame.CrashPointMultiplier
 	
 	// Если было зависание, используем максимальную скорость
 	if stuckGameCount > 0 {
