@@ -425,8 +425,10 @@ multiplierUpdateLoop:
 				ws.mu.Lock()
 				logger.Info("Lock 20")
 				for userId, conn := range connections {
+					logger.Info(" range connections 1")
 					// Проверка автокэшаута для активных ставок
 					if bet, exists := ws.bets[userId]; exists && bet.Status == "active" {
+						logger.Info(" range connections 2")
 						if bet.CashOutMultiplier > 0 && sentMultiplier >= bet.CashOutMultiplier {
 							logger.Info("Автоматический кэшаут для пользователя %d на %.2fx", userId, sentMultiplier)
 							if err := crashGameCashout(nil, bet, sentMultiplier); err != nil {
@@ -438,6 +440,7 @@ multiplierUpdateLoop:
 						}
 
 						// Отправляем обновление множителя
+						logger.Info(" range connections 3")
 						err := conn.WriteJSON(multiplierInfo)
 						if err != nil {
 							logger.Error("Не удалось отправить обновление множителя пользователю %d: %v", userId, err)
@@ -448,6 +451,7 @@ multiplierUpdateLoop:
 							}
 						}
 					} else {
+						logger.Info(" range connections 4")
 						// Отправляем обновление наблюдателям
 						err := conn.WriteJSON(multiplierInfo)
 						if err != nil {
