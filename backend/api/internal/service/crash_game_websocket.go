@@ -423,6 +423,7 @@ multiplierUpdateLoop:
 
 				// Отправляем всем клиентам
 				ws.mu.Lock()
+				logger.Info("Lock 20")
 				for userId, conn := range connections {
 					// Проверка автокэшаута для активных ставок
 					if bet, exists := ws.bets[userId]; exists && bet.Status == "active" {
@@ -459,6 +460,7 @@ multiplierUpdateLoop:
 						}
 					}
 				}
+				logger.Info("UnLock 20")
 				ws.mu.Unlock()
 
 				// Обновляем последнее отправленное значение
@@ -500,6 +502,7 @@ multiplierUpdateLoop:
 				}
 
 				ws.mu.Lock()
+				logger.Info("Lock 21")
 				for _, conn := range connections {
 					err := conn.WriteJSON(multiplierInfo)
 					if err != nil {
@@ -507,6 +510,7 @@ multiplierUpdateLoop:
 					}
 				}
 				ws.mu.Unlock()
+				logger.Info("UnLock 21")
 
 				lastSentMultiplier = currentMultiplier
 
