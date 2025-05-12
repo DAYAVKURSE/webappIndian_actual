@@ -719,8 +719,8 @@ func (ws *CrashGameWebsocketService) ProcessCashout(userId int64, multiplier flo
 
 	logger.Info("ProcessCashout Lock")
 	// Отправляем пользователю, который сделал кэшаут
-	ws.mu.Lock()
-	defer ws.mu.Unlock()
+	//ws.mu.Lock()
+	//defer ws.mu.Unlock()
 	logger.Info("ProcessCashout Unlock")
 
 	if conn, ok := ws.connections[userId]; ok {
