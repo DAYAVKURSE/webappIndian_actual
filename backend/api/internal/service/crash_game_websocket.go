@@ -692,12 +692,13 @@ func (ws *CrashGameWebsocketService) BroadcastGameStarted() {
 }
 
 func (ws *CrashGameWebsocketService) ProcessCashout(userId int64, multiplier float64, isAuto bool) {
+	logger.Info("ProcessCashout 1")
 	bet, ok := ws.bets[userId]
 	if !ok {
 		logger.Warn("No active bet found for user %d during cashout", userId)
 		return
 	}
-
+	logger.Info("ProcessCashout 2")
 	// Получаем информацию о пользователе
 	var user models.User
 	if err := db.DB.First(&user, userId).Error; err != nil {
@@ -705,6 +706,7 @@ func (ws *CrashGameWebsocketService) ProcessCashout(userId int64, multiplier flo
 		return
 	}
 
+	logger.Info("ProcessCashout 3")
 	// Создаем сообщение о кэшауте
 	cashoutInfo := gin.H{
 		"type":               "cashout_result",
@@ -715,9 +717,11 @@ func (ws *CrashGameWebsocketService) ProcessCashout(userId int64, multiplier flo
 		"username":           user.Nickname,
 	}
 
+	logger.Info("ProcessCashout Lock")
 	// Отправляем пользователю, который сделал кэшаут
 	ws.mu.Lock()
 	defer ws.mu.Unlock()
+	logger.Info("ProcessCashout Unlock")
 
 	if conn, ok := ws.connections[userId]; ok {
 		err := conn.WriteJSON(cashoutInfo)
