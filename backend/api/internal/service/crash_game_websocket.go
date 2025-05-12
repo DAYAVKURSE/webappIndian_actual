@@ -319,6 +319,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 		connections[userId] = conn
 	}
 	ws.mu.Unlock()
+	logger.Info("UnLock 10")
 
 	if len(connections) == 0 {
 		logger.Info("Нет подключений для игры %d, пропускаем обновления множителя", currentGame.ID)
@@ -438,6 +439,7 @@ multiplierUpdateLoop:
 							}
 							ws.ProcessCashout(userId, sentMultiplier, true)
 							ws.mu.Unlock()
+							logger.Info("Lock 20_1")
 							continue
 						}
 
@@ -466,7 +468,7 @@ multiplierUpdateLoop:
 						}
 					}
 				}
-				logger.Info("UnLock 20")
+				logger.Info("UnLock 20_2")
 				ws.mu.Unlock()
 
 				// Обновляем последнее отправленное значение
