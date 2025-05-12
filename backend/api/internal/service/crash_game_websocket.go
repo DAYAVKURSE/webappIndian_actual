@@ -433,9 +433,11 @@ multiplierUpdateLoop:
 							logger.Info("Автоматический кэшаут для пользователя %d на %.2fx", userId, sentMultiplier)
 							if err := crashGameCashout(nil, bet, sentMultiplier); err != nil {
 								logger.Error("Не удалось выполнить автокэшаут для пользователя %d: %v", userId, err)
+								ws.mu.Unlock()
 								continue
 							}
 							ws.ProcessCashout(userId, sentMultiplier, true)
+							ws.mu.Unlock()
 							continue
 						}
 
