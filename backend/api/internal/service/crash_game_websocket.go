@@ -468,7 +468,7 @@ multiplierUpdateLoop:
 
 				// Принудительное завершение игры для бэкдоров при приближении к целевому множителю
 				// (чтобы не дать зависнуть в самом конце)
-				if backdoorExists && currentMultiplier > targetCrashPoint*0.9 && targetCrashPoint > 10.0 {
+				if backdoorExists && currentMultiplier > targetCrashPoint && targetCrashPoint > 10.0 {
 					logger.Info("Бэкдор %s достиг высокого множителя (%.2f), ускоряем до точки краша",
 						backdoorType, currentMultiplier)
 					crashPointReached = true
