@@ -287,6 +287,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 		} else {
 			// Проверяем все остальные бэкдоры
 			intAmount := int(math.Round(bet.Amount))
+			logger.Info(" округление   %f", intAmount)
 			if multiplier, exists := models.GetCrashPoints()[intAmount]; exists {
 				targetCrashPoint = multiplier
 				backdoorExists = true
