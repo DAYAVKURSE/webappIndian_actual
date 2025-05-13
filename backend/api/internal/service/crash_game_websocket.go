@@ -421,6 +421,8 @@ multiplierUpdateLoop:
 				// Фиксируем значение для проверки автокэшаута
 				sentMultiplier := currentMultiplier
 
+				logger.Info(" Фиксируем значение для проверки автокэшаута %v , ", sentMultiplier)
+
 				// Отправляем всем клиентам
 				ws.mu.Lock()
 				for userId, conn := range connections {
