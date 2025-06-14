@@ -1,1 +1,1 @@
-export const API_BASE_URL = 'rupex-game.co:8080/api';
+export const API_BASE_URL = 'rupex-game.co/api';
