@@ -34,33 +34,33 @@ export const Terms = () => {
                 <p>PLEASE READ THESE TERMS CAREFULLY BEFORE ACCEPTING THEM.</p>
                 <p>By using our Services, you acknowledge:</p>
                 <ul>
-                <li>You enter into a binding agreement with BiTRave and accept these Terms and Conditions;</li>
-                <li>You agree to all applicable terms, policies, and guidelines published on our Website.</li>
+                    <li>You enter into a binding agreement with BiTRave and accept these Terms and Conditions;</li>
+                    <li>You agree to all applicable terms, policies, and guidelines published on our Website.</li>
                 </ul>
 
                 <p>When engaging with BiTRave’s betting services, you also confirm that:</p>
                 <ul>
-                <li>You meet the minimum legal age to use our services in your country of residence;</li>
-                <li>You are not located in restricted areas;</li>
-                <li>You are 18 years or older;</li>
-                <li>You are playing solely for yourself, using your own funds;</li>
-                <li>This is your first and only registration on BiTRave;</li>
-                <li>You have not self-excluded from any gambling platform in the past 12 months;</li>
-                <li>You understand and accept the terms and conditions fully;</li>
-                <li>All personal information provided by you is accurate, verifiable, and truthful. Providing incorrect information will result in the voiding of any winnings;</li>
-                <li>BiTRave sets specific limits on the maximum amount that can be won and withdrawn daily/weekly/monthly.</li>
+                    <li>You meet the minimum legal age to use our services in your country of residence;</li>
+                    <li>You are not located in restricted areas;</li>
+                    <li>You are 18 years or older;</li>
+                    <li>You are playing solely for yourself, using your own funds;</li>
+                    <li>This is your first and only registration on BiTRave;</li>
+                    <li>You have not self-excluded from any gambling platform in the past 12 months;</li>
+                    <li>You understand and accept the terms and conditions fully;</li>
+                    <li>All personal information provided by you is accurate, verifiable, and truthful. Providing incorrect information will result in the voiding of any winnings;</li>
+                    <li>BiTRave sets specific limits on the maximum amount that can be won and withdrawn daily/weekly/monthly.</li>
                 </ul>
 
                 <h3>General Terms and Conditions</h3>
                 <ol>
-                <li><strong>Service Usage:</strong> By accessing BiTRave, the user acknowledges and agrees to follow the platform's rules and policies. Users must be 18 years or older, reside in India, and meet the legal age for online gaming.</li>
-                <li><strong>Account Creation:</strong> Users can register using valid personal information (email, phone number). Each user is allowed only one account. Any duplicate accounts will be closed.</li>
-                <li><strong>User Responsibility:</strong> Users are responsible for the accuracy of their personal data. Misrepresentation may lead to account suspension.</li>
-                <li><strong>Fraud and Misuse:</strong> BiTRave actively monitors for any suspicious activity, such as multi-accounting, using bots, or other fraudulent practices. Accounts involved in such activities will be suspended.</li>
-                <li><strong>Bonuses and Rewards:</strong> Users can access special bonuses as part of the loyalty program, including deposit bonuses and rewards earned through gameplay. Withdrawal of bonus funds is possible only after fulfilling all wagering requirements.</li>
-                <li><strong>Data Privacy:</strong> BiTRave adheres to strict data privacy policies, ensuring that personal information is protected and used only for service provision.</li>
-                <li><strong>Force Majeure:</strong> BiTRave shall not be held liable for service interruptions caused by external factors beyond control, such as technical malfunctions or natural disasters.</li>
-                <li><strong>Disputes:</strong> Any disputes or disagreements related to account activity or services offered must be submitted to BiTRave's support within 10 days for resolution.</li>
+                    <li><strong>Service Usage:</strong> By accessing BiTRave, the user acknowledges and agrees to follow the platform's rules and policies. Users must be 18 years or older, reside in India, and meet the legal age for online gaming.</li>
+                    <li><strong>Account Creation:</strong> Users can register using valid personal information (email, phone number). Each user is allowed only one account. Any duplicate accounts will be closed.</li>
+                    <li><strong>User Responsibility:</strong> Users are responsible for the accuracy of their personal data. Misrepresentation may lead to account suspension.</li>
+                    <li><strong>Fraud and Misuse:</strong> BiTRave actively monitors for any suspicious activity, such as multi-accounting, using bots, or other fraudulent practices. Accounts involved in such activities will be suspended.</li>
+                    <li><strong>Bonuses and Rewards:</strong> Users can access special bonuses as part of the loyalty program, including deposit bonuses and rewards earned through gameplay. Withdrawal of bonus funds is possible only after fulfilling all wagering requirements.</li>
+                    <li><strong>Data Privacy:</strong> BiTRave adheres to strict data privacy policies, ensuring that personal information is protected and used only for service provision.</li>
+                    <li><strong>Force Majeure:</strong> BiTRave shall not be held liable for service interruptions caused by external factors beyond control, such as technical malfunctions or natural disasters.</li>
+                    <li><strong>Disputes:</strong> Any disputes or disagreements related to account activity or services offered must be submitted to BiTRave's support within 10 days for resolution.</li>
                 </ol>
 
                 <h3>BiTRave Privacy Policy</h3>
@@ -221,7 +221,7 @@ export const Terms = () => {
                         <div className={styles.footer_socials}>
                             <a href="/terms">Terms of use</a>
                             <a href="https://t.me/BiTRaveofficial">Telegram</a>
-                            <a href="https://t.me/BiTRavesupport">Support</a>
+                            <a href="https://t.me/rupexsupport">Support</a>
                         </div>
                     </div>
                 </div>

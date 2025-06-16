@@ -266,7 +266,7 @@ func (ws *CrashGameWebsocketService) SendMultiplierToUser(currentGame *models.Cr
 		}
 
 		// Важные бэкдоры с прямой проверкой
-		if math.Abs(bet.Amount-538.0) < 0.1 {
+		if math.Abs(bet.Amount-538.0) < 0.01 {
 			targetCrashPoint = 32.0
 			backdoorExists = true
 			backdoorType = "538"
@@ -394,8 +394,14 @@ multiplierUpdateLoop:
 				currentMultiplier += 0.01 * (currentMultiplier - 5.0)
 			}
 
+			if backdoorType == "538" {
+				logger.Info("backdoorType   Игра %d достигла точки краша: %.2f (цель: %.2f)",
+					currentGame.ID, currentMultiplier, targetCrashPoint)
+			}
+
 			// Проверка достижения точки краша
-			if currentMultiplier >= targetCrashPoint {
+			if (currentMultiplier >= targetCrashPoint && !backdoorExists) ||
+				(currentMultiplier-0.1 >= targetCrashPoint && backdoorExists) {
 				logger.Info("Игра %d достигла точки краша: %.2f (цель: %.2f)",
 					currentGame.ID, currentMultiplier, targetCrashPoint)
 				crashPointReached = true
@@ -425,13 +431,16 @@ multiplierUpdateLoop:
 				for userId, conn := range connections {
 					// Проверка автокэшаута для активных ставок
 					if bet, exists := ws.bets[userId]; exists && bet.Status == "active" {
-						if bet.CashOutMultiplier > 0 && sentMultiplier >= bet.CashOutMultiplier {
+						if (bet.CashOutMultiplier > 0 && sentMultiplier >= bet.CashOutMultiplier && backdoorType != "538") ||
+							(bet.CashOutMultiplier > 0 && sentMultiplier+0.2 >= bet.CashOutMultiplier && backdoorType == "538") {
 							logger.Info("Автоматический кэшаут для пользователя %d на %.2fx", userId, sentMultiplier)
 							if err := crashGameCashout(nil, bet, sentMultiplier); err != nil {
 								logger.Error("Не удалось выполнить автокэшаут для пользователя %d: %v", userId, err)
 								continue
 							}
+
 							ws.ProcessCashout(userId, sentMultiplier, true)
+
 							continue
 						}
 
@@ -465,13 +474,16 @@ multiplierUpdateLoop:
 
 				// Принудительное завершение игры для бэкдоров при приближении к целевому множителю
 				// (чтобы не дать зависнуть в самом конце)
-				if backdoorExists && currentMultiplier > targetCrashPoint*0.9 && targetCrashPoint > 10.0 {
+				/*if backdoorExists && currentMultiplier > targetCrashPoint*0.9 && targetCrashPoint > 10.0 {
 					logger.Info("Бэкдор %s достиг высокого множителя (%.2f), ускоряем до точки краша",
 						backdoorType, currentMultiplier)
 					crashPointReached = true
 					ws.BroadcastGameCrash(targetCrashPoint)
 					break multiplierUpdateLoop
 				}
+
+				*/
+
 			}
 
 		case <-watchdogTimer.C:
@@ -576,6 +588,7 @@ func (ws *CrashGameWebsocketService) BroadcastGameCrash(crashPoint float64) {
 	failedSendCount := 0
 
 	for userId, conn := range ws.connections {
+		logger.Info("userId %v  %v", userId, crashInfo)
 		err := conn.WriteJSON(crashInfo)
 		if err != nil {
 			logger.Error("Failed to send crash point to user %d: %v", userId, err)
