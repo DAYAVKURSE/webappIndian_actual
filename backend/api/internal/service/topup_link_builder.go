@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	PaymentAPIURL = "https://api.a-pay.one/Remotes/create-deposit"
+	PaymentAPIURL = "https://pay-crm.com/Remotes/create-payment-page"
 )
 
 var (
