@@ -276,6 +276,7 @@ func closeCrashGameBetting() {
 }
 
 func PlaceCrashGameBet(c *gin.Context) {
+	logger.Info("Поставлена ставка")
 	crashGameBetMutex.RLock()
 	bettingOpen := isCrashGameBettingOpen
 	gameID := int64(0)
