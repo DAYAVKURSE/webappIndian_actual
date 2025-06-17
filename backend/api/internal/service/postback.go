@@ -68,7 +68,7 @@ func verifySignature(accessKey string, transactions []TransactionBody, signature
 	// Создаем строку для подписи
 	var signatureString string
 	for _, tx := range transactions {
-		signatureString += fmt.Sprintf("%s%s%s%s%s%s%s%s%s%s",
+		signatureString += fmt.Sprintf("%s%v%v%s%s%s%v%v%v%s",
 			tx.OrderID,
 			tx.CustomUserID,
 			tx.Amount,

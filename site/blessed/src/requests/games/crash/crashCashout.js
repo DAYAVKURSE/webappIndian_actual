@@ -7,12 +7,12 @@ export async function crashCashout() {
         return { 
             ok: false, 
             status: 401,
-            json: async () => ({ error: 'Ошибка авторизации. Telegram WebApp initData отсутствует.' })
+            json: async () => ({ error: 'Authorization error. Telegram WebApp initData is missing.' })
         };
     }
 
     try {
-        console.log('Отправка запроса на вывод средств');
+        console.log('Sending cashout request');
         console.log('URL:', `https://${API_BASE_URL}/games/crashgame/cashout`);
         
         const response = await fetch(`https://${API_BASE_URL}/games/crashgame/cashout`, {
@@ -23,15 +23,15 @@ export async function crashCashout() {
             },
         });
 
-        console.log('Получен ответ со статусом:', response.status);
+        console.log('Received response with status:', response.status);
         
         return response;
     } catch (error) {
-        console.error('Ошибка при выводе средств:', error);
+        console.error('Error during cashout:', error);
         return { 
             ok: false, 
             status: 500,
-            json: async () => ({ error: 'Сетевая ошибка при выводе средств.' })
+            json: async () => ({ error: 'Network error during cashout.' })
         };
     }
 }

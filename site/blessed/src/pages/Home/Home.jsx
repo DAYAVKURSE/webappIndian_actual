@@ -101,12 +101,12 @@ export const Home = () => {
                     </div>
 
                     <div className={styles.home__hiw__card}>
-                            <div className={`${styles.pulseCircle} ${styles.pulseCircle10}`}></div>
-                            <img src="/referral.png" alt="Exchange" className={styles.home__hiw__card_image} />
+                        <div className={`${styles.pulseCircle} ${styles.pulseCircle10}`}></div>
+                        <img src="/referral.png" alt="Exchange" className={styles.home__hiw__card_image} />
                         <div className={styles.home__hiw__card_content}>
                             <h3 className={styles.home__hiw__card_title}>Referral System — Boost your revenue easily</h3>
                             <p className={styles.home__hiw__card_desc}>
-                            Increase your revenue by inviting friends. Earn bonus 20% for every successful referral, and speed up your progress in the Trave Pass.
+                                Increase your revenue by inviting friends. Earn bonus 20% for every successful referral, and speed up your progress in the Trave Pass.
                             </p>
                             <a href="https://t.me/BiTRave_bot" className={styles.home__hiw__card_button}>Try it out</a>
                         </div>
@@ -133,7 +133,8 @@ export const Home = () => {
                         <div className={styles.footer_socials}>
                             <a href="/terms">Terms of use</a>
                             <a href="https://t.me/BiTRaveofficial">Telegram</a>
-                            <a href="https://t.me/BiTRavesupport">Support</a>
+
+                            <a href="https://t.me/BiTRaveofficial">Support</a>
                         </div>
                     </div>
                 </div>

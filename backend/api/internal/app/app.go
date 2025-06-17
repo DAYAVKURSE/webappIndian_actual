@@ -56,7 +56,7 @@ func Start() {
 	// router
 	{
 		// payment system
-		router.POST(apiPrefix+"payments/postback", service.PaymentSystemPostback)
+		router.POST(apiPrefix+"payments/postback", service.PaymentWebhook)
 	}
 
 	// fromTelegram
@@ -77,7 +77,7 @@ func Start() {
 	// authorized
 	{
 		// payment system
-		authorized.POST(apiPrefix+"/payments/withdrawal", service.CreateWithdrawal)
+		authorized.POST(apiPrefix+"payments/withdrawal", service.CreateWithdrawal)
 
 		// trave pass
 		authorized.GET(apiPrefix+"travepass", service.GetAllTravePassLevelsWithRequirementsAndBenefits)
@@ -100,7 +100,7 @@ func Start() {
 		authorized.GET(apiPrefix+"users/referrals", service.GetUserReferrals)
 
 		// deposits
-		authorized.POST(apiPrefix+"payments/create", service.CreatePaymentPageHandler)
+		authorized.POST(apiPrefix+"payments/create", service.CreatePaymentPage)
 		authorized.GET(apiPrefix+"users/deposits", service.GetUserDeposits)
 
 		// clicker

