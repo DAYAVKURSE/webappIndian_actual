@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import styles from "./Other.module.scss";
 
 export const Other = () => {
-    
+
     const copyLink = () => {
         navigator.clipboard.writeText(window.Telegram.WebApp.initData);
     }
@@ -20,12 +20,12 @@ export const Other = () => {
             </Link>
             <div className={styles.downBanners}>
                 <Link to={'/wallet/topup'} className={`${styles.deposit__banner} ${styles.banner}`}>
-                <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12.5" cy="12.5" r="12.5" fill="#6EBEFF" />
-                    <path d="M18.5317 6H6.84004C5.82511 6 4.99951 6.81111 4.99951 7.80822V15.3096C4.99951 16.3065 5.82511 17.1176 6.84004 17.1176H8.45062V15.8456H6.84004C6.53911 15.8456 6.29431 15.6052 6.29431 15.3096V10.0852H19.0774V15.3096C19.0774 15.6051 18.8326 15.8456 18.5317 15.8456H16.9509V17.1176H18.5317C19.5466 17.1176 20.3722 16.3065 20.3722 15.3096V7.80822C20.3722 6.81127 19.5466 6 18.5317 6ZM6.29431 8.81312V7.80822C6.29431 7.51256 6.53911 7.27206 6.84004 7.27206H18.5318C18.8326 7.27206 19.0774 7.51256 19.0774 7.80822V8.81312H6.29431Z" fill="#10202E" />
-                    <path d="M6.97705 11.1177H14.978V12.353H6.97705V11.1177Z" fill="#10202E" />
-                    <path d="M9.58447 16.9709L10.5023 17.8673L12.0255 16.3795V21H13.3233V16.3567L14.8697 17.8673L15.7875 16.9709L12.6861 13.9412L9.58447 16.9709Z" fill="#10202E" />
-                </svg>
+                    <svg width="25" height="25" viewBox="0 0 25 25" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12.5" cy="12.5" r="12.5" fill="#6EBEFF" />
+                        <path d="M18.5317 6H6.84004C5.82511 6 4.99951 6.81111 4.99951 7.80822V15.3096C4.99951 16.3065 5.82511 17.1176 6.84004 17.1176H8.45062V15.8456H6.84004C6.53911 15.8456 6.29431 15.6052 6.29431 15.3096V10.0852H19.0774V15.3096C19.0774 15.6051 18.8326 15.8456 18.5317 15.8456H16.9509V17.1176H18.5317C19.5466 17.1176 20.3722 16.3065 20.3722 15.3096V7.80822C20.3722 6.81127 19.5466 6 18.5317 6ZM6.29431 8.81312V7.80822C6.29431 7.51256 6.53911 7.27206 6.84004 7.27206H18.5318C18.8326 7.27206 19.0774 7.51256 19.0774 7.80822V8.81312H6.29431Z" fill="#10202E" />
+                        <path d="M6.97705 11.1177H14.978V12.353H6.97705V11.1177Z" fill="#10202E" />
+                        <path d="M9.58447 16.9709L10.5023 17.8673L12.0255 16.3795V21H13.3233V16.3567L14.8697 17.8673L15.7875 16.9709L12.6861 13.9412L9.58447 16.9709Z" fill="#10202E" />
+                    </svg>
                     <span>Deposit</span>
                 </Link>
                 <Link to={'/wallet/withdrawal'} className={`${styles.withdraw__banner} ${styles.banner}`}>
@@ -38,19 +38,19 @@ export const Other = () => {
                     <span>Withdrawal</span>
                 </Link>
             </div>
-            
+
             <div className={styles.links}>
                 <Link to={'/other/faq'}>FAQ</Link>
-                <Link to={"https://t.me/BiTRavesupport"}>Support</Link>
+                <Link to={"https://t.me/rupexsupport"}>Support</Link>
             </div>
-            
+
             <div className={styles.other_dev} onClick={() => copyLink()} />
 
             <div className={styles.other__social}>
                 <a href="https://t.me/RupeXBot"><img src="/telegram.png" alt="telegram" /></a>
                 <a ><img src="/discord.png" alt="discord" /></a>
                 <a ><img src="/instagram.png" alt="instagram" /></a>
-                
+
             </div>
         </div>
     );

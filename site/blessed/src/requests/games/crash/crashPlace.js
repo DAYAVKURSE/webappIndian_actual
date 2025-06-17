@@ -7,18 +7,17 @@ export async function crashPlace(Amount, CashOutMultiplier) {
         return { 
             ok: false, 
             status: 401,
-            json: async () => ({ error: 'Ошибка авторизации. Telegram WebApp initData отсутствует.' })
+            json: async () => ({ error: 'Authorization error. Telegram WebApp initData is missing.' })
         };
     }
 
     try {
-        const requestBody = { amount: Number(Amount) };
+        const requestBody = { 
+            Amount: Number(Amount),
+            CashOutMultiplier: CashOutMultiplier !== undefined ? Number(CashOutMultiplier) : undefined
+        };
 
-        if (CashOutMultiplier > 1) {
-            requestBody.CashOutMultiplier = parseFloat(CashOutMultiplier);
-        }
-
-        console.log('Отправка запроса на ставку:', requestBody);
+        console.log('Sending bet request:', requestBody);
         console.log('URL:', `https://${API_BASE_URL}/games/crashgame/place`);
         
         const response = await fetch(`https://${API_BASE_URL}/games/crashgame/place`, {
@@ -30,15 +29,15 @@ export async function crashPlace(Amount, CashOutMultiplier) {
             body: JSON.stringify(requestBody),
         });
 
-        console.log('Получен ответ со статусом:', response.status);
+        console.log('Received response with status:', response.status);
         
         return response;
     } catch (error) {
-        console.error('Ошибка при размещении ставки:', error);
+        console.error('Error placing bet:', error);
         return { 
             ok: false, 
             status: 500,
-            json: async () => ({ error: 'Сетевая ошибка при размещении ставки.' })
+            json: async () => ({ error: 'Network error while placing bet.' })
         };
     }
 }

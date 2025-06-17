@@ -36,12 +36,75 @@ export const Crash = () => {
     const [queuedBet, setQueuedBet] = useState(0);
 
     useEffect(() => {
+        const queuedBetFromStorage = localStorage.getItem('queuedBet');
+        if (queuedBetFromStorage) {
+            setQueuedBet(parseInt(queuedBetFromStorage));
+        }
+    }, []);
+
+    useEffect(() => {
         const interval = setInterval(() => {
             setXValue(valXValut.current);
         }, 80);
     
         return () => clearInterval(interval);
     }, []);
+
+    const placeBetQueue = async (queueBetFromStorage) => {
+        try {
+            // Проверяем, что ставка все еще в очереди
+            const currentQueuedBet = localStorage.getItem('queuedBet');
+            if (!currentQueuedBet || Number(currentQueuedBet) !== Number(queueBetFromStorage)) {
+                console.log('Queued bet was changed or removed');
+                return;
+            }
+
+            // Добавляем небольшую задержку перед размещением ставки
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Проверяем состояние игры перед размещением ставки
+            if (gameActive || isCrashed) {
+                console.log('Game is not ready for placing bet');
+                return;
+            }
+
+            const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
+
+            if (response.ok) {
+                setBet(parseInt(queueBetFromStorage));
+                localStorage.removeItem('queuedBet');
+                setQueuedBet(0);
+                
+                // Сбрасываем множитель и перезапускаем симуляцию
+                valXValut.current = 1.0;
+                setXValue(1.0);
+                setStartMultiplierTime(Date.now());
+                simulateMultiplierGrowth(Date.now(), 1.0);
+                
+                // Обновляем позицию звезды
+                setStarPosition({ x: 50, y: -40 });
+                
+                toast.success('Queued bet placed successfully!');
+            } else {
+                // Если не удалось поставить, пробуем еще раз через 1 секунду
+                console.log('Failed to place queued bet, retrying...');
+                setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
+            }
+        } catch (error) {
+            console.error('Error placing queued bet:', error);
+            // В случае ошибки пробуем еще раз через 1 секунду
+            setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
+        }
+    }
+
+    useEffect(() => {
+        if (!isBettingClosed && !gameActive && !isCrashed) {
+            const queueBetFromStorage = localStorage.getItem('queuedBet');
+            if (queueBetFromStorage) {
+                placeBetQueue(queueBetFromStorage);
+            }
+        }
+    }, [isBettingClosed, gameActive, isCrashed]);
     
 
     console.log(dimensions)
@@ -70,7 +133,7 @@ export const Crash = () => {
             clearInterval(multiplierTimerRef.current);
         }
     
-        valXValut.current = initialMultiplier ;
+        valXValut.current = initialMultiplier;
         
         const updateInterval = 100; 
         const growthFactor = 0.03; 
@@ -86,6 +149,7 @@ export const Crash = () => {
             lastValue = smoothedMultiplier;
             
             valXValut.current = parseFloat(smoothedMultiplier);
+            setXValue(parseFloat(smoothedMultiplier));
         }, updateInterval);
     };
     
@@ -129,32 +193,22 @@ export const Crash = () => {
                 console.log('WebSocket data received:', data);
                 
                 if (data.type === "multiplier_update") {
-                    // Updating game state
                     setIsBettingClosed(true);
                     setIsCrashed(false);
                     setGameActive(true);
                     setCollapsed(false);
 
-                    // Ограничиваем позицию звезды высотой контейнера
-                    const maxHeight = dimensions.height;
-                    const maxWidth = dimensions.width;
-                    
-                    // Вычисляем позицию с учетом ограничений
-                    const xPos = Math.min(data.multiplier * 50, maxWidth * 0.8); // 80% от ширины
-                    const yPos = Math.max(-data.multiplier * 40, -maxHeight * 0.8); // 80% от высоты вверх
-
+                    // Обновляем позицию звезды только вверх
                     setStarPosition({
-                        x: xPos,
-                        y: yPos,
+                        x: Math.min(200, 50 + data.multiplier * 40 - 40), // Начинаем с 50 и двигаем вправо
+                        y: Math.max(-200, -data.multiplier * 40),
                     });
                     
-                    // If this is the first multiplier update, start simulation
                     if (!startMultiplierTime) {
                         setStartMultiplierTime(Date.now());
                         simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
                     }
                     
-                    // Automatic cashout when reaching the specified multiplier
                     if (isAutoEnabled && bet > 0 && parseFloat(data.multiplier) >= autoOutputCoefficient && autoOutputCoefficient > 0) {
                         handleCashout();
                         toast.success(`Auto cashout at ${data.multiplier}x`);
@@ -162,7 +216,6 @@ export const Crash = () => {
                 }
 
                 if (data.type === "game_crash") {
-                    // Stop multiplier growth simulation
                     if (multiplierTimerRef.current) {
                         clearInterval(multiplierTimerRef.current);
                         multiplierTimerRef.current = null;
@@ -171,24 +224,45 @@ export const Crash = () => {
                     
                     setIsCrashed(true);
                     setGameActive(false);
+                    setIsBettingClosed(true);
                     setOverlayText(`Crashed at ${data.crash_point.toFixed(2)}x`);
                     setCollapsed(true);
                     valXValut.current = parseFloat(data.crash_point).toFixed(2);
+                    setXValue(parseFloat(data.crash_point).toFixed(2));
 
-                    setIsFalling(true);
-                    // Оставляем звезду на последней позиции при крахе
-                    setStarPosition(prev => ({ x: prev.x, y: prev.y }));
+                    // Убираем анимацию падения
+                    setStarPosition({ x: 50, y: -40 });
+                    
+                    // Проверяем наличие ставки в очереди и пытаемся разместить её
+                    const queueBetFromStorage = localStorage.getItem('queuedBet');
+                    if (queueBetFromStorage) {
+                        setTimeout(async () => {
+                            try {
+                                const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
+                                if (response.ok) {
+                                    setBet(parseInt(queueBetFromStorage));
+                                    localStorage.removeItem('queuedBet');
+                                    setQueuedBet(0);
+                                    toast.success('Queued bet placed successfully!');
+                                } else {
+                                    // Если не удалось поставить, пробуем еще раз через 1 секунду
+                                    setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
+                                }
+                            } catch (error) {
+                                console.error('Error placing queued bet:', error);
+                                setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
+                            }
+                        }, 1000);
+                    }
                     
                     setTimeout(() => {
                         if (bet > 0) {
-                            // If the player had an active bet, show a loss message
                             toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
                             setBet(0);
                         }
                         valXValut.current = 1.2;
-                        // Возвращаем звезду в начальную позицию
+                        setXValue(1.2);
                         setStarPosition({ x: 50, y: -40 });
-                        setIsFalling(false);
                     }, 3000);
                 }
 
@@ -196,7 +270,7 @@ export const Crash = () => {
                     setCollapsed(true);
                     console.log('Timer tick received:', data.remaining_time);
                     
-                    if (data.remaining_time > 13) {
+                    if (data.remaining_time > 5) {
                         setIsBettingClosed(true);
                         setGameActive(false);
                         setOverlayText('Game starts soon');
@@ -207,43 +281,53 @@ export const Crash = () => {
                         setGameActive(false);
                         setOverlayText(`Game starts in ${data.remaining_time} seconds`);
                         console.log('Betting open - time remaining:', data.remaining_time);
-                        
-                        // If there's a queued bet and betting is open, place it
-                        if (queuedBet > 0) {
-                            console.log('Attempting to place queued bet:', queuedBet);
+                    } else {
+                        setIsBettingClosed(false);
+                        setGameActive(true);
+                        setOverlayText('Game started!');
+                    }
+                }
+
+                if (data.type === "game_started") {
+                    toast.success('Game started!');
+                    setIsBettingClosed(false);
+                    setIsCrashed(false);
+                    setGameActive(true);
+                    setCollapsed(false);
+                    
+                    setStartMultiplierTime(Date.now());
+                    simulateMultiplierGrowth(Date.now(), 1.0);
+                    setXValue(1.0);
+
+                    // Пытаемся разместить ставку из очереди
+                    const queueBetFromStorage = localStorage.getItem('queuedBet');
+                    if (queueBetFromStorage) {
+                        setTimeout(async () => {
                             try {
-                                const response = await crashPlace(queuedBet, autoOutputCoefficient);
+                                const response = await crashPlace(Number(queueBetFromStorage), autoOutputCoefficient);
                                 if (response.ok) {
-                                    setBet(queuedBet);
-                                    toast.success('Queued bet placed!');
-                                    setQueuedBet(0); // Clear queue
-                                    console.log('Queued bet placed successfully');
-                                } else {
-                                    const errorData = await response.json();
-                                    console.error('Failed to place queued bet:', errorData);
-                                    toast.error(errorData.error || 'Failed to place queued bet');
-                                    increaseBalanceRupee(queuedBet); // Return money on error
+                                    setBet(parseInt(queueBetFromStorage));
+                                    localStorage.removeItem('queuedBet');
                                     setQueuedBet(0);
+                                    toast.success('Queued bet placed successfully!');
+                                } else {
+                                    // Если не удалось поставить, пробуем еще раз через 1 секунду
+                                    setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
                                 }
                             } catch (error) {
                                 console.error('Error placing queued bet:', error);
-                                toast.error('Failed to place queued bet');
-                                increaseBalanceRupee(queuedBet); // Return money on error
-                                setQueuedBet(0);
+                                setTimeout(() => placeBetQueue(queueBetFromStorage), 1000);
                             }
-                        }
+                        }, 1000);
                     }
                 }
 
                 if (data.type === "cashout_result") {
-                    // Don't reset bet here to show the player they won
+                    // Показываем сообщение о выигрыше
                     toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${data.cashout_multiplier}x)`);
                     
-                    // Delay resetting the bet to give the user time to see the result
-                    setTimeout(() => {
-                        setBet(0);
-                        increaseBalanceRupee(data.win_amount);
-                    }, 2000);
+                    // Обновляем баланс
+                    increaseBalanceRupee(data.win_amount);
                 }
 
                 // Processing another player's cashout message
@@ -254,26 +338,6 @@ export const Crash = () => {
                 // Processing another player's bet message
                 if (data.type === "new_bet") {
                     toast.success(`${data.username} bet ₹${data.amount.toFixed(0)}`);
-                }
-                
-                // Displaying active game start
-                if (data.type === "game_started") {
-                    toast.success('Game started!');
-                    setIsBettingClosed(true);
-                    setIsCrashed(false);
-                    setGameActive(true);
-                    setCollapsed(false);
-                    
-                    // Start multiplier growth simulation with initial value of 1.0
-                    setStartMultiplierTime(Date.now());
-                    simulateMultiplierGrowth(Date.now(), 1.0);
-
-                    // Очищаем ставку в очереди, если она не была размещена
-                    if (queuedBet > 0) {
-                        increaseBalanceRupee(queuedBet);
-                        setQueuedBet(0);
-                        toast.error('Failed to place queued bet - game started');
-                    }
                 }
             } catch (error) {
                 console.error('Error processing WebSocket message:', error);
@@ -308,49 +372,45 @@ export const Crash = () => {
             return;
         }
 
-        // Проверяем, есть ли уже ставка в очереди
-        if (queuedBet > 0) {
-            toast.error('You already have a bet in queue');
-            return;
-        }
-
         try {
             setLoading(true);
-            console.log('Attempting to place bet:', betAmount, 'Betting closed:', isBettingClosed);
             
-            if (isBettingClosed) {
-                // If betting is closed, queue the bet
+            // Если игра активна или есть ставка в очереди, ставим в очередь
+            if (gameActive || queuedBet > 0) {
                 setQueuedBet(betAmount);
                 decreaseBalanceRupee(betAmount);
+                localStorage.setItem('queuedBet', betAmount);
                 toast.success('Bet will be placed in the next game!');
-                console.log('Bet queued for next game');
+                setLoading(false);
                 return;
             }
 
+            // Если игра не активна, пытаемся поставить сразу
             const response = await crashPlace(betAmount, autoOutputCoefficient);
             
             if (response.ok) {
-                const data = await response.json();
-                console.log('Server response to bet:', data);
                 setBet(betAmount);
                 decreaseBalanceRupee(betAmount);
                 toast.success('Bet accepted! Waiting for game to start');
-                
                 setCollapsed(true);
                 setOverlayText('Your bet is accepted! Waiting for game...');
                 setTimeout(() => {
                     setCollapsed(false);
                 }, 2000);
             } else {
-                const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
-                console.error('Bet error:', errorData);
-                toast.error(errorData.error || 'Error placing bet');
-                increaseBalanceRupee(betAmount); // Return money on error
+                // Если не удалось поставить, ставим в очередь
+                setQueuedBet(betAmount);
+                decreaseBalanceRupee(betAmount);
+                localStorage.setItem('queuedBet', betAmount);
+                toast.success('Bet will be placed in the next game!');
             }
         } catch (err) {
             console.error('Error placing bet:', err.message);
-            toast.error('Failed to place bet');
-            increaseBalanceRupee(betAmount); // Return money on error
+            // В случае ошибки тоже ставим в очередь
+            setQueuedBet(betAmount);
+            decreaseBalanceRupee(betAmount);
+            localStorage.setItem('queuedBet', betAmount);
+            toast.success('Bet will be placed in the next game!');
         } finally {
             setLoading(false);
         }
@@ -380,7 +440,10 @@ export const Crash = () => {
             if (response.ok) {
                 const data = await response.json();
                 console.log('Server response to cashout:', data);
-                // Don't reset bet here as it will happen when cashout_result is received via WebSocket
+                // Сбрасываем ставку сразу после успешного кэшаута
+                setBet(0);
+                setGameActive(false);
+                setIsCrashed(false);
                 toast.success(`Cashout request sent at multiplier ${xValue}x`);
             } else {
                 const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
@@ -407,11 +470,21 @@ export const Crash = () => {
 
     // Changing auto-cashout coefficient
     const handleCoefficientChange = (e) => {
-        const value = parseFloat(e.target.value);
-        if (!isNaN(value) && value >= 1) {
-            setAutoOutputCoefficient(value);
+        const raw = e.target.value;
+      
+        // Если пользователь очистил поле — ставим 0
+        if (raw === '') {
+          setAutoOutputCoefficient(0);
+          return;
         }
-    };
+      
+        // Иначе пробуем распарсить число
+        const value = parseFloat(raw);
+        if (!isNaN(value) && value >= 1) {
+          setAutoOutputCoefficient(value);
+        }
+      };
+      
 
     // Changing bet amount
     const handleAmountChange = (delta) => {
@@ -429,6 +502,7 @@ export const Crash = () => {
         });
     };
 
+
     return (
         <div className={styles.crash}>
             {/* User balance */}
@@ -445,14 +519,14 @@ export const Crash = () => {
                 
                 {/* Star animation */}
                 <div 
-                className={`${styles.star} ${isFalling ? styles.falling : ''}`} 
-                style={{
-                    transform: `translate(${starPosition.x}px, ${starPosition.y}px)`,
-                }}
-            >
-                <img src="/star.svg" alt="Star" />
-            </div>
-                
+                    className={`${styles.star} ${isFalling ? styles.falling : ''}`} 
+                    style={{
+                        transform: `translate(${starPosition.x}px, ${starPosition.y}px)`,
+                    }}
+                >
+                    <img src="/star.svg" alt="Star" />
+                </div>
+                    
                 {/* Multiplier display */}
                 <div className={styles.multiplier}>
                     {`${xValue}`.slice(0, 3)} x
@@ -480,14 +554,15 @@ export const Crash = () => {
                     </div>
                     
                     <div className={styles.coefficientInput}>
-                        <input 
-                            type="number" 
-                            min="1.0" 
-                            step="0.1"
-                            value={autoOutputCoefficient} 
-                            onChange={handleCoefficientChange}
-                            className={styles.autoInput}
-                            placeholder="Example: 2.0"
+                    <input
+                        type="number"
+                        min="1.0"
+                        step="0.1"
+                        // если в состоянии 0 — показываем пустую строку, иначе — само число
+                        value={autoOutputCoefficient === 0 ? '' : autoOutputCoefficient}
+                        onChange={handleCoefficientChange}
+                        className={styles.autoInput}
+                        placeholder="Example: 2.0"
                         />
                         <span className={styles.inputLabel}>x</span>
                     </div>
@@ -497,7 +572,7 @@ export const Crash = () => {
                     <div className={styles.betAmount}>
                         <input className={styles.amount__input} value={betAmount}
                                 onChange={(e) => {
-                                    const value = e.target.value.replace(/\D/g, ""); // Удаляем все нецифровые символы
+                                    const value = e.target.value.replace(/\D/g, ""); // Remove non-digit characters
                                     setBetAmount(value);
                                 }}
                             ></input>
@@ -512,19 +587,22 @@ export const Crash = () => {
                         <button className={styles.quickButton} onClick={() => handleMultiplyAmount(2)}>x2</button>
                     </div>
 
-                    {bet > 0 ? (
+                    {bet > 0 && !queuedBet ? (
                         <button 
                             className={`${styles.mainButton} ${(gameActive && !isCrashed) ? styles.activeButton : ''}`} 
                             onClick={handleCashout} 
-                            disabled={!gameActive || loading || isCrashed}
+                            disabled={!gameActive || loading || isCrashed || !bet}
                         >
-                            {loading ? 'Loading...' : 'Cashout'}
+                            {loading ? 'Loading...' : 
+                             !gameActive ? 'Waiting for game...' :
+                             isCrashed ? 'Game finished' :
+                             'Cashout'}
                         </button>
                     ) : (
                         <button 
                             className={`${styles.mainButton} ${isBettingClosed ? styles.queuedButton : ''}`}
                             onClick={handleBet} 
-                            disabled={loading || queuedBet > 0}
+                            disabled={loading || queuedBet > 0 || (gameActive && bet > 0)}
                         >
                             {loading ? 'Loading...' : 
                              queuedBet > 0 ? `Queued: ₹${queuedBet}` :
