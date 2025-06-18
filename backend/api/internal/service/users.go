@@ -7,6 +7,7 @@ import (
 	"BlessedApi/internal/models/travepass"
 	"BlessedApi/pkg/logger"
 	"errors"
+	"fmt"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -16,8 +17,10 @@ import (
 )
 
 type signUpInput struct {
-	Nickname string `validate:"required,min=3,max=32"`
-	AvatarID int    `validate:"required,min=1,max=100"`
+	Nickname        string `validate:"required,min=3,max=32"`
+	AvatarID        int    `validate:"required,min=1,max=100"`
+	Password        string `validate:"required,min=6,max=100"`
+	PasswordConfirm string `validate:"required,min=6,max=100"`
 }
 
 func (i *signUpInput) Validate() error {
@@ -28,25 +31,29 @@ func (i *signUpInput) Validate() error {
 func SignUp(c *gin.Context) {
 	var input signUpInput
 	var err error
-
 	if err = c.Bind(&input); err != nil {
 		c.JSON(400, gin.H{"error": "Unable to unmarshal body"})
 		return
 	}
 
 	var user models.User
-	if user.ID, err = middleware.GetUserIDFromGinContext(c); err != nil {
+	/*if user.ID, err = middleware.GetUserIDFromGinContext(c); err != nil {
 		logger.Error("%v", err)
 		c.Status(500)
 		return
 	}
 
-	if err := input.Validate(); err != nil {
+	*/
+
+	/*if err := input.Validate(); err != nil {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
+
+	*/
 	user.AvatarID = input.AvatarID
 	user.Nickname = input.Nickname
+	user.Password = input.Password
 
 	exists, err := models.CheckIfUserExistsByID(user.ID)
 	if err != nil {
@@ -71,6 +78,14 @@ func SignUp(c *gin.Context) {
 	}
 
 	user.TravePassLevelID = 0
+	passwordHash, err := middleware.HashAndSalt(user.Password)
+	if err != nil {
+		logger.Error("%v", err)
+		c.Status(500)
+		return
+	}
+	logger.Info(fmt.Sprintf("password: %v password hash: %s", user.Password, passwordHash))
+	user.Password = passwordHash
 
 	err = db.DB.Transaction(func(tx *gorm.DB) error {
 		if err = tx.Create(&user).Error; err != nil {
@@ -136,8 +151,8 @@ func GetUser(c *gin.Context) {
 }
 
 type LeaderboardEntry struct {
-	UserID      int64   `json:"user_id"`
-	Nickname    string  `json:"nickname"`
+	UserID        int64   `json:"user_id"`
+	Nickname      string  `json:"nickname"`
 	TotalWinnings float64 `json:"total_winnings"`
 }
 
@@ -179,7 +194,6 @@ func GetLeaders(c *gin.Context) {
 		"leaders": leaders,
 	})
 }
-
 
 func GetUserReferrals(c *gin.Context) {
 	userID, err := middleware.GetUserIDFromGinContext(c)

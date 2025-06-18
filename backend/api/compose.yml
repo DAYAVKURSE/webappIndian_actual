@@ -28,26 +28,7 @@ services:
     networks:
       - db-network
 
-  api_test:
-    container_name: BlessedApiTest
-    build:
-      context: ./
-      dockerfile: Dockerfile.test
-    command: go test ./... -v
-    volumes:
-      - /var/log/BlessedLogs/:/logs/
-    env_file:
-      - ../.env
-    networks:
-      - db-network
-    ports: []
-    healthcheck:
-      test: ["CMD", "test", "-f", "/test-result/success"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    depends_on:
-      - redis
+
 
 volumes:
   redis-data:

@@ -25,9 +25,9 @@ func Start() {
 
 	router := gin.Default()
 	router.Use(middleware.CORSMiddleware())
-	router.Use(middleware.BlockBadActorsMiddleware())
-	fromTelegram := router.Group("/", middleware.ValidateTelegramInitDataMiddleware())
-	authorized := fromTelegram.Group("/", middleware.AuthMiddleware())
+	//router.Use(middleware.BlockBadActorsMiddleware())
+	//	fromTelegram := router.Group("/", middleware.ValidateTelegramInitDataMiddleware())
+	authorized := router.Group("/", middleware.AuthMiddleware())
 
 	// Initialize Redis and Binance WebSocket services
 	redisService := redis.NewRedisService("redis:6379", "")
@@ -36,11 +36,12 @@ func Start() {
 	binanceWS.Start()
 
 	// Binary options WebSocket routes
-	apiWebsocketService := service.NewAPIWebsocketServiceBinaryOptions(redisService, binanceWS)
+	//apiWebsocketService := service.NewAPIWebsocketServiceBinaryOptions(redisService, binanceWS)
+
 	// fromTelegram
 	{
-		fromTelegram.GET(apiPrefix+"ws/kline", apiWebsocketService.WebsocketHandler)
-		fromTelegram.GET(apiPrefix+"ws/kline/latest", apiWebsocketService.LatestKlineWebsocketHandler)
+		//		fromTelegram.GET(apiPrefix+"ws/kline", apiWebsocketService.WebsocketHandler)
+		//		fromTelegram.GET(apiPrefix+"ws/kline/latest", apiWebsocketService.LatestKlineWebsocketHandler)
 	}
 
 	// Start the Roulette X14 game loop in a separate goroutine
@@ -59,20 +60,27 @@ func Start() {
 		router.POST(apiPrefix+"payments/postback", service.PaymentWebhook)
 	}
 
+	router.POST(apiPrefix+"auth/signup", service.SignUp)
+
+	router.POST(apiPrefix+"auth/login", service.AuthLogin)
+
 	// fromTelegram
-	{
-		fromTelegram.GET(apiPrefix+"ws/fortunewheel/live", fortuneWheelWebsocketService.LiveWinsWebsocketHandler)
+	/*
+		{
+			fromTelegram.GET(apiPrefix+"ws/fortunewheel/live", fortuneWheelWebsocketService.LiveWinsWebsocketHandler)
 
-		// Roulette X14 WebSocket routes
-		//fromTelegram.GET(apiPrefix+"ws/roulettex14/live", service.RouletteWebsocketService.LiveRouletteX14WebsocketHandler)
+			// Roulette X14 WebSocket routes
+			//fromTelegram.GET(apiPrefix+"ws/roulettex14/live", service.RouletteWebsocketService.LiveRouletteX14WebsocketHandler)
 
-		// Crash Game WebSocket routes
-		fromTelegram.GET(apiPrefix+"ws/crashgame/live", service.CrashGameWS.LiveCrashGameWebsocketHandler)
+			// Crash Game WebSocket routes
+			fromTelegram.GET(apiPrefix+"ws/crashgame/live", service.CrashGameWS.LiveCrashGameWebsocketHandler)
 
-		// auth
-		fromTelegram.GET(apiPrefix+"users/auth", service.Auth)
-		fromTelegram.POST(apiPrefix+"users/auth/signup", service.SignUp)
-	}
+			// auth
+			fromTelegram.GET(apiPrefix+"users/auth", service.Auth)
+			fromTelegram.POST(apiPrefix+"users/auth/signup", service.SignUp)
+		}
+
+	*/
 
 	// authorized
 	{

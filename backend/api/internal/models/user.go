@@ -24,8 +24,8 @@ type User struct {
 	TravePassLevelID int64 `gorm:"index;not null;constraint:OnUpdate:CASCADE,OnDelete:SET NULL"`
 	LastClicksReset  time.Time
 	CreatedAt        time.Time
+	Password         string
 }
-
 
 func (u *User) Validate() error {
 	return validate.Struct(u)
@@ -62,8 +62,22 @@ func CheckIfUserExistsByID(userID int64) (bool, error) {
 	return exists, nil
 }
 
+func GetUserWithPassword(nickname string) (*User, error) {
+	var user User
+
+	err := db.DB.
+		Where("nickname = ?", nickname).
+		First(&user).Error
+	if err != nil {
+		return nil, logger.WrapError(err, "")
+	}
+
+	return &user, nil
+}
+
 func CheckIfUserExistsByNickname(nn string) (bool, error) {
 	var exists bool
+
 	err := db.DB.Model(&User{}).
 		Select("count(*) > 0").
 		Where("nickname = ?", nn).
