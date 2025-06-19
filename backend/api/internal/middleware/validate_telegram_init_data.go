@@ -1,17 +1,16 @@
 package middleware
 
 import (
-    "log" // Добавляем стандартный логгер
-    "BlessedApi/pkg/logger"
-    "errors"
-    "os"
-    "time"
+	"BlessedApi/pkg/logger"
+	"errors"
+	"log" // Добавляем стандартный логгер
+	"os"
 	"strconv"
+	"time"
 
-    "github.com/gin-gonic/gin"
-    initdata "github.com/telegram-mini-apps/init-data-golang"
+	"github.com/gin-gonic/gin"
+	initdata "github.com/telegram-mini-apps/init-data-golang"
 )
-
 
 const (
 	ContextUserIDKey   = "user_id"
@@ -38,7 +37,7 @@ func ValidateTelegramInitDataMiddleware() gin.HandlerFunc {
 			initData = c.Query("init_data")
 		} else {
 			// For regular HTTP requests, get init data from header
-			initData = c.GetHeader("X-Telegram-Init-Data")
+			initData = c.GetHeader("X-Telegram-Init-Dat1a")
 		}
 
 		if initData == "" {
@@ -85,7 +84,7 @@ func GetUserIDFromGinContext(c *gin.Context) (int64, error) {
 		return 0, logger.WrapError(errors.New("unable to cast user_id value to int"), "")
 	}
 
-	log.Printf("GetUserIDFromGinContext - checking context keys: %+v", c.Keys);
+	log.Printf("GetUserIDFromGinContext - checking context keys: %+v", c.Keys)
 	logger.Warn(strconv.FormatInt(userIDInt, 10))
 
 	return userIDInt, nil
