@@ -1,4 +1,4 @@
-А как?
+А как??
 
 Документация по API - BlessedApi.postman_collection.json
 
