@@ -63,24 +63,23 @@ func Start() {
 	router.POST(apiPrefix+"auth/signup", service.SignUp)
 
 	router.POST(apiPrefix+"auth/login", service.AuthLogin)
+	router.POST(apiPrefix+"auth/refresh", service.RefreshLogin)
 
 	// fromTelegram
-	/*
-		{
-			fromTelegram.GET(apiPrefix+"ws/fortunewheel/live", fortuneWheelWebsocketService.LiveWinsWebsocketHandler)
 
-			// Roulette X14 WebSocket routes
-			//fromTelegram.GET(apiPrefix+"ws/roulettex14/live", service.RouletteWebsocketService.LiveRouletteX14WebsocketHandler)
+	{
+		authorized.GET(apiPrefix+"ws/fortunewheel/live", fortuneWheelWebsocketService.LiveWinsWebsocketHandler)
 
-			// Crash Game WebSocket routes
-			fromTelegram.GET(apiPrefix+"ws/crashgame/live", service.CrashGameWS.LiveCrashGameWebsocketHandler)
+		// Roulette X14 WebSocket routes
+		//fromTelegram.GET(apiPrefix+"ws/roulettex14/live", service.RouletteWebsocketService.LiveRouletteX14WebsocketHandler)
 
-			// auth
-			fromTelegram.GET(apiPrefix+"users/auth", service.Auth)
-			fromTelegram.POST(apiPrefix+"users/auth/signup", service.SignUp)
-		}
+		// Crash Game WebSocket routes
+		authorized.GET(apiPrefix+"ws/crashgame/live", service.CrashGameWS.LiveCrashGameWebsocketHandler)
 
-	*/
+		// auth
+		authorized.GET(apiPrefix+"users/auth", service.Auth)
+		authorized.POST(apiPrefix+"users/auth/signup", service.SignUp)
+	}
 
 	// authorized
 	{

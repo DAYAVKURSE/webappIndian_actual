@@ -7,7 +7,6 @@ import (
 	"BlessedApi/internal/models/travepass"
 	"BlessedApi/pkg/logger"
 	"errors"
-	"fmt"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -84,7 +83,6 @@ func SignUp(c *gin.Context) {
 		c.Status(500)
 		return
 	}
-	logger.Info(fmt.Sprintf("password: %v password hash: %s", user.Password, passwordHash))
 	user.Password = passwordHash
 
 	err = db.DB.Transaction(func(tx *gorm.DB) error {
@@ -116,7 +114,7 @@ func SignUp(c *gin.Context) {
 		return
 	}
 
-	c.Status(200)
+	c.JSON(200, gin.H{"status": "OK"})
 }
 
 func GetUser(c *gin.Context) {
@@ -214,7 +212,7 @@ func GetUserReferrals(c *gin.Context) {
 	}
 
 	if len(userReferrals) == 0 {
-		c.JSON(404, userReferrals)
+		c.JSON(200, userReferrals)
 		return
 	}
 

@@ -11,7 +11,8 @@ import (
 const (
 	TokenAccess  = "TokenAccess"
 	TokenRefresh = "TokenRefresh"
-	JWTkey       = "dasdasdasdasdas"
+	JWTkey       = "aovleroznv24khjg"
+	queryArgName = "init_data"
 )
 
 const (
@@ -21,14 +22,27 @@ const (
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// get user id from context
+		var token string
+		var err error
 
-		token, err := GetTokenFromAuthorizationHeader(c)
-		if err != nil {
-			logger.Error("%v", err)
-			c.AbortWithStatus(400)
-			return
+		if c.IsWebsocket() {
+			token, err = GetTokenFromQueryArg(c)
+			if err != nil {
+				logger.Error("%v", err)
+				c.AbortWithStatus(400)
+				return
+			}
+		} else {
+			token, err = GetTokenFromAuthorizationHeader(c)
+			if err != nil {
+				logger.Error("%v", err)
+				c.AbortWithStatus(400)
+				return
+			}
+
 		}
 
+		// _____
 		userId, tokenType, err := TokenCheck(token, JWTkey)
 		if err != nil {
 			logger.Error("%v", err)

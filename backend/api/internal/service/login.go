@@ -4,15 +4,18 @@ import (
 	"BlessedApi/internal/middleware"
 	"BlessedApi/internal/models"
 	"BlessedApi/pkg/logger"
-	"fmt"
+	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 	"time"
 )
 
 const AccessExpiration = 10
+const RefreshExpiration = 10
 
 type Token struct {
-	AccessToken string `json:"access_token"`
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 type Login struct {
@@ -36,8 +39,6 @@ func AuthLogin(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Invalid data"})
 	}
 
-	logger.Error(fmt.Sprintf("%v %v  user %v", req.Password, user.Password, user))
-
 	if !middleware.ComparePasswords(user.Password, req.Password) {
 		logger.Error("Error login or password incorrect")
 		c.JSON(400, gin.H{"error": "Invalid data"})
@@ -52,6 +53,17 @@ func BaseAuth(c *gin.Context, req *Login, user *models.User) {
 
 	tmCreate := time.Now().Unix()
 	accessExpiration := tmCreate + int64(AccessExpiration*60*60)
+	refreshExpiration := tmCreate + int64(RefreshExpiration*60*60)
+
+	//TODO запись в бд токена
+
+	refresh, err := middleware.TokenNew(middleware.JWTkey, user.ID, refreshExpiration, middleware.TokenRefresh)
+	if err != nil {
+
+		logger.Error(err.Error())
+		c.AbortWithStatus(500)
+		return
+	}
 
 	access, err := middleware.TokenNew(middleware.JWTkey, user.ID, accessExpiration, middleware.TokenAccess)
 	if err != nil {
@@ -62,7 +74,67 @@ func BaseAuth(c *gin.Context, req *Login, user *models.User) {
 	}
 
 	token := Token{
-		AccessToken: access,
+		AccessToken:  access,
+		RefreshToken: refresh,
+	}
+
+	c.JSON(200, token)
+}
+
+func RefreshLogin(c *gin.Context) {
+
+	var req Token
+	if err := c.ShouldBindJSON(&req); err != nil {
+		logger.Error("Failed to bind  request: %v", err)
+		c.JSON(400, gin.H{"error": "Invalid data"})
+		return
+	}
+	logger.Info(req.RefreshToken)
+	userId, tokenType, err := middleware.TokenCheck(req.RefreshToken, middleware.JWTkey)
+	if err != nil {
+		logger.Error("%v", err)
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			logger.Error("%v", err)
+			c.AbortWithStatus(401)
+			return
+		}
+		logger.Error("%v", err)
+		c.AbortWithStatus(400)
+		return
+	}
+
+	logger.Info(tokenType)
+	if tokenType != middleware.TokenRefresh {
+		logger.Error("%v", err)
+		c.AbortWithStatus(400)
+		return
+	}
+
+	//TODO GetRefreshTokenInfoByRefreshToken - получаем токен ищ база
+
+	//TODO DeleteRefreshTokenById - удаляем токен
+	tmCreate := time.Now().Unix()
+	accessExpiration := tmCreate + int64(AccessExpiration*60*60)
+	refreshExpiration := tmCreate + int64(RefreshExpiration*60*60)
+
+	refresh, err := middleware.TokenNew(middleware.JWTkey, int64(userId), refreshExpiration, middleware.TokenRefresh)
+	if err != nil {
+		logger.Error(err.Error())
+		c.AbortWithStatus(500)
+		return
+	}
+
+	access, err := middleware.TokenNew(middleware.JWTkey, int64(userId), accessExpiration, middleware.TokenAccess)
+	if err != nil {
+		logger.Error(err.Error())
+		c.AbortWithStatus(500)
+		return
+	}
+
+	// TODO AddRefreshToken  добавляем токен
+	token := Token{
+		AccessToken:  access,
+		RefreshToken: refresh,
 	}
 
 	c.JSON(200, token)

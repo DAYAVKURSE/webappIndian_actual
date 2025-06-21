@@ -23,6 +23,15 @@ func GetTokenFromAuthorizationHeader(c *gin.Context) (string, error) {
 	return token[1], nil
 }
 
+func GetTokenFromQueryArg(c *gin.Context) (string, error) {
+	token := c.Request.Header.Get(queryArgName)
+	if token == "" {
+		return "", errors.New("authorization not QueryArg format")
+	}
+
+	return token, nil
+}
+
 func TokenCheck(tokenStr string, hmacSecretKey string) (uint64, string, error) {
 	token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
