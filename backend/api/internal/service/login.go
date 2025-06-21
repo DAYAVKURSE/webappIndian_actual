@@ -11,7 +11,7 @@ import (
 )
 
 const AccessExpiration = 10
-const RefreshExpiration = 10
+const RefreshExpiration = 100
 
 type Login struct {
 	Nickname      string `json:"nickname"`
@@ -47,7 +47,7 @@ func BaseAuth(c *gin.Context, req *Login, user *models.User) {
 	req.Password = ""
 
 	tmCreate := time.Now().Unix()
-	accessExpiration := tmCreate + int64(AccessExpiration*60*60)
+	accessExpiration := tmCreate + int64(AccessExpiration*60)
 	refreshExpiration := tmCreate + int64(RefreshExpiration*60*60)
 
 	refresh, err := middleware.TokenNew(middleware.JWTkey, user.ID, refreshExpiration, middleware.TokenRefresh)
@@ -130,7 +130,7 @@ func RefreshLogin(c *gin.Context) {
 	}
 
 	tmCreate := time.Now().Unix()
-	accessExpiration := tmCreate + int64(AccessExpiration*60*60)
+	accessExpiration := tmCreate + int64(AccessExpiration*60)
 	refreshExpiration := tmCreate + int64(RefreshExpiration*60*60)
 
 	refresh, err := middleware.TokenNew(middleware.JWTkey, int64(userId), refreshExpiration, middleware.TokenRefresh)
