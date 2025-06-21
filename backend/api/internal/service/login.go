@@ -13,11 +13,6 @@ import (
 const AccessExpiration = 10
 const RefreshExpiration = 10
 
-type Token struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
-
 type Login struct {
 	Nickname      string `json:"nickname"`
 	Password      string `json:"password"`
@@ -55,8 +50,6 @@ func BaseAuth(c *gin.Context, req *Login, user *models.User) {
 	accessExpiration := tmCreate + int64(AccessExpiration*60*60)
 	refreshExpiration := tmCreate + int64(RefreshExpiration*60*60)
 
-	//TODO запись в бд токена
-
 	refresh, err := middleware.TokenNew(middleware.JWTkey, user.ID, refreshExpiration, middleware.TokenRefresh)
 	if err != nil {
 
@@ -64,6 +57,16 @@ func BaseAuth(c *gin.Context, req *Login, user *models.User) {
 		c.AbortWithStatus(500)
 		return
 	}
+
+	refreshTokenInfo := &models.RefreshToken{
+		RefreshToken: refresh,
+		UserId:       uint64(user.ID),
+		Expiration:   uint64(refreshExpiration),
+		TmCreate:     uint64(tmCreate),
+	}
+
+	//TODO запись в бд токена
+	models.CreateRefreshToken(refreshTokenInfo)
 
 	access, err := middleware.TokenNew(middleware.JWTkey, user.ID, accessExpiration, middleware.TokenAccess)
 	if err != nil {
@@ -73,7 +76,7 @@ func BaseAuth(c *gin.Context, req *Login, user *models.User) {
 		return
 	}
 
-	token := Token{
+	token := models.Token{
 		AccessToken:  access,
 		RefreshToken: refresh,
 	}
@@ -83,7 +86,7 @@ func BaseAuth(c *gin.Context, req *Login, user *models.User) {
 
 func RefreshLogin(c *gin.Context) {
 
-	var req Token
+	var req models.Token
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logger.Error("Failed to bind  request: %v", err)
 		c.JSON(400, gin.H{"error": "Invalid data"})
@@ -111,8 +114,21 @@ func RefreshLogin(c *gin.Context) {
 	}
 
 	//TODO GetRefreshTokenInfoByRefreshToken - получаем токен ищ база
+	token, err := models.GetRefreshTokenByRefreshToken(req.RefreshToken)
+	if err != nil {
+		logger.Error("%v", err)
+		c.AbortWithStatus(400)
+		return
+	}
 
 	//TODO DeleteRefreshTokenById - удаляем токен
+	err = models.DeleteRefreshTokenById(token.Id)
+	if err != nil {
+		logger.Error("%v", err)
+		c.AbortWithStatus(400)
+		return
+	}
+
 	tmCreate := time.Now().Unix()
 	accessExpiration := tmCreate + int64(AccessExpiration*60*60)
 	refreshExpiration := tmCreate + int64(RefreshExpiration*60*60)
@@ -131,11 +147,20 @@ func RefreshLogin(c *gin.Context) {
 		return
 	}
 
+	refreshTokenInfoNew := &models.RefreshToken{
+		RefreshToken: refresh,
+		UserId:       userId,
+		Expiration:   uint64(refreshExpiration),
+		TmCreate:     uint64(tmCreate),
+	}
+
 	// TODO AddRefreshToken  добавляем токен
-	token := Token{
+	models.CreateRefreshToken(refreshTokenInfoNew)
+
+	tokenNew := models.Token{
 		AccessToken:  access,
 		RefreshToken: refresh,
 	}
 
-	c.JSON(200, token)
+	c.JSON(200, tokenNew)
 }
