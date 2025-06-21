@@ -24,7 +24,7 @@ func GetTokenFromAuthorizationHeader(c *gin.Context) (string, error) {
 }
 
 func GetTokenFromQueryArg(c *gin.Context) (string, error) {
-	token := c.Request.Header.Get(queryArgName)
+	token := c.Query(queryArgName)
 	if token == "" {
 		return "", errors.New("authorization not QueryArg format")
 	}
