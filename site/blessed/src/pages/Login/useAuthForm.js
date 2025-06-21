@@ -23,49 +23,39 @@ export const useAuthForm = (mode) => {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setLoading(true);
-  setError('');
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-  try {
-    if (mode === 'register') {
-      if (form.password !== form.confirmPassword) {
-        setError('Пароли не совпадают');
-        setLoading(false);
-        return;
-      }
-
-      const result = await signUp({
-        nickname: form.username,
-        password: form.password,
-      });
-
-      // Проверяем статус или success-поле из ответа сервера
-      if (result?.status === 'ok') {
-        navigate(0); // перезагружаем страницу
+    try {
+      if (mode === 'register') {
+        if (form.password !== form.confirmPassword) {
+          setError('Пароли не совпадают');
+          setLoading(false);
+          return;
+        }
+        await signUp({
+          nickname: form.username,
+          password: form.password,
+        }).then((res) => {
+          console.log(res);
+          navigate(0);
+        });
       } else {
-        throw new Error('Registration failed');
+        await login({
+          nickname: form.username,
+          password: form.password,
+        }).then(() => {
+          navigate('/');
+        });
       }
-
-    } else {
-      const result = await login({
-        nickname: form.username,
-        password: form.password,
-      });
-
-      if (result?.status === 'ok') {
-        navigate('/');
-      } else {
-        throw new Error('Login failed');
-      }
+    } catch (err) {
+      console.log(err);
+      setError('Ошибка. Проверьте данные и попробуйте снова.');
+    } finally {
+      setLoading(false);
     }
-  } catch (err) {
-    console.error(err);
-    setError('Ошибка. Проверьте данные и попробуйте снова.');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return {
     form,

@@ -10,8 +10,7 @@ export const Profile = () => {
   const userId = Number(window?.Telegram?.WebApp?.initDataUnsafe?.user?.id);
   const userName = localStorage.getItem("store");
   console.log(userName, userName?.userName);
-  const navigate = useNavigate();
-
+const navigate = useNavigate();
   const copyLink = () => {
     const link = `https://t.me/RupeXBot=${userId}`;
     navigator.clipboard.writeText(link);
@@ -40,21 +39,18 @@ export const Profile = () => {
       console.log(e);
     }
   }, []);
-  const exit = () => {
 
-  // Очистить localStorage
-  localStorage.clear();
-
-  // Очистить sessionStorage
-  sessionStorage.clear();
+  const handleLogout = () => {
+    sessionStorage.clear();
+    localStorage.clear();
     navigate("/login");
-  }
+  };
 
   return (
     <div className={styles.profile}>
       <h1 className={styles.title}>Account</h1>
       <p className={styles.username}>
-        Name {JSON?.parse(localStorage?.getItem("store"))?.userName}
+        Name {JSON.parse(localStorage.getItem("store"))?.userName}
       </p>
 
       <div className={styles.referralSection}>
@@ -123,8 +119,7 @@ export const Profile = () => {
           <p className={styles.noReferrals}>No referrals yet</p>
         )}
       </div>
-
-      <button onClick={exit}>Exit</button>
+      <button onClick={handleLogout}>выход</button>
     </div>
   );
 };

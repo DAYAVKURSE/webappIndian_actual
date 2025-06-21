@@ -52,7 +52,6 @@ export const Other = () => {
                 <a ><img src="/instagram.png" alt="instagram" /></a>
                 
             </div>
-    
         </div>
     );
 };

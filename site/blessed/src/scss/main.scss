@@ -1,6 +1,5 @@
 @import "@/scss/variables.module.scss";
-@import url("https://fonts.googleapis.com/css2?family=Jost:ital,wght@0,100..900;1,100..900&display=swap");
-
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Poppins", "Roboto",
     sans-serif;
@@ -9,10 +8,12 @@ body {
   margin: 0;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
+  background-color: #0b151e;
   color: #fff;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   height: 100%;
-  background-color: #0b0c0e;
+  font-family: "Inter", sans-serif;
+  font-optical-sizing: auto;
 }
 
 #root {
@@ -161,5 +162,3 @@ input[type="number"] {
   font-weight: normal;
   font-style: normal;
 }
-
-

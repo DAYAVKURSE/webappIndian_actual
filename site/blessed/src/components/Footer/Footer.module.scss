@@ -9,6 +9,7 @@
     padding: 0 5px 16px;
     
     position: fixed;
+    background: #0b151e;
     z-index: 99;
 
     &__spacer {
@@ -25,6 +26,7 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    background: #0b151e;
 }
 
 @keyframes fadeIn {

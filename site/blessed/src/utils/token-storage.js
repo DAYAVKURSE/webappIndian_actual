@@ -1,20 +1,10 @@
-export function getAccessToken() {
-  return localStorage.getItem('accessToken');
-}
+// token-storage.js
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@/config';
 
-export function getRefreshToken() {
-  return localStorage.getItem('refreshToken');
-}
+export const getAccessToken = () => localStorage.getItem(ACCESS_TOKEN_KEY);
+export const setAccessToken = (token) => localStorage.setItem(ACCESS_TOKEN_KEY, token);
+export const removeAccessToken = () => localStorage.removeItem(ACCESS_TOKEN_KEY);
 
-export function setAccessToken(token) {
-  localStorage.setItem('accessToken', token);
-}
-
-export function setRefreshToken(token) {
-  localStorage.setItem('refreshToken', token);
-}
-
-export function removeAccessToken() {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-}
+export const getRefreshToken = () => localStorage.getItem(REFRESH_TOKEN_KEY);
+export const setRefreshToken = (token) => localStorage.setItem(REFRESH_TOKEN_KEY, token);
+export const removeRefreshToken = () => localStorage.removeItem(REFRESH_TOKEN_KEY);

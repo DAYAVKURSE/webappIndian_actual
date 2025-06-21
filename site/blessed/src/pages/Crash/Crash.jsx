@@ -2,11 +2,10 @@ import { useEffect, useState, useRef } from 'react';
 import { crashPlace, crashCashout, crashGetHistory } from '@/requests';
 import styles from "./Crash.module.scss";
 import { API_BASE_URL } from '@/config';
-import { getAccessToken } from '@/utils/token-storage';
-const token = getAccessToken();
-const initData = token;
+const initData = getAccessToken() || '';
 import toast from 'react-hot-toast';
 import useStore from '@/store';
+import { getAccessToken } from '../../utils/token-storage';
 
 export const Crash = () => {
     const { BalanceRupee, increaseBalanceRupee, decreaseBalanceRupee } = useStore();
@@ -113,7 +112,7 @@ export const Crash = () => {
         }
 
         const encoded_init_data = encodeURIComponent(initData);
-        const ws = new WebSocket(`ws://testfakeserver.com/api/ws/crashgame/live?init_data=${encoded_init_data}`);
+        const ws = new WebSocket(`wss://testfakeserver.com/api/ws/crashgame/live?init_data=${encoded_init_data}`);
         wsRef.current = ws;
 
         ws.onopen = () => {

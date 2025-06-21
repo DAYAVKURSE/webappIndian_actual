@@ -3,11 +3,7 @@ import { apiClient } from '../../apiClient';
 
 export async function getMe() {
   try {
-    const response = await apiClient('/users', {
-      method: 'GET',
-    });
-
-    const data = await response.json();
+    const data = await apiClient('/users', { method: 'GET' });
 
     const store = useStore.getState();
     store.setUserName(data.Nickname);
@@ -19,11 +15,7 @@ export async function getMe() {
 
     return data;
   } catch (error) {
-    if (error?.response?.status === 400) {
-      window.location.href = '/login';
-    } else {
-      console.error('Error fetching user data:', error);
-    }
+    console.error('Error fetching user data:', error);
     throw error;
   }
 }

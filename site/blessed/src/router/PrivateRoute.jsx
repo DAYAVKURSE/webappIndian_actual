@@ -1,17 +1,12 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { getMe } from '../requests/users/getMe';
-import { getAccessToken, removeAccessToken } from '../utils/token-storage';
+import { removeAccessToken } from '../utils/token-storage';
 
 export const PrivateRoute = () => {
   const [auth, setAuth] = useState(null);
 
   useEffect(() => {
-    if (getAccessToken()) {
-      setAuth(true);
-      return;
-    }
-
     getMe()
       .then(() => setAuth(true))
       .catch(() => {
@@ -28,5 +23,5 @@ export const PrivateRoute = () => {
     return <Navigate to="/login" replace />;
   }
 
-  return <Outlet/>;
+  return <Outlet />;
 };
