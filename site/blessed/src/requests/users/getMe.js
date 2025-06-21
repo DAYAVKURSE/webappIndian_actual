@@ -1,21 +1,11 @@
-import { API_BASE_URL } from '@/config';
-import useStore from '@/store';
-
-const initData = window.Telegram.WebApp.initData;
+import useStore from '../../store';
+import { apiClient } from '../../apiClient';
 
 export async function getMe() {
   try {
-    const response = await fetch(`https://${API_BASE_URL}/users`, {
+    const response = await apiClient('/users', {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Telegram-Init-Data': initData,
-      },
     });
-
-    if (response.status === 401) {
-      window.location.href = '/onboarding';
-    }
 
     const data = await response.json();
 
@@ -26,10 +16,14 @@ export async function getMe() {
     store.setDailyClicks(data.DailyClicks);
 
     useStore.setState({ avatarId: data.AvatarID });
-    
+
     return data;
   } catch (error) {
-    console.error('Error fetching user data:', error);
+    if (error?.response?.status === 400) {
+      window.location.href = '/login';
+    } else {
+      console.error('Error fetching user data:', error);
+    }
     throw error;
   }
 }

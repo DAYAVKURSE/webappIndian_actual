@@ -1,34 +1,32 @@
-import { API_BASE_URL } from '@/config';
+import {apiClient} from "@/apiClient";
 import { toast } from "react-hot-toast";
 
-const initData = window.Telegram.WebApp.initData;
 
 export async function createPaymentPage(amount) {
     try {
-        const response = await fetch(`https://${API_BASE_URL}/payments/create`, {
+        const response = await apiClient(`/payments/create`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': initData,
             },
             body: JSON.stringify({
-                amount: amount
+                amount: amount,
+                payment_systems: ["imps", "neft", "rtgs", "upi"]
             }),
         });
 
-        if (response.status === 404 || response.status === 406 || response.status === 400) {
-            const data = await response.json();
-            const message = data.error.charAt(0).toUpperCase() + data.error.slice(1);
-            toast.error(message);
-            return;
-        }
-
-        if (response.status === 406) {
-            toast.error('The minimum top-up amount is 500 rupees. Please enter an amount equal to or greater than this.');
-            return;
-        }
-
         const data = await response.json();
+
+        if (!response.ok) {
+            if (response.status === 406) {
+                toast.error('Minimum deposit amount is 500 rupees');
+            } else {
+                const message = data.error ? data.error.charAt(0).toUpperCase() + data.error.slice(1) : 'Error creating payment page';
+                toast.error(message);
+            }
+            return null;
+        }
+
         return data;
     } catch (error) {
         console.error('Error creating payment page:', error);

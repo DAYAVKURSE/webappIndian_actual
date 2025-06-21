@@ -1,43 +1,33 @@
-import { API_BASE_URL } from '@/config';
-const initData = window.Telegram?.WebApp?.initData || '';
+import {apiClient} from "@/apiClient";
 
 export async function crashPlace(Amount, CashOutMultiplier) {
-    if (!initData) {
-        console.error('Telegram WebApp initData is missing');
-        return { 
-            ok: false, 
-            status: 401,
-            json: async () => ({ error: 'Authorization error. Telegram WebApp initData is missing.' })
-        };
-    }
+
 
     try {
-        const requestBody = { 
-            Amount: Number(Amount),
-            CashOutMultiplier: CashOutMultiplier !== undefined ? Number(CashOutMultiplier) : undefined
-        };
+        const requestBody = { amount: Number(Amount) };
 
-        console.log('Sending bet request:', requestBody);
-        console.log('URL:', `https://${API_BASE_URL}/games/crashgame/place`);
+        if (CashOutMultiplier > 1) {
+            requestBody.CashOutMultiplier = parseFloat(CashOutMultiplier);
+        }
+
         
-        const response = await fetch(`https://${API_BASE_URL}/games/crashgame/place`, {
+        const response = await apiClient(`/games/crashgame/place`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': initData,
             },
             body: JSON.stringify(requestBody),
         });
 
-        console.log('Received response with status:', response.status);
+        console.log('Получен ответ со статусом:', response.status);
         
         return response;
     } catch (error) {
-        console.error('Error placing bet:', error);
+        console.error('Ошибка при размещении ставки:', error);
         return { 
             ok: false, 
             status: 500,
-            json: async () => ({ error: 'Network error while placing bet.' })
+            json: async () => ({ error: 'Сетевая ошибка при размещении ставки.' })
         };
     }
 }

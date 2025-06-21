@@ -1,13 +1,11 @@
-import { API_BASE_URL } from '@/config';
-const initData = window.Telegram.WebApp.initData;
+import {apiClient} from "@/apiClient";
 
 export async function getWheelWins() {
     try {
-        const response = await fetch(`https://${API_BASE_URL}/games/fortunewheel/wins`, {
+        const response = await apiClient(`/games/fortunewheel/wins`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': initData,
             },
         });
 

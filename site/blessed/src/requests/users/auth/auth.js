@@ -1,20 +1,30 @@
-import { API_BASE_URL } from '@/config';
-const initData = window.Telegram.WebApp.initData;
-export async function auth() {
+// src/shared/api/auth.js
+import { apiClient } from '../../../apiClient';
+import { setAccessToken } from '@/utils/token-storage';
+import { removeAccessToken } from '../../../utils/token-storage';
+
+export async function login(payload) {
   try {
-    const response = await fetch(`https://${API_BASE_URL}/users/auth`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Telegram-Init-Data': initData,
-      },
+    const response = await apiClient('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
 
-    const data = await response;
-    return data;
-    
+    const data = await response.json();
+
+
+    if (data?.access_token) {
+      setAccessToken(data.access_token);
+    }
   } catch (error) {
-    console.error('Error registering user:', error);
+    console.error('Error logging in user:', error);
     throw error;
   }
+}
+
+export async function logout() {
+  removeAccessToken();
+  return apiClient('/users/logout', {
+    method: 'POST',
+  });
 }

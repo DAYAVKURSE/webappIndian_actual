@@ -1,14 +1,12 @@
-import { API_BASE_URL } from '@/config';
+import {apiClient} from "@/apiClient";
 
-const initData = window.Telegram.WebApp.initData;
 
 export async function crashGetHistory() {
     try {
-        const response = await fetch(`https://${API_BASE_URL}/games/crashgame/history`, {
+        const response = await apiClient(`/games/crashgame/history`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': initData,
             },
         });
 

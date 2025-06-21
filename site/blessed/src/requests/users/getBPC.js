@@ -1,13 +1,12 @@
-import { API_BASE_URL } from '@/config';
+import {apiClient} from "@/apiClient";
 import useStore from '@/store';
-const initData = window.Telegram.WebApp.initData;
+
 export async function getBPC() {
   try {
-    const response = await fetch(`https://${API_BASE_URL}/clicker`, {
+    const response = await apiClient(`/clicker`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'X-Telegram-Init-Data': initData,
       },
     });
 

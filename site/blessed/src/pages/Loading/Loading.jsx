@@ -1,40 +1,38 @@
-import styles from "./Loading.module.scss";
-import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
-import { auth } from "@/requests";
-import useStore from "@/store";
+import styles from './Loading.module.scss';
+import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
+import useStore from '@/store';
+import { logout } from '../../requests';
+import { getAccessToken } from '../../utils/token-storage';
 
 export const Loading = () => {
-    const navigate = useNavigate();
-    const { setReferredBy } = useStore();
+  const navigate = useNavigate();
+  const { setReferredBy } = useStore();
 
-    useEffect(() => {
-        const getReferralFromURL = () => {
-            const params = new URLSearchParams(window.location.search);
-            return params.get("referral");
-        };
+  useEffect(() => {
+    const getReferralFromURL = () => {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('referral');
+    };
 
-        async function checkAuth() {
-            const referral = getReferralFromURL();
-            
-            if (referral) {
-                setReferredBy(referral);
-            }
+    async function checkAuth() {
+      const referral = getReferralFromURL();
 
-            const response = await auth();
+      if (referral) {
+        setReferredBy(referral);
+      }
 
-            if (response.status === 200) {
-                navigate("/clicker");
-            } else {
-                navigate("/onboarding");
-            }
-        }
+      const token = getAccessToken();
 
-        checkAuth();
-    }, [navigate, setReferredBy]);
+      if (token) {
+        navigate('/clicker');
+      } else {
+        navigate('/onboarding');
+      }
+    }
 
-    return (
-        <div className={styles.loading}>
-        </div>
-    );
+    checkAuth();
+  }, [navigate, setReferredBy]);
+
+  return <div className={styles.loading}></div>;
 };

@@ -17,7 +17,7 @@ export const Topup = () => {
 
     const handleTopup = async () => {
         if (amount < 500) {
-            toast.error('Minimum topup amount is 500');
+            toast.error('Minimum deposit amount is 500 rupees');
             return;
         }
         setLoading(true);
@@ -26,10 +26,14 @@ export const Topup = () => {
             if (data && data.url) {
                 window.location.href = data.url;
             } else {
+                toast.error('Error creating payment page');
                 console.error('No URL returned from createPaymentPage');
             }
         } catch (error) {
             console.error('Error during topup:', error);
+            toast.error('Error processing deposit');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -76,7 +80,10 @@ export const Topup = () => {
                <button
                     className={styles.nextButton}
                     onClick={handleTopup}
-               >Next</button>
+                    disabled={loading}
+               >
+                    {loading ? 'Loading...' : 'Next'}
+               </button>
             </div>
         </div>
         </>

@@ -1,13 +1,11 @@
-import { API_BASE_URL } from '@/config';
-const initData = window.Telegram.WebApp.initData;
+import {apiClient} from "@/apiClient";
 
 export async function roulettePlaceBet(Amount, Color) {
     try {
-        const response = await fetch(`https://${API_BASE_URL}/games/roulettex14/place`, {
+        const response = await apiClient(`/games/roulettex14/place`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': initData,
             },
             body: JSON.stringify({ 
                 Amount: Amount,

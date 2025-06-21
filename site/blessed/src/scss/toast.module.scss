@@ -1,7 +1,6 @@
 @import "@/scss/variables.module.scss";
 
 .toast {
-    background-color: #0B151E !important;
     color: #6ebeff !important;
     z-index: 100;
     border: 1px solid #6ebeff !important;;
@@ -9,11 +8,9 @@
 }
 
 .toastSuccess {
-    background-color: #0B151E !important;
     color: #6ebeff !important;
 }
 
 .toastError {
-    background-color: #0B151E !important;
     color: #6ebeff !important;
 }

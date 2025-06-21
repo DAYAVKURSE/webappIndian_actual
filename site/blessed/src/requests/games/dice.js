@@ -1,13 +1,11 @@
-import { API_BASE_URL } from '@/config';
-const initData = window.Telegram.WebApp.initData;
+import {apiClient} from "@/apiClient";
 
 export async function rollDice(Amount, WinPercent, Direction) {
     try {
-        const response = await fetch(`https://${API_BASE_URL}/games/dice/place`, {
+        const response = await apiClient(`/games/dice/place`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': initData,
             },
             body: JSON.stringify({ 
                 Amount: Amount,

@@ -1,13 +1,11 @@
-import { API_BASE_URL } from '@/config';
-const initData = window.Telegram.WebApp.initData;
+import {apiClient} from "@/apiClient";
 
 export async function getTravepassProgress() {
     try {
-        const response = await fetch(`https://${API_BASE_URL}/requirements/progress`, {
+        const response = await apiClient(`/requirements/progress`, {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': initData,
             },
         });
         

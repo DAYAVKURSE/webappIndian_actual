@@ -1,7 +1,6 @@
 import { API_BASE_URL } from '@/config';
 import { toast } from "react-hot-toast"; // Добавим импорт toast чтоб потом уведы оформить
 
-const initData = window.Telegram.WebApp.initData;
 
 export async function createWithdrawal(amount, accountName, accountNumber, bankCode) {
     const body = {
@@ -15,11 +14,10 @@ export async function createWithdrawal(amount, accountName, accountNumber, bankC
     };
 
     try {
-        const response = await fetch(`https://${API_BASE_URL}/payments/withdrawal`, {
+        const response = await fetch(`${API_BASE_URL}/payments/withdrawal`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': initData,
             },
             body: JSON.stringify(body),
         });

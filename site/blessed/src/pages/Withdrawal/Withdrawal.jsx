@@ -60,38 +60,35 @@ export const Withdrawal = () => {
             return;
         }
 
-        
-        toast.success('Your withdraw application has been created! Please contact our support team to confirm your application.');
+        setLoading(true);
+        try {
+            const response = await createWithdrawal(
+                amount,
+                account_name,
+                account_number,
+                bank_code
+            );
 
-        // setLoading(true);
-        // try {
-        //     const response = await createWithdrawal(
-        //         amount,
-        //         account_name,
-        //         account_number,
-        //         bank_code
-        //     );
+            if (response.status === 200) {
+                toast.success('Withdrawal created successfully.');
 
-        //     if (response.status === 200) {
-        //         toast.success('Withdrawal created successfully.');
-
-        //         setForm({
-        //             "amount": 0,
-        //             "data": {
-        //                 "account_name": "",
-        //                 "account_number": "",
-        //                 "bank_code": ""
-        //             }
-        //         });
-        //         setAmount(0);
-        //     } else {
-        //         toast.error(response.message || 'Failed to create withdrawal. Please try again.');
-        //     }
-        // } catch (error) {
-        //     console.log('Error creating withdrawal:', error);
-        // } finally {
-        //     setLoading(false);
-        // }
+                setForm({
+                    "amount": 0,
+                    "data": {
+                        "account_name": "",
+                        "account_number": "",
+                        "bank_code": ""
+                    }
+                });
+                setAmount(0);
+            } else {
+                toast.error(response.message || 'Failed to create withdrawal. Please try again.');
+            }
+        } catch (error) {
+            console.log('Error creating withdrawal:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (

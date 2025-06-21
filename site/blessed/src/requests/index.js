@@ -1,5 +1,4 @@
 export * from "./users/auth/auth";
-export * from "./users/auth/signup";
 export * from "./users/getDeposits";
 export * from "./users/getMe";
 export * from "./users/getBPC";

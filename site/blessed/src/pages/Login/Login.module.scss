@@ -1,0 +1,94 @@
+.authContainer {
+  margin: 12vh auto 0;
+  width: 360px;
+  .authTitle {
+    font-size: 24px;
+    font-weight: 500;
+    margin-top: 32px;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+}
+.headerForm {
+  display: flex;
+  justify-content: center;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  .form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .inputWrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+
+    input {
+      width: 100%;
+      padding: 12px 40px 12px 36px;
+      border-radius: 12px;
+      border: 1px solid #1a1b20;
+      font-size: 16px;
+      outline: none;
+      transition: 0.3s;
+      background-color: #1a1b20;
+      color: #a3a3a3;
+      &::placeholder {
+        color: #a3a3a3;
+      }
+
+      &:focus {
+        border-color: #00aeff;
+        box-shadow: 0 0 0 3px rgba(0, 174, 255, 0.1);
+      }
+    }
+  }
+
+  .icon {
+    position: absolute;
+    left: 12px;
+    color: #999;
+    font-size: 16px;
+  }
+
+  .eye {
+    position: absolute;
+    right: 12px;
+    color: #999;
+    font-size: 16px;
+    cursor: pointer;
+  }
+}
+
+.tabs {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  width: 100%;
+  height: 44px;
+  border-radius: 16px;
+  background-color: #02a5db;
+  border: none;
+  color: white;
+  font-size: 20px;
+  font-weight: 500;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  &:hover {
+    background-color: #5978f3;
+  }
+}
+

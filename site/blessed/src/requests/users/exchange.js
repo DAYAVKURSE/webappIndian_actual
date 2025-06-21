@@ -1,13 +1,11 @@
-import { API_BASE_URL } from '@/config';
-const initData = window.Telegram.WebApp.initData;
+import {apiClient} from "@/apiClient";
 
 export async function exchange(AmountBcoins) {
     try {
-        const response = await fetch(`https://${API_BASE_URL}/users/exchange`, {
+        const response = await apiClient(`/users/exchange`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': initData,
             },
             body: JSON.stringify({ 
                 AmountBcoins: AmountBcoins

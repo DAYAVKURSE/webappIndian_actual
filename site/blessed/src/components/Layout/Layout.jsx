@@ -1,19 +1,27 @@
 import toastStyles from "@/scss/toast.module.scss";
 import { Toaster, useToasterStore, toast } from "react-hot-toast";
 import { Header, Footer } from "@/components";
-import { Outlet } from "react-router-dom";
-import { getMe } from "@/requests";
+import { Outlet,
+  //  useNavigate
+   } from "react-router-dom";
 import { useEffect } from "react";
+// import { getMe } from "../../requests/users/getMe";
 
 const TOAST_LIMIT = 3;
 
 export const Layout = () => {
   const { toasts } = useToasterStore();
+  // const navigate = useNavigate();
 
-  useEffect(() => {
-    getMe();
-  }, []);
+  // Получение данных пользователя (аналог приватного роутера)
+  // useEffect(() => {
+  //   getMe().catch((error) => {
+  //     console.error("User not authenticated:", error);
+  //     navigate("/onboarding");
+  //   });
+  // }, []);
 
+  // Ограничение количества видимых тостов
   useEffect(() => {
     toasts
       .filter((t) => t.visible)
@@ -24,30 +32,30 @@ export const Layout = () => {
   return (
     <>
       <Toaster
-  toastOptions={{
-    position: "top-center",
-    success: {
-      className: toastStyles.toastSuccess,
-      style: { border: "1px solid #6ebeff" },
-      iconTheme: {
-        primary: "#6ebeff",
-        secondary: "#0B0B0B",
-      },
-    },
-    error: {
-      className: toastStyles.toastError,
-      style: { border: "1px solid #6ebeff" },
-      iconTheme: {
-        primary: "#6ebeff",
-        secondary: "#0B0B0B",
-      },
-    },
-    default: {
-      className: toastStyles.toast,
-      style: { border: "1px solid #6ebeff" },
-    },
-  }}
-/>
+        toastOptions={{
+          position: "top-center",
+          success: {
+            className: toastStyles.toastSuccess,
+            style: { border: "1px solid #6ebeff" },
+            iconTheme: {
+              primary: "#6ebeff",
+              secondary: "#0B0B0B",
+            },
+          },
+          error: {
+            className: toastStyles.toastError,
+            style: { border: "1px solid #6ebeff" },
+            iconTheme: {
+              primary: "#6ebeff",
+              secondary: "#0B0B0B",
+            },
+          },
+          default: {
+            className: toastStyles.toast,
+            style: { border: "1px solid #6ebeff" },
+          },
+        }}
+      />
 
       <Header />
       <main>

@@ -1,38 +1,16 @@
-import { API_BASE_URL } from '@/config';
-import useStore from '@/store';
+import { apiClient } from '../../../apiClient';
 
-const initData = window.Telegram.WebApp.initData;
-
-export async function signUp({ Nickname, avatarId }) {
-  const referredBy = useStore.getState().referredBy;
-  
-  const bodyData = {
-    Nickname,
-    avatarId,
-  };
-
+export async function signUp(payload) {
   try {
-    const response = await fetch(`https://${API_BASE_URL}/users/auth/signup${referredBy ? `?referral=${referredBy}` : ''}`, {
+    const response = apiClient('/auth/signup', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Telegram-Init-Data': initData,
-      },
-      body: JSON.stringify(bodyData),
+      body: JSON.stringify(payload),
     });
 
-    if (response.status === 200) {
-      return {
-        status: response.status,
-      };
-    } else {
-      return {
-        status: response.status,
-        data: await response.json(),
-      };
-    }
+    const data = await response.json();
+    return data;
   } catch (error) {
-    console.error('Error registering user:', error);
+    console.error('Error logging in user:', error);
     throw error;
   }
 }
