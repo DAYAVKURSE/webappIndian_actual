@@ -21,10 +21,13 @@ async function refreshToken() {
   });
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Failed to refresh token:', errorText);
     throw new Error('Refresh token expired or invalid');
   }
 
   const data = await response.json();
+
   if (data.access_token) {
     setAccessToken(data.access_token);
   }
@@ -38,32 +41,30 @@ async function refreshToken() {
 export async function apiClient(path, options = {}) {
   let token = getAccessToken();
 
-  const headers = {
-    'Content-Type': 'application/json',
-    Authorization: `Bearer ${token || ''}`,
-    ...(options.headers || {}),
-  };
+  async function makeRequest(tokenToUse) {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+      Authorization: `Bearer ${tokenToUse}`,
+    };
 
-  let response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+    });
+
+    return response;
+  }
+
+  let response = await makeRequest(token || '');
 
   if (response.status === 401) {
-    // Попытка обновить токен
     try {
-      token = await refreshToken();
+      const newAccessToken = await refreshToken();
 
-      // Повторяем исходный запрос с новым токеном
-      response = await fetch(`${API_BASE_URL}${path}`, {
-        ...options,
-        headers: {
-          ...headers,
-          Authorization: `Bearer ${token}`,
-        },
-      });
-    } catch (e) {
-      // Если обновление не удалось, очищаем токены и редиректим
+      response = await makeRequest(newAccessToken);
+    } catch (error) {
+      console.error('Token refresh failed:', error);
       removeAccessToken();
       removeRefreshToken();
       window.location.href = '/login';

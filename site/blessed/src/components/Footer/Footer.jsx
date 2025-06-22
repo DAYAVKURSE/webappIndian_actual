@@ -1,7 +1,37 @@
-import styles from "./Footer.module.scss"
-import { NavLink } from "react-router-dom"
+import { useEffect, useState } from "react";
+import styles from "./Footer.module.scss";
+import { NavLink } from "react-router-dom";
 
 export const Footer = () => {
+    const [isInputFocused, setIsInputFocused] = useState(false);
+
+    useEffect(() => {
+        const handleFocus = (e) => {
+            const target = e.target ;
+            if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+                setIsInputFocused(true);
+            }
+        };
+
+        const handleBlur = () => {
+            setIsInputFocused(false);
+        };
+
+        window.addEventListener("focusin", handleFocus);
+        window.addEventListener("focusout", handleBlur);
+
+        return () => {
+            window.removeEventListener("focusin", handleFocus);
+            window.removeEventListener("focusout", handleBlur);
+        };
+    }, []);
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+    if (isMobile && isInputFocused) {
+        return null;
+    }
+
     return (
         <>
             <div className={styles.footer__spacer} />
