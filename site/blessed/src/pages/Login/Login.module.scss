@@ -69,11 +69,21 @@
 }
 
 .tabs {
-  margin-top: 20px;
+  margin-top: 32px;
   display: flex;
   gap: 12px;
+  justify-content: center;
+  align-items: center;
+  gap: 47px;
+  color: #a3a3a3;
 }
 
+.btnTabs {
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: 500;
+
+}
 .btn {
   width: 100%;
   height: 44px;
@@ -90,6 +100,12 @@
   cursor: pointer;
   transition: all 0.2s;
   &:hover {
-    background-color: #5978f3;
+    background-color: #0D62FF;
   }
+}
+
+.active {
+  text-decoration: underline;
+  color: #e2e2e2;
+  font-weight: 500;
 }
