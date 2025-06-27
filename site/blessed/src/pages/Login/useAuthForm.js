@@ -22,40 +22,43 @@ export const useAuthForm = (mode) => {
     setError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    try {
-      if (mode === 'register') {
-        if (form.password !== form.confirmPassword) {
-          setError('Пароли не совпадают');
-          setLoading(false);
-          return;
-        }
-        await signUp({
-          nickname: form.username,
-          password: form.password,
-        }).then((res) => {
-          console.log(res);
-          navigate(0);
-        });
-      } else {
-        await login({
-          nickname: form.username,
-          password: form.password,
-        }).then(() => {
-          navigate('/');
-        });
+  try {
+    if (mode === 'register') {
+      if (form.password !== form.confirmPassword) {
+        setError('Пароли не совпадают');
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      console.log(err);
-      setError('Ошибка. Проверьте данные и попробуйте снова.');
-    } finally {
-      setLoading(false);
+      await signUp({
+        nickname: form.username,
+        password: form.password,
+      });
+      // После успешной регистрации сразу логинимся:
+      await login({
+        nickname: form.username,
+        password: form.password,
+      });
+      navigate('/'); // переход в приложение
+    } else {
+      await login({
+        nickname: form.username,
+        password: form.password,
+      });
+      navigate('/'); // переход в приложение
     }
-  };
+  } catch (err) {
+    console.log(err);
+    setError('Ошибка. Проверьте данные и попробуйте снова.');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return {
     form,
