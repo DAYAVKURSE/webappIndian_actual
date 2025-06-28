@@ -1,0 +1,29 @@
+---
+- hosts: prod
+  become: yes
+  collections:
+    - ansible.posix
+    - community.docker
+
+  vars:
+    src_dir: "{{ playbook_dir }}/.."
+    dst_dir: /opt/myapp
+
+  tasks:
+    # 1️⃣ Синхронизируем локальный код → сервер
+    - name: Sync workspace (rsync)
+      ansible.posix.synchronize:
+        src: "{{ src_dir }}/"
+        dest: "{{ dst_dir }}/"
+        delete: true
+        rsync_opts:
+          - "--exclude=.git/"
+          - "'--filter=:- .dockerignore'"
+    - name: Docker compose up (always run)
+      community.docker.docker_compose_v2:
+        project_src: "{{ dst_dir }}"
+        pull: missing        # тянуть только недостающие образы
+        build: always        # ← заменили auto
+        recreate: auto
+        remove_orphans: true
+        state: present
