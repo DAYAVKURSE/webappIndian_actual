@@ -36,13 +36,9 @@ func Start() {
 	binanceWS.Start()
 
 	// Binary options WebSocket routes
-	//apiWebsocketService := service.NewAPIWebsocketServiceBinaryOptions(redisService, binanceWS)
+	apiWebsocketService := service.NewAPIWebsocketServiceBinaryOptions(redisService, binanceWS)
 
 	// fromTelegram
-	{
-		//		fromTelegram.GET(apiPrefix+"ws/kline", apiWebsocketService.WebsocketHandler)
-		//		fromTelegram.GET(apiPrefix+"ws/kline/latest", apiWebsocketService.LatestKlineWebsocketHandler)
-	}
 
 	// Start the Roulette X14 game loop in a separate goroutine
 	go service.SuperviseRouletteX14Game()
@@ -53,6 +49,11 @@ func Start() {
 	// Fortune Wheel WebSocket routes
 	service.InitFortuneWheelService(redisService)
 	fortuneWheelWebsocketService := service.NewFortuneWheelWebsocketService(redisService)
+
+	{
+		authorized.GET(apiPrefix+"ws/kline", apiWebsocketService.WebsocketHandler)
+		authorized.GET(apiPrefix+"ws/kline/latest", apiWebsocketService.LatestKlineWebsocketHandler)
+	}
 
 	// router
 	{
