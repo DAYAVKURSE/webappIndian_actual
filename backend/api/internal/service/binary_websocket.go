@@ -136,12 +136,14 @@ func (a *APIWebsocketServiceBinaryOptions) getLatestKline(ctx context.Context) (
 	// Fetch and sort keys from Redis.
 	keys, err := a.fetchSortedKeys(ctx)
 	if err != nil || len(keys) == 0 {
+		logger.Info("getLatestKline 1")
 		return binance.KlineData{}, logger.WrapError(err, "")
 	}
 
 	// Fetch the kline data for the most recent key.
 	klineData, err := a.fetchSingleKlineData(ctx, keys[len(keys)-1])
 	if err != nil {
+		logger.Info("getLatestKline 2")
 		return binance.KlineData{}, logger.WrapError(err, "")
 	}
 
