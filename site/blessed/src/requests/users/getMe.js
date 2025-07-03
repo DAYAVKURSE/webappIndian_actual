@@ -3,7 +3,9 @@ import { apiClient } from '../../apiClient';
 
 export async function getMe() {
   try {
-    const data = await apiClient('/users', { method: 'GET' });
+    const response = await apiClient('/users', { method: 'GET' });
+
+    const data = await response.json();
 
     const store = useStore.getState();
     store.setUserName(data.Nickname);

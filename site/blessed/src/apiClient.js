@@ -1,4 +1,5 @@
 import { API_BASE_URL } from '@/config';
+
 import {
   getAccessToken,
   getRefreshToken,
@@ -27,6 +28,7 @@ async function refreshToken() {
   }
 
   const data = await response.json();
+  console.log('Refresh token response:', data);
 
   if (data.access_token) {
     setAccessToken(data.access_token);
@@ -58,8 +60,10 @@ export async function apiClient(path, options = {}) {
 
   let response = await makeRequest(token || '');
 
-  if (response.status === 401) {
+  if (response.status === 400) {
     try {
+      console.log('Token refresh triggered');
+
       const newAccessToken = await refreshToken();
 
       response = await makeRequest(newAccessToken);
@@ -77,5 +81,5 @@ export async function apiClient(path, options = {}) {
     throw new Error(errorText || 'API error');
   }
 
-  return await response.json();
+  return response;
 }

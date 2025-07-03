@@ -19,15 +19,14 @@ export async function crashPlace(Amount, CashOutMultiplier) {
             body: JSON.stringify(requestBody),
         });
 
-        console.log('Получен ответ со статусом:', response.status);
         
         return response;
     } catch (error) {
-        console.error('Ошибка при размещении ставки:', error);
+        console.error('Error when placing a bid:', error);
         return { 
             ok: false, 
             status: 500,
-            json: async () => ({ error: 'Сетевая ошибка при размещении ставки.' })
+            json: async () => ({ error: 'Network error when placing a bet.' })
         };
     }
 }

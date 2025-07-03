@@ -1,334 +1,338 @@
-@import "@/scss/variables.module.scss";
+@import '@/scss/variables.module.scss';
 
 .roulette {
+  position: relative;
+  overflow-x: hidden;
+  padding: 0 8px;
+  margin-bottom: 30px;
+
+  &__wheel {
+    display: grid;
+    justify-content: center;
+    align-items: center;
     position: relative;
-    overflow-x: hidden;
 
-    &__wheel {
-        display: grid;
-        justify-content: center;
-        align-items: center;
-        position: relative;
+    &_rotate div {
+      rotate: 337deg;
+    }
 
-        &_rotate div {
-            rotate: 337deg;
-        }
+    img {
+      margin-top: 30px;
+      position: absolute;
+      align-self: flex-start;
+      justify-self: center;
+    }
+
+    &_text {
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-weight: 400;
+      align-self: center;
+      justify-self: center;
+
+      &_container {
+        display: flex;
+        align-items: end;
+      }
+
+      &_bold {
+        font-weight: 500;
+      }
+
+      &_gray {
+        color: $low-white;
+        margin-left: 3px;
+        font-weight: 500;
+        font-size: 15px;
+      }
+    }
+  }
+
+  &__bets {
+    width: 100%;
+    &_wrapper {
+      width: 100%;
+    }
+
+    &_container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 7px;
+      width: 100%;
+
+      &_buttons {
+        flex-direction: row;
+      }
+    }
+
+    &__button {
+      display: flex;
+      padding: 7px 14px;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      gap: 5px;
+      flex: 1 0 0;
+      border-radius: 44px;
+      line-height: 20px;
+
+      font-weight: 700;
+      color: #2b2b2b;
+      cursor: pointer;
+
+      img {
+        filter: brightness(0) saturate(100%) invert(0%) sepia(0%) saturate(0%) hue-rotate(235deg) brightness(107%)
+          contrast(108%);
+      }
+
+      &_red {
+        background-color: $red;
+      }
+
+      &_yellow {
+        background-color: $light-yellow;
+      }
+
+      &_green {
+        background-color: $green;
+      }
+    }
+
+    &_title {
+      color: #0d99ff;
+      font-size: 20px;
+      font-style: normal;
+      font-weight: 600;
+      text-transform: uppercase;
+      text-align: center;
+      line-height: 24px;
+      padding-bottom: 8px;
+    }
+
+    &_list {
+      display: flex;
+      padding: 24px;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 10px;
+      align-self: stretch;
+      border-radius: 31px;
+      background: $low-black;
+    }
+
+    &__item {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+
+      border-bottom: 2px solid #1c1c1c;
+      padding-bottom: 10px;
+
+      &:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+
+      &_username {
+        color: $mid-white;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: 26px;
+      }
+
+      &_amount {
+        display: flex;
+        gap: 5px;
+        color: $light-yellow;
+        text-align: center;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 500;
+        line-height: 24px;
+        text-wrap: nowrap;
 
         img {
-            margin-top: 30px;
-            position: absolute;
-            align-self: flex-start;
-            justify-self: center;
+          filter: brightness(0) saturate(100%) invert(83%) sepia(93%) saturate(398%) hue-rotate(309deg) brightness(102%)
+            contrast(105%);
         }
-
-        &_text {
-            position: absolute;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            font-weight: 400;
-            align-self: center;
-            justify-self: center;
-
-            &_container {
-                display: flex;
-                align-items: end;
-            }
-
-            &_bold {
-                font-weight: 500;
-            }
-
-            &_gray {
-                color: $low-white;
-                margin-left: 3px;
-                font-weight: 500;
-                font-size: 15px;
-            }
-        }
+      }
     }
 
-    &__bets {
-        padding: 6px 18px;
+    // &__distribution {
+    //     display: flex;
+    //     height: 10px;
+    //     width: 100%;
+    //     margin: 5px 0 20px 0;
+    //     padding: 0 20px;
 
-        &_wrapper {
-            padding: 20px;
-        }
+    //     &__red {
+    //         background-color: #ffc397;
+    //     }
 
-        &_container {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 10px;
-            width: 100%;
-            padding: 0 20px 10px;
+    //     &__green {
+    //         background-color: #edff8c;
+    //     }
 
-            &_buttons {
-                flex-direction: row;
-            }
-        }
+    //     &__yellow {
+    //         background-color: #ffd689;
+    //     }
 
-        &__button {
-            display: flex;
-            padding: 7px 24px;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            gap: 5px;
-            flex: 1 0 0;
-            border-radius: 44px;
-            line-height: 20px;
+    //     div {
+    //         &:first-child {
+    //             border-radius: 50px 0 0 50px;
+    //         }
 
-            font-weight: 700;
-            color: #2b2b2b;
-            cursor: pointer;
+    //         &:last-child {
+    //             border-radius: 0 50px 50px 0;
+    //         }
+    //     }
+    // }
+  }
 
-            img {
-                filter: brightness(0) saturate(100%) invert(0%) sepia(0%) saturate(0%) hue-rotate(235deg) brightness(107%) contrast(108%);
-            }
+  &__wins {
+    &_container {
+      display: flex;
+      // max-width: 100%;
+      gap: 10px;
 
-            &_red {
-                background-color: $red;
-            }
-
-            &_yellow {
-                background-color: $light-yellow;
-            }
-
-            &_green {
-                background-color: $green;
-            }
-        }
-
-
-        &_title {
-            color: #FFF;
-            font-size: 24px;
-            font-style: normal;
-            font-weight: 600;
-            line-height: 24px;
-            padding-bottom: 26px;
-        }
-
-        &_list {
-            display: flex;
-            padding: 24px;
-            flex-direction: column;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 10px;
-            align-self: stretch;
-            border-radius: 31px;
-            background: $low-black;
-        }
-
-        &__item {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-
-            border-bottom: 2px solid #1C1C1C;
-            padding-bottom: 10px;
-
-            &:last-child {
-                border-bottom: none;
-                padding-bottom: 0;
-            }
-
-            &_username {
-                color: $mid-white;
-                font-size: 16px;
-                font-style: normal;
-                font-weight: 400;
-                line-height: 26px;
-            }
-
-            &_amount {
-                display: flex;
-                gap: 5px;
-                color: $light-yellow;
-                text-align: center;
-                font-size: 16px;
-                font-style: normal;
-                font-weight: 500;
-                line-height: 24px;
-                text-wrap: nowrap;
-
-                img {
-                    filter: brightness(0) saturate(100%) invert(83%) sepia(93%) saturate(398%) hue-rotate(309deg) brightness(102%) contrast(105%);
-                }
-            }
-        }
-
-        // &__distribution {
-        //     display: flex;
-        //     height: 10px;
-        //     width: 100%;
-        //     margin: 5px 0 20px 0;
-        //     padding: 0 20px;
-
-        //     &__red {
-        //         background-color: #ffc397;
-        //     }
-
-        //     &__green {
-        //         background-color: #edff8c;
-        //     }
-
-        //     &__yellow {
-        //         background-color: #ffd689;
-        //     }
-
-        //     div {
-        //         &:first-child {
-        //             border-radius: 50px 0 0 50px;
-        //         }
-
-        //         &:last-child {
-        //             border-radius: 0 50px 50px 0;
-        //         }
-        //     }
-        // }
+      div {
+        width: 106px !important;
+        max-width: 106px !important;
+        min-width: 106px !important;
+      }
     }
-
-    &__wins {
-        &_container {
-            display: flex;
-            // max-width: 100%;
-            gap: 10px;
-
-            div {
-                width: 106px !important;
-                max-width: 106px !important;
-                min-width: 106px !important;
-            }
-        }
-    }
+  }
 }
 
-.roulette__bets_title {
-    text-align: center;
-    font-weight: 500;
-    font-size: 24px;
-    letter-spacing: -0.03em;
-    color: #fff;
-}
+// .roulette__bets_title {
+//     text-align: center;
+//     font-weight: 500;
+//     font-size: 24px;
+//     letter-spacing: -0.03em;
+//     color: #fff;
+// }
 
 .nowins {
-    font-weight: 400;
-    font-size: 16px;
-    letter-spacing: -0.03em;
-    color: #fff;
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: -0.03em;
+  color: #fff;
 }
 
 .roulette__bets__button_red {
-    border-radius: 40px;
-    background: #c62314;
-    box-shadow: inset 0 3px 1px 0 rgba(255, 255, 255, 0.25);
-    font-weight: 500;
-    font-size: 20px;
-    color: #fff;
+  border-radius: 37.93px;
+  background: #c81100;
+  font-weight: 500;
+  font-size: 20px;
+  color: #fff;
 }
 
 .roulette__bets__button_green {
-    border-radius: 40px;
-    background: #07a147;
-    box-shadow: inset 0 3px 2px 0 rgba(255, 255, 255, 0.25);
-    font-weight: 500;
-    font-size: 20px;
-    color: #fff;
+  border-radius: 37.93px;
+  background: #00ac46;
+  font-weight: 500;
+  font-size: 20px;
+  color: #fff;
 }
 
 .roulette__bets__button_yellow {
-    border-radius: 40px;
-    box-shadow: inset 0 3px 1px 0 rgba(255, 255, 255, 0.25);
-    background: #f1c53c;
-    font-weight: 500;
-    font-size: 20px;
-    color: #fff;
+  border-radius: 37.93px;
+  background: #ffca27;
+  font-weight: 500;
+  font-size: 20px;
+  color: #fff;
 }
 
 .roulette__wheel {
-    position: relative;
-    width: 60%;
+  position: relative;
+  width: 60%;
+  display: flex;
+  justify-content: center;
+  margin: 0 auto;
+  margin-bottom: 20px;
+  aspect-ratio: 1/1;
+}
+
+.wheel {
+  width: 100%;
+  height: 100%;
+  transition: transform 6s ease-out;
+}
+
+.arrow {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+}
+
+.roulette__bets_wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-top: 54px;
+  margin-bottom: 32px;
+
+  & .roulette__input {
     display: flex;
-    justify-content: center;
-    margin: 0 auto;
-    margin-bottom: 20px;
-    aspect-ratio: 1/1;
-  }
-  
-  .wheel {
-    width: 100%;
-    height: 100%;
-    transition: transform 6s ease-out;
-  }
-  
-  .arrow {
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%) rotate(180deg);
-    width: 30px;
-  }
-
-  .roulette__bets_wrapper {
-    display: flex;
-    flex-direction: column;
-
-    & .roulette__input {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        background: #10202e;
-        width: calc(100% - 20px);
-        padding: 15px 22px;
-        border-radius: 10px;
-        font-weight: 500;
-        font-size: 18px;
-        color: #fff;
-    }
-
-    & .rightContainer {
-        display: flex;
-        gap:15px;
-        font-weight: 500;
-        font-size: 20px;
-        line-height: 100%;
-        text-align: center;
-        color: #fff;
-    }
-
-    .roulette__downbuttons {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        width: calc(100% - 20px);
-        margin-top: 10px;
-        gap:16px;
-
-        & button {
-            border-radius: 10px;
-            height: 40px;
-            background: #10202e;
-            font-weight: 400;
-            font-size: 18px;
-            color: #a3a3a3;
-            border:none;
-            outline: none;
-        }
-    }
-  }
-
-  .amount__input {
-    background: none;
-    border: none;
-    outline: none;
-    color:#fff;
-    font-family: "Jost", sans-serif;
-    font-style: normal;
+    align-items: center;
+    justify-content: space-between;
+    background: #1a1b20;
+    padding: 15px 24px;
+    border-radius: 10px;
     font-weight: 500;
     font-size: 18px;
-    line-height: 26px;
-    color: #FFFFFF;
-    margin-left: 15px;
+    color: #d5d5d5;
+    border: 1px solid #252525;
+  }
+
+  & .rightContainer {
+    display: flex;
+    flex-shrink: 1;
+    gap: 15px;
+    font-weight: 500;
+    font-size: 20px;
+    line-height: 100%;
+    text-align: center;
+    color: #fff;
+  }
+
+  .roulette__downbuttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 8px;
+    gap: 8px;
+
+    & button {
+      border-radius: 10px;
+      height: 40px;
+      background: #1a1b20;
+      font-weight: 400;
+      font-size: 18px;
+      color: #d5d5d5;
+      border: 1px solid #252525;
+      outline: none;
+    }
+  }
+}
+
+.amount__input {
+  background: none;
+  border: none;
+  outline: none;
+  color: #d5d5d5;
+  font-style: normal;
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 26px;
+  width: 100%;
+}
+
+.back_button {
+  margin-top: 54px;
+  margin-bottom: 37px;
 }

@@ -1,18 +1,17 @@
-@import "@/scss/variables.module.scss";
-@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap");
+@import '@/scss/variables.module.scss';
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Poppins", "Roboto",
-    sans-serif;
-  font-family: "Jost", sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Poppins', 'Roboto', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-weight: 400;
   margin: 0;
   -moz-osx-font-smoothing: grayscale;
   -webkit-font-smoothing: antialiased;
-  background-color: #0b151e;
+  background-color: #0b0c0e;
   color: #fff;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
   height: 100%;
-  font-family: "Inter", sans-serif;
+  font-family: 'Inter', sans-serif;
   font-optical-sizing: auto;
 }
 
@@ -38,8 +37,7 @@ main {
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
 }
 
 html {
@@ -76,7 +74,7 @@ li {
   margin-bottom: 0;
 }
 
-input[type="text"] {
+input[type='text'] {
   line-height: inherit;
   box-shadow: none;
 }
@@ -122,43 +120,42 @@ input {
   }
 }
 
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
 
-input[type="number"] {
+input[type='number'] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
 
 @font-face {
-  font-family: "Gilroy";
-  src: url("@/fonts/Gilroy-Regular.ttf") format("truetype");
+  font-family: 'Gilroy';
+  src: url('@/fonts/Gilroy-Regular.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "Gilroy";
-  src: local("Gilroy Bold"), local("Gilroy-Bold");
-  src: url("@/fonts/Gilroy-Bold.ttf") format("truetype");
+  font-family: 'Gilroy';
+  src: local('Gilroy Bold'), local('Gilroy-Bold');
+  src: url('@/fonts/Gilroy-Bold.ttf') format('truetype');
   font-weight: bold;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "Gilroy";
-  src: local("Gilroy ExtraBold"), local("Gilroy-ExtraBold"),
-    url("@/fonts/Gilroy-ExtraBold.ttf") format("truetype");
+  font-family: 'Gilroy';
+  src: local('Gilroy ExtraBold'), local('Gilroy-ExtraBold'), url('@/fonts/Gilroy-ExtraBold.ttf') format('truetype');
   font-weight: 800;
   font-style: normal;
 }
 
 @font-face {
-  font-family: "Hanson";
-  src: url("@/fonts/Hanson-Bold.ttf") format("truetype");
+  font-family: 'Hanson';
+  src: url('@/fonts/Hanson-Bold.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
 }

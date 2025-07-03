@@ -1,40 +1,36 @@
-@import "@/scss/variables.module.scss";
+@import '@/scss/variables.module.scss';
 
 .input {
-    min-width: 47px;
-    min-height: 47px;
-    padding: 12px 24px;
-    border-radius: 5px;
-    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
-    background: #10202e;
-    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
-    background: #10202e;
-    font-size: 16px;
-    color: #fff;
+  min-width: 47px;
+  min-height: 47px;
+  padding: 12px 24px;
+  border-radius: 5px;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
+  background: #10202e;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
+  background: #10202e;
+  font-size: 16px;
+  color: #fff;
+  width: 100%;
+  height: 100%;
+  outline: none !important;
+  appearance: none !important;
+  border: none !important;
+  &::placeholder {
+    font-weight: 400;
+    font-size: 14px;
+    color: #3c698e;
+  }
+
+  &__container {
+    min-width: 48px;
+    min-height: 48px;
     width: 100%;
-    height: 100%;
-    outline: none !important;
-    appearance: none !important;
-    border: none !important;
-    &::placeholder {
-        font-weight: 400;
-        font-size: 14px;
-        color: #3c698e;
-    }
+    display: inline-block;
+    padding: 1px;
+    border-radius: 5px;
 
-    &__container {
-        min-width: 48px;
-        min-height: 48px;
-        width: 100%;
-        display: inline-block;
-        padding: 1px;
-        border-radius: 5px;
-        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
-        background: #10202e;
-        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.25);
-        background: #10202e;
-        outline: none;
-        border: none;
-
-    }
+    outline: none;
+    border: none;
+  }
 }

@@ -1,19 +1,19 @@
 @import "@/scss/variables.module.scss";
 
 .toast {
-    background-color: #0B151E !important;
-    color: #6ebeff !important;
+    background-color: #1A1B20 !important;
+    color: #D0D0D0 !important;
     z-index: 100;
-    border: 1px solid #6ebeff !important;;
+    border: 1px solid #565656 !important;;
     border-radius: 10px !important;
 }
 
 .toastSuccess {
-    background-color: #0B151E !important;
-    color: #6ebeff !important;
+    background-color: #1A1B20 !important;
+    color: #D0D0D0 !important;
 }
 
 .toastError {
-    background-color: #0B151E !important;
-    color: #6ebeff !important;
+    background-color: #1A1B20 !important;
+    color: #D0D0D0 !important;
 }

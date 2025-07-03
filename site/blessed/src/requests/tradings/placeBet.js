@@ -14,7 +14,9 @@ export async function placeBet(Amount, Duration, Direction) {
             }),
         });
 
-        return await response;
+        const data = await response.json();
+
+        return await data;
     } catch (error) {
         console.error('Error registering user:', error);
         throw error;

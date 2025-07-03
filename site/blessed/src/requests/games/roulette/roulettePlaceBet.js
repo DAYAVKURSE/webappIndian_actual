@@ -13,7 +13,9 @@ export async function roulettePlaceBet(Amount, Color) {
             }),
         });
 
-        return await response;
+        const data = await response.json();
+
+        return await data;
     } catch (error) {
         console.error('Error registering user:', error);
         throw error;

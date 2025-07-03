@@ -4,8 +4,8 @@ import styles from './Trading.module.scss';
 import { placeBet, getOutcome, getBPC, getMe } from '@/requests';
 import useStore from '@/store';
 import toast from 'react-hot-toast';
-// import { Amount, ActionButtons } from '@/components';
-// import { API_BASE_URL } from '@/config';
+import { getAccessToken } from '../../utils/token-storage';
+import { MoneyGameStatus } from '@/components';
 
 export const Trading = () => {
   const { BalanceRupee, setBalanceRupee } = useStore();
@@ -16,211 +16,181 @@ export const Trading = () => {
   const [currentPrice, setCurrentPrice] = useState(null);
   const [priceChange, setPriceChange] = useState(0);
 
+  const initData = encodeURIComponent(getAccessToken() || '');
+
   const candleSeriesRef = useRef(null);
   const chartRef = useRef(null);
   const [markers, setMarkers] = useState([]);
   const wsLatestRef = useRef(null);
   const lastPriceRef = useRef(null);
 
-  //   const initData = useRef(window.Telegram.WebApp.initData);
+  const fetchOutcome = async () => {
+    try {
+      const outcomeData = await getOutcome();
+      if (outcomeData) {
+        setOutcome({
+          ...outcomeData,
+          latestBets: outcomeData.latestBets.slice(0, 5),
+        });
+        if (outcomeData.userBalance !== undefined) {
+          setBalanceRupee(outcomeData.userBalance);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch outcome:', err);
+    }
+  };
 
-  // Загрузка начальных данных
   useEffect(() => {
-    const loadInitialData = async () => {
+    (async () => {
       try {
         await getMe();
         await getBPC();
-        const outcomeData = await getOutcome();
-        if (outcomeData) {
-          setOutcome({
-            ...outcomeData,
-            latestBets: outcomeData.latestBets.slice(0, 5),
-          });
-        }
-      } catch (error) {
-        console.error('Error loading initial data:', error);
-        toast.error('Couldnt upload data');
+        await fetchOutcome();
+      } catch (err) {
+        console.error('Initial data error:', err);
+        toast.error("Couldn't load initial data");
       }
-    };
-
-    loadInitialData();
+    })();
   }, []);
 
-  // const formatTime = (seconds) => {
-  //     const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
-  //     const secs = String(seconds % 60).padStart(2, "0");
-  //     return `${minutes}:${secs}`;
-  // };
+  const setupWebSockets = useCallback(() => {
+    const ws_initial = new WebSocket(`wss://testfakeserver.com/api/ws/kline?init_data=${initData}`);
 
-  // Установка и обработка  соединений
-  const setups = useCallback(() => {
-    if (!chartRef.current || !candleSeriesRef.current) return;
-
-    // const encoded_init_data = encodeURIComponent(initData.current);
-    // const ws_url_initial = `wss://${API_BASE_URL}/ws/kline?init_data=${encoded_init_data}`;
-    // const ws_url_latest = `wss://${API_BASE_URL}/ws/kline/latest?init_data=${encoded_init_data}`;
-
-    const ws_url_initial = `wss://176.120.21.195:8080/ws/kline`;
-    const ws_url_latest = `wss://176.120.21.195:8080/ws/kline/latest`;
-    // Получение исторических данных
-    const ws_initial = new WebSocket(ws_url_initial);
-    ws_initial.onmessage = (event) => {
+    ws_initial.onmessage = (e) => {
       try {
-        const data = JSON.parse(event.data);
+        const data = JSON.parse(e.data);
         if (Array.isArray(data) && data.length > 0) {
-          const last100Data = data.slice(-100).map((item) => ({
+          const formatted = data.slice(-100).map((item) => ({
             time: item.openTime / 1000,
             open: item.open,
             high: item.high,
             low: item.low,
             close: item.close,
           }));
-
-          candleSeriesRef.current.setData(last100Data);
+          candleSeriesRef.current.setData(formatted);
           setChartReady(true);
         }
-      } catch (error) {
-        console.error('Error when processing  source data:', error);
+      } catch (err) {
+        console.error('Init WS message error:', err);
       } finally {
         ws_initial.close();
       }
     };
 
-    ws_initial.onerror = (error) => {
-      console.error(' error for source data:', error);
-      toast.error('Server connection error');
+    ws_initial.onerror = (err) => {
+      console.error('WebSocket error for source data:', err);
       ws_initial.close();
     };
 
-    // Обработка обновлений в реальном времени
-    const connectLatestWs = () => {
-      const ws_latest = new WebSocket(ws_url_latest);
-      wsLatestRef.current = ws_latest;
+    const connectLiveUpdates = () => {
+      const ws = new WebSocket(`wss://testfakeserver.com/api/ws/kline?init_data=${initData}`);
+      wsLatestRef.current = ws;
 
-      ws_latest.onmessage = (event) => {
+      ws.onmessage = (e) => {
         try {
-          const data = JSON.parse(event.data);
-          if (data && typeof data === 'object') {
-            const time = data.openTime / 1000;
+          const data = JSON.parse(e.data);
+          if (!data || typeof data !== 'object') return;
 
-            if (time && candleSeriesRef.current && chartReady) {
-              // Обновляем свечной график
-              candleSeriesRef.current.update({
-                time,
-                open: data.open,
-                high: data.high,
-                low: data.low,
-                close: data.close,
-              });
+          const time = data.openTime / 1000;
+          if (candleSeriesRef.current && chartReady) {
+            candleSeriesRef.current.update({
+              time,
+              open: data.open,
+              high: data.high,
+              low: data.low,
+              close: data.close,
+            });
 
-              // Обновляем текущую цену и изменение
-              setCurrentPrice(data.close);
-              if (lastPriceRef.current !== null) {
-                const change = ((data.close - lastPriceRef.current) / lastPriceRef.current) * 100;
-                setPriceChange(change);
-              }
-              lastPriceRef.current = data.close;
-
-              // Обновляем маркеры ставок
-              setMarkers((prevMarkers) =>
-                prevMarkers.map((marker) =>
-                  marker.time === time && marker.value === null ? { ...marker, value: data.close } : marker
-                )
-              );
+            setCurrentPrice(data.close);
+            if (lastPriceRef.current !== null) {
+              const change = ((data.close - lastPriceRef.current) / lastPriceRef.current) * 100;
+              setPriceChange(change);
             }
+            lastPriceRef.current = data.close;
+
+            setMarkers((prev) =>
+              prev.map((marker) =>
+                marker.time === time && marker.value === null ? { ...marker, value: data.close } : marker
+              )
+            );
           }
-        } catch (error) {
-          console.error('Error when processing  update:', error);
+        } catch (err) {
+          console.error('Live WS update error:', err);
         }
       };
 
-      ws_latest.onerror = (error) => {
-        console.error(' error for updates:', error);
-        ws_latest.close();
-        setTimeout(connectLatestWs, 2000); // Повторное подключение через 2 секунды
+      let reconnectTimeout;
+
+      ws.onerror = (e) => {
+        console.error('WebSocket error:', e);
+        if (ws.readyState !== WebSocket.CLOSED && ws.readyState !== WebSocket.CLOSING) {
+          ws.close();
+        }
       };
 
-      ws_latest.onclose = () => {
-        setTimeout(connectLatestWs, 2000); // Повторное подключение через 2 секунды
+      ws.onclose = () => {
+        if (reconnectTimeout) clearTimeout(reconnectTimeout);
+        reconnectTimeout = setTimeout(() => connectLiveUpdates(), 2000);
       };
     };
 
-    connectLatestWs();
+    connectLiveUpdates();
 
     return () => {
-      if (wsLatestRef.current) {
-        wsLatestRef.current.close();
-      }
+      if (wsLatestRef.current) wsLatestRef.current.close();
     };
-  }, [chartReady]);
+  }, [chartReady, initData]);
 
-  // Инициализация графика
   useEffect(() => {
     const chart = createChart('chart', {
       layout: {
-        background: { color: '#000000' },
-        textColor: '#3F7FFB',
+        background: { color: '#1a1b20' },
+        textColor: '#C5C8D1',
         fontSize: 12,
+        fontFamily: 'Inter, sans-serif',
       },
       grid: {
-        vertLines: { color: 'rgba(63, 127, 251, 0.1)' },
-        horzLines: { color: 'rgba(63, 127, 251, 0.1)' },
+        vertLines: { color: 'rgba(255, 255, 255, 0.05)' },
+        horzLines: { color: 'rgba(255, 255, 255, 0.05)' },
       },
       rightPriceScale: {
-        borderColor: 'rgba(63, 127, 251, 0.2)',
-        scaleMargins: {
-          top: 0.1,
-          bottom: 0.1,
-        },
-        visible: true,
+        borderColor: '#1F1F1F',
+        scaleMargins: { top: 0.15, bottom: 0.15 },
       },
       timeScale: {
-        borderColor: 'rgba(63, 127, 251, 0.2)',
-        visible: true,
+        borderColor: '#1F1F1F',
         timeVisible: true,
-        secondsVisible: false,
+        secondsVisible: true,
         tickMarkFormatter: (time) => {
           const date = new Date(time * 1000);
-          const hours = date.getHours().toString().padStart(2, '0');
-          const minutes = date.getMinutes().toString().padStart(2, '0');
-          return `${hours}:${minutes}`;
+          return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
         },
       },
       crosshair: {
         mode: 1,
-        vertLine: {
-          color: 'rgba(63, 127, 251, 0.5)',
-          width: 1,
-          style: 1,
-          visible: true,
-          labelVisible: true,
-        },
-        horzLine: {
-          color: 'rgba(63, 127, 251, 0.5)',
-          width: 1,
-          style: 1,
-          visible: true,
-          labelVisible: true,
-        },
+        vertLine: { color: '#4E5A6B', width: 1, visible: true, labelVisible: true },
+        horzLine: { color: '#4E5A6B', width: 1, visible: true, labelVisible: true },
       },
       localization: {
         timeFormatter: (time) => {
           const date = new Date(time * 1000);
-          const hours = date.getHours().toString().padStart(2, '0');
-          const minutes = date.getMinutes().toString().padStart(2, '0');
-          const seconds = date.getSeconds().toString().padStart(2, '0');
-          return `${hours}:${minutes}:${seconds}`;
+          return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}:${date
+            .getSeconds()
+            .toString()
+            .padStart(2, '0')}`;
         },
       },
     });
 
-    // Создаем свечной график вместо линейного
     const candleSeries = chart.addCandlestickSeries({
-      upColor: 'rgba(0, 150, 136, 0.8)',
-      downColor: 'rgba(255, 82, 82, 0.8)',
-      borderVisible: false,
-      wickUpColor: 'rgba(0, 150, 136, 0.8)',
-      wickDownColor: 'rgba(255, 82, 82, 0.8)',
+      upColor: '#0d99ff',
+      downColor: '#ef5350',
+      borderUpColor: '#0d99ff',
+      borderDownColor: '#ef5350',
+      wickUpColor: '#0d99ff',
+      wickDownColor: '#ef5350',
+      borderVisible: true,
       priceFormat: {
         type: 'price',
         precision: 2,
@@ -228,172 +198,71 @@ export const Trading = () => {
       },
     });
 
-    candleSeriesRef.current = candleSeries;
-    chartRef.current = chart;
-
     // Скрываем водяной знак
     const watermark_Ebaniy = document.getElementById('tv-attr-logo');
     if (watermark_Ebaniy) {
       watermark_Ebaniy.style.display = 'none';
     }
 
+    candleSeriesRef.current = candleSeries;
+    chartRef.current = chart;
+
     return () => {
       chart.remove();
-      if (wsLatestRef.current) {
-        wsLatestRef.current.close();
-      }
+      if (wsLatestRef.current) wsLatestRef.current.close();
     };
   }, []);
 
-  // Установка  соединений после инициализации графика
   useEffect(() => {
-    const cleanup = setups();
+    const cleanup = setupWebSockets();
     return cleanup;
-  }, [setups]);
+  }, [setupWebSockets]);
 
-  // Периодическое обновление баланса и исходов
   useEffect(() => {
-    const updateInterval = setInterval(async () => {
-      try {
-        const outcomeData = await getOutcome();
-        if (outcomeData) {
-          setOutcome({
-            ...outcomeData,
-            latestBets: outcomeData.latestBets.slice(0, 5),
-          });
-
-          if (outcomeData.userBalance !== undefined) {
-            setBalanceRupee(outcomeData.userBalance);
-          }
-        }
-      } catch (error) {
-        console.error('Error updating data:', error);
-      }
-    }, 30000); // Обновлять каждые 30 секунд
-
-    return () => clearInterval(updateInterval);
-  }, [setBalanceRupee]);
+    const interval = setInterval(fetchOutcome, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleBet = async (direction) => {
     try {
       const response = await placeBet(bet, time, direction);
-
       if (!response || response.status !== 200) {
         const errorData = await response?.json().catch(() => ({}));
-        toast.error(errorData?.error || 'Couldnt place a bid');
+        toast.error(errorData?.error || "Couldn't place a bid");
         return;
       }
 
-      const data = await response.json().catch(() => ({}));
+      toast.success('The bid was successfully placed');
+      setBalanceRupee(Math.max(0, BalanceRupee - bet));
 
-      if (data) {
-        toast.success('The bid was successfully placed');
-        setBalanceRupee(Math.max(0, BalanceRupee - bet));
+      const now = Math.floor(Date.now() / 1000);
+      const shape = direction === 'up' ? 'arrowUp' : 'arrowDown';
 
-        const betTime = Math.floor(Date.now() / 1000);
-        const endTime = betTime + time;
-        const shape = direction === 'up' ? 'arrowUp' : 'arrowDown';
+      const newMarkers = [
+        { time: now, position: 'aboveBar', color: '#ffd689', shape, text: `₹ ${bet}`, value: null },
+        { time: now + time, position: 'aboveBar', color: '#ffd689', shape, text: `₹ ${bet}`, value: null },
+      ];
 
-        const newMarkers = [
-          {
-            time: betTime,
-            position: 'aboveBar',
-            color: '#ffd689',
-            shape: shape,
-            text: `₹ ${bet}`,
-            value: null,
-          },
-          {
-            time: endTime,
-            position: 'aboveBar',
-            color: '#ffd689',
-            shape: shape,
-            text: `₹ ${bet}`,
-            value: null,
-          },
-        ];
+      const allMarkers = [...markers, ...newMarkers];
+      candleSeriesRef.current?.setMarkers(allMarkers);
+      setMarkers(allMarkers);
 
-        // Обновить маркеры на графике
-        if (candleSeriesRef.current) {
-          const allMarkers = [...markers, ...newMarkers];
-          candleSeriesRef.current.setMarkers(allMarkers);
-          setMarkers(allMarkers);
-        }
+      setOutcome((prev) => ({
+        ...prev,
+        latestBets: [{ outcome: '', amount: bet, direction }, ...prev.latestBets].slice(0, 5),
+      }));
 
-        // Обновить последние ставки
-        setOutcome((prevOutcome) => ({
-          ...prevOutcome,
-          latestBets: [{ outcome: '', amount: bet, direction }, ...prevOutcome.latestBets].slice(0, 5),
-        }));
-
-        // Получить результат через установленное время
-        const checkInterval = setInterval(async () => {
-          try {
-            const outcomeData = await getOutcome();
-            if (outcomeData) {
-              setOutcome({
-                ...outcomeData,
-                latestBets: outcomeData.latestBets.slice(0, 5),
-              });
-
-              // Обновить баланс
-              if (outcomeData.userBalance !== undefined) {
-                setBalanceRupee(outcomeData.userBalance);
-              }
-
-              // Показать уведомление о результате ставки
-              const latestBet = outcomeData.latestBets[0];
-              if (latestBet && latestBet.outcome) {
-                if (latestBet.outcome === 'win') {
-                  toast.success(`You win! (+₹ ${latestBet.payout})`);
-                } else if (latestBet.outcome === 'lose') {
-                  toast.error(`You lose! (-₹ ${bet})`);
-                }
-              }
-            }
-          } catch (error) {
-            console.error('Error when getting the result:', error);
-          } finally {
-            clearInterval(checkInterval);
-          }
-        }, time * 1000 + 1000); // Добавляем 1 секунду для завершения обработки на сервере
-      }
-    } catch (error) {
-      console.error('Error when placing a bid:', error);
-      toast.error('Couldnt place a bid');
+      setTimeout(fetchOutcome, time * 1000 + 1000);
+    } catch (err) {
+      console.error('Bet placement error:', err);
+      toast.error("Couldn't place a bid");
     }
   };
 
-  // Форматирование баланса для отображения
-  //   const formatBalance = (balance) => {
-  //     if (balance === undefined || balance === null) return { main: '0', suppl: '00' };
-
-  //     const balanceStr = balance.toFixed(2);
-  //     const [main, suppl] = balanceStr.split('.');
-
-  //     return { main, suppl: suppl || '00' };
-  //   };
-
-  // Форматирование цены для отображения
-  //   const formatPrice = (price) => {
-  //     if (price === null || price === undefined) return 'Loading...';
-  //     return price.toFixed(2);
-  //   };
-
-  //   // Форматирование изменения цены
-  //   const formatPriceChange = (change) => {
-  //     if (change === null || change === undefined) return '';
-  //     const sign = change >= 0 ? '+' : '';
-  //     return `${sign}${change.toFixed(2)}%`;
-  //   };
-
-  //   const { main, suppl } = formatBalance(BalanceRupee);
-
   return (
     <div className={styles.trading}>
+      <MoneyGameStatus />
       <h1 className={styles.title}>Trading</h1>
-      <p className={styles.trading_text}>Your balance</p>
-      <h3 className={styles.trading_balance}>₹ {BalanceRupee ? BalanceRupee.toFixed(0) : 0}</h3>
 
       <div className={styles.chartWrap}>
         <div id="chart" className={styles.chart} />
@@ -401,57 +270,72 @@ export const Trading = () => {
 
       <div className={styles.trading__bet}>
         <button className={styles.trading__bet_button} onClick={() => handleBet('down')}>
-          <img src="/24=arrow_circle_down.svg" alt="Down" />
+          <img src="/trading_arrow.svg" alt="Down" />
         </button>
         <button className={styles.trading__bet_button} onClick={() => handleBet('up')}>
-          <img src="/24=arrow_circle_up.svg" alt="Up" />
+          <img src="/trading_arrow.svg" alt="Up" />
         </button>
       </div>
 
       <div className={styles.trading__timer}>
         <button className={styles.minusBtn} onClick={() => setTime((prevTime) => Math.max(prevTime - 10, 10))}>
-          −
+          <img src="/trading_min.svg" alt="trading_min" />
         </button>
-        <p className={styles.trading__timer_text}>00:10</p>
+        <div className={styles.trading__timer_text}>00:10</div>
         <button className={styles.plusBtn} onClick={() => setTime((prevTime) => Math.min(prevTime + 10, 3540))}>
-          +
+          <img src="/trading_plus.svg" alt="trading_plus" />
         </button>
       </div>
 
       <div className={styles.trading_button_container}>
         <button className={styles.trading_button} onClick={() => setTime(() => 10)}>
-          10 <span>sec</span>
+          10 sec
         </button>
         <button className={styles.trading_button} onClick={() => setTime(() => 30)}>
-          30 <span>sec</span>
+          30 sec
         </button>
         <button className={styles.trading_button} onClick={() => setTime(() => 60)}>
-          1 <span>min</span>
+          1 min
         </button>
         <button className={styles.trading_button} onClick={() => setTime(() => 300)}>
-          5 <span>min</span>
+          5 min
         </button>
       </div>
 
-      <div className={styles.betAmount}>
-        <div className={styles.amountDisplay}>
-          <input
-            className={styles.amount__input}
-            value={bet}
-            onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, ''); // Удаляем все нецифровые символы
-              setBet(value);
-            }}
-          ></input>
-          <div className={styles.amountControls}>
-            <button onClick={() => setBet((prev) => Math.max(prev - 10, 10))}>−</button>
-            <button onClick={() => setBet((prev) => prev + 10)}>+</button>
+      <div className={styles.bet}>
+        <div className={styles.betAmount}>
+          <div className={styles.amountDisplay}>
+            <input
+              className={styles.amount__input}
+              value={bet}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '');
+                setBet(value);
+              }}
+            />
+            <div className={styles.amountControls}>
+              <button onClick={() => setBet((prev) => Math.max(prev - 10, 10))}>
+                <img src="/trading_min.svg" alt="trading_min" />
+              </button>
+              <button onClick={() => setBet((prev) => prev + 10)}>
+                <img src="/trading_plus.svg" alt="trading_plus" />
+              </button>
+            </div>
+          </div>
+          <div className={styles.amountButtons}>
+            <button onClick={() => setBet((prev) => Math.floor(prev / 2))}>/ 2</button>
+            <button onClick={() => setBet((prev) => prev * 2)}>× 2</button>
           </div>
         </div>
-        <div className={styles.amountButtons}>
-          <button onClick={() => setBet((prev) => Math.floor(prev / 2))}>/ 2</button>
-          <button onClick={() => setBet((prev) => prev * 2)}>× 2</button>
-        </div>
+        <button className={styles.betButton}>
+          Bet{' '}
+          <svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path
+              d="M13.0942 10L8.08507 4.99167L6.90674 6.17L10.7401 10.0033L6.90674 13.8308L8.08507 15.0092L13.0942 10Z"
+              fill="#FFFFFF"
+            ></path>
+          </svg>
+        </button>
       </div>
     </div>
   );

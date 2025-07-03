@@ -36,23 +36,23 @@ export const Layout = () => {
           position: "top-center",
           success: {
             className: toastStyles.toastSuccess,
-            style: { border: "1px solid #6ebeff" },
+            style: { border: "1px solid #565656" },
             iconTheme: {
-              primary: "#6ebeff",
-              secondary: "#0B0B0B",
+              primary: "#0D99FF",
+              secondary: "#1A1B20",
             },
           },
           error: {
             className: toastStyles.toastError,
-            style: { border: "1px solid #6ebeff" },
+            style: { border: "1px solid #565656" },
             iconTheme: {
-              primary: "#6ebeff",
-              secondary: "#0B0B0B",
+              primary: "#C81100",
+              secondary: "#1A1B20",
             },
           },
           default: {
             className: toastStyles.toast,
-            style: { border: "1px solid #6ebeff" },
+            style: { border: "1px solid #565656" },
           },
         }}
       />

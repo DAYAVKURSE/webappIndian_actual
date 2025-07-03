@@ -1,93 +1,97 @@
 .header {
-    position: fixed;
-    padding: 16px 18px;
+  position: fixed;
+  padding: 16px 18px;
 
-    & .headerContainer {
-        display: flex;
+  & .headerContainer {
+    display: flex;
     justify-content: space-between;
-    }
-    font-size: 16px;
-    animation: fadeIn .2s ease-in-out forwards;
+    align-items: center;
+  }
+  font-size: 16px;
+  animation: fadeIn 0.2s ease-in-out forwards;
+  width: 100%;
+  z-index: 99;
+  background: #15171e;
+
+  &__buttons {
+    display: flex;
+    gap: 10px;
+    font-size: 12px;
+
+    // &:first-child {
+    //     margin-right: 10px;
+    // }
+  }
+
+  &__spacer {
     width: 100%;
-    z-index: 99;
-    background: #15171E;
-
-    &__buttons {
-        display: flex;
-        gap: 10px;
-        font-size: 12px;
-
-        // &:first-child {
-        //     margin-right: 10px;
-        // }
-    }
-
-    &__spacer {
-        width: 100%;
-        min-height: 72px;
-    }
+    min-height: 72px;
+  }
 }
 
 @keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .logo {
-    width: 90px;
-    height: 40px;   
+  width: 90px;
+  height: 40px;
 }
 
 .balance {
-    display: flex;
-    flex-direction: column;
-    align-items: start;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
 
-    & .title {
-        font-weight: 500;
-        font-size: 12px;
-        line-height: 100%;
-        color: #9b9a99;
-    }
-
-    & .coin {
-        font-weight: 500;
-        font-size: 14px;
-        line-height: 100%;
-        color: #e7e7e7;
-    }
-
-    & .count {
-        font-weight: 500;
-        font-size: 14px;
-        line-height: 100%;
-        color: #e7e7e7;
-    }
-}
-.deposit {
-    border-radius: 38px;
-    width: 80px;
-    height: 25px;
-    background-image: url('../button.png');
-    background-position: center;
-    background-size: 100% 100%;
+  & .title {
     font-weight: 500;
     font-size: 12px;
-    color: #fff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    transform: scale(1.2);
+    line-height: 100%;
+    color: #9b9a99;
+  }
+
+  & .coin {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 100%;
+    color: #e7e7e7;
+  }
+
+  & .count {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 100%;
+    color: #e7e7e7;
+  }
+}
+.deposit {
+  border-radius: 38px;
+  width: 80px;
+  height: 30px;
+  background-color: #FAAD30;
+  font-weight: 500;
+  font-size: 16px;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .rightContainer {
-    display: flex;
-    gap:8vw;
+  display: flex;
+  align-items: center;
+  gap: 8vw;
+  height: 100%;
+}
+
+.header__spacer {
+  background: #15171E;
+  min-height: 50px;
 }

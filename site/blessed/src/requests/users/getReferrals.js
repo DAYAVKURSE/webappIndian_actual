@@ -1,4 +1,4 @@
-import {apiClient} from "@/apiClient";
+import { apiClient } from '@/apiClient';
 
 export async function getReferrals() {
   try {
@@ -10,8 +10,8 @@ export async function getReferrals() {
     });
 
     const data = await response.json();
+
     return data;
-    
   } catch (error) {
     console.error('Error registering user:', error);
     throw error;

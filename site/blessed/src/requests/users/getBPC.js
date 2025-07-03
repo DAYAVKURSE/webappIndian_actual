@@ -11,6 +11,7 @@ export async function getBPC() {
     });
 
     const data = await response.json();
+
     const BPC = data.BiPerClick * data.BonusMultiplier;
     useStore.setState({ BiPerClick: BPC });
     return data;

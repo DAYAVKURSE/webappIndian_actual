@@ -11,8 +11,10 @@ export async function exchange(AmountBcoins) {
                 AmountBcoins: AmountBcoins
             }),
         });
+
+        const data = await response.json();
         
-        return await response;
+        return await data;
     } catch (error) {
         console.error('Error registering user:', error);
         throw error;

@@ -1,22 +1,22 @@
-import styles from "./Input.module.scss";
+import styles from './Input.module.scss';
 
-export const Input = ({ id, type, onChange, placeholder, disabled, center, min, max, value, name, ref }) => {
-    return (
-        <div className={styles.input__container}>
-            <input
-                ref={ref}
-                className={styles.input}
-                type={type || "text"}
-                onChange={onChange}
-                placeholder={placeholder}
-                disabled={disabled}
-                id={id}
-                min={min !== undefined ? min : undefined}
-                max={max !== undefined ? max : undefined}
-                value={value}
-                name={name}
-                style={{ textAlign: center ? "center" : "left" }}
-            />
-        </div>
-    );
+export const Input = ({ id, type, onChange, placeholder, disabled, center, min, max, value, name, ref, className }) => {
+  return (
+    <div className={styles.input__container}>
+      <input
+        ref={ref}
+        className={`${styles.input} ${className}`}
+        type={type || 'text'}
+        onChange={onChange}
+        placeholder={placeholder}
+        disabled={disabled}
+        id={id}
+        min={min !== undefined ? min : undefined}
+        max={max !== undefined ? max : undefined}
+        value={value}
+        name={name}
+        style={{ textAlign: center ? 'center' : 'left' }}
+      />
+    </div>
+  );
 };

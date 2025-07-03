@@ -9,13 +9,15 @@ export async function crashCashout() {
       },
     });
 
-    return response;
+      const data = await response.json();
+
+    return data;
   } catch (error) {
-    console.error('Ошибка при выводе средств:', error);
+    console.error('Error when withdrawing funds:', error);
     return {
       ok: false,
       status: 500,
-      json: async () => ({ error: 'Сетевая ошибка при выводе средств.' }),
+      json: async () => ({ error: 'Network error when withdrawing funds.' }),
     };
   }
 }

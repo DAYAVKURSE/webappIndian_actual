@@ -8,10 +8,12 @@ import {
 
 export async function login(payload) {
   try {
-    const data = await apiClient('/auth/login', {
+    const response = await apiClient('/auth/login', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+
+    const data = await response.json();
 
     if (data?.access_token) {
       setAccessToken(data.access_token);
