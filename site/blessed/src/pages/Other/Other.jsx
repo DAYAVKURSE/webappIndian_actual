@@ -23,22 +23,10 @@ export const Other = () => {
           <span>Withdrawal</span>
         </Link>
       </div>
-      <Link to={'https://t.me/BiTRavesupport'} className={`${styles.support__banner} ${styles.banner}`}>
+      <Link to={'https://t.me/rupexsupport'} className={`${styles.support__banner} ${styles.banner}`}>
         <img src="/support.png" alt="support" />
         <span>Support</span>
       </Link>
-
-      <div className={styles.links}>
-        <Link to={'/other/faq'}>
-          FAQ{' '}
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M13.0942 10L8.08507 4.99167L6.90674 6.17L10.7401 10.0033L6.90674 13.8308L8.08507 15.0092L13.0942 10Z"
-              fill="#D0D0D0"
-            ></path>
-          </svg>
-        </Link>
-      </div>
 
       <div className={styles.other_dev} onClick={() => copyLink()} />
 

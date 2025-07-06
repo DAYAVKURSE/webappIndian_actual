@@ -9,8 +9,8 @@ export const Games = () => {
 
       <div className={styles.games_cards}>
         <GameCard to="/games/dice" src="/game_dice.png" label="Roll" />
-        <GameCard to="/games/roulette" src="/game_roulette.png" label="Roulette" />
         <GameCard to="/games/crash" src="/game_crash.png" label="Star Crash" />
+        <GameCard to="/games/roulette" src="/game_roulette.png" label="Roulette" />
         <GameCard to="/games/nvuti" src="/game_vault.png" label="Vault" />
 
         <p className={styles.coming_separator}></p>

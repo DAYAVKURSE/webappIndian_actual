@@ -1,13 +1,13 @@
 import { useEffect, useState, useRef } from 'react';
 import { crashPlace, crashCashout, crashGetHistory } from '@/requests';
 import styles from './Crash.module.scss';
-const initData = getAccessToken() || '';
 import toast from 'react-hot-toast';
 import useStore from '@/store';
 import { getAccessToken } from '../../utils/token-storage';
 import { MoneyGameStatus } from '@/components';
 
 export const Crash = () => {
+  const initData = getAccessToken() || '';
   const { BalanceRupee, increaseBalanceRupee, decreaseBalanceRupee } = useStore();
   const [betAmount, setBetAmount] = useState(100);
   const [bet, setBet] = useState(0);
@@ -263,7 +263,9 @@ export const Crash = () => {
 
         // Processing another player's cashout message
         if (data.type === 'other_cashout') {
-          toast.success(`${data.username} won ₹${data.win_amount.toFixed(0)} at ${data.cashout_multiplier}x!`);
+          toast.success(
+            `${data.username} won ₹${data.win_amount.toFixed(0)} at ${data.cashout_multiplier}x!`
+          );
         }
 
         // Processing another player's bet message
@@ -550,7 +552,13 @@ export const Crash = () => {
               ) : gameActive ? (
                 <span>
                   Queue Bet{' '}
-                  <svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <path
                       d="M13.0942 10L8.08507 4.99167L6.90674 6.17L10.7401 10.0033L6.90674 13.8308L8.08507 15.0092L13.0942 10Z"
                       fill="#FFFFFF"
@@ -560,7 +568,13 @@ export const Crash = () => {
               ) : (
                 <span>
                   Place Bet{' '}
-                  <svg width="24" height="24" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 20 20"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <path
                       d="M13.0942 10L8.08507 4.99167L6.90674 6.17L10.7401 10.0033L6.90674 13.8308L8.08507 15.0092L13.0942 10Z"
                       fill="#FFFFFF"
@@ -572,7 +586,6 @@ export const Crash = () => {
           )}
         </div>
       </div>
-
     </div>
   );
 };
