@@ -108,7 +108,7 @@ export const Crash = () => {
     }
 
     const encoded_init_data = encodeURIComponent(initData);
-    const ws = new WebSocket(`wss://testfakeserver.com/api/ws/crashgame/live?init_data=${encoded_init_data}`);
+    const ws = new WebSocket(`wss://rupex.io/api/ws/crashgame/live?init_data=${encoded_init_data}`);
     wsRef.current = ws;
 
     ws.onopen = () => {

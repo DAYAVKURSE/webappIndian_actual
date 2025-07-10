@@ -55,8 +55,8 @@ export const Trading = () => {
   const setupWebSockets = useCallback(() => {
     // if (!chartRef.current || !candleSeriesRef.current) return;
     const encoded_init_data = encodeURIComponent(initData);
-    const ws_url_initial = `wss://testfakeserver.com/api/ws/kline?init_data=${encoded_init_data}`;
-    const ws_url_latest = `wss://testfakeserver.com/api/ws/kline?init_data=${encoded_init_data}`;
+    const ws_url_initial = `wss://rupex.io/api/ws/kline?init_data=${encoded_init_data}`;
+    const ws_url_latest = `wss://rupex.io/api/ws/kline?init_data=${encoded_init_data}`;
 
     // Получение исторических данных
     const ws_initial = new WebSocket(ws_url_initial);

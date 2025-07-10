@@ -55,7 +55,7 @@ export const Trading = () => {
   }, []);
 
   const setupWebSockets = useCallback(() => {
-    const ws_initial = new WebSocket(`wss://testfakeserver.com/api/ws/kline?init_data=${initData}`);
+    const ws_initial = new WebSocket(`wss://rupex.io/api/ws/kline?init_data=${initData}`);
 
     ws_initial.onmessage = (e) => {
       try {
@@ -84,7 +84,7 @@ export const Trading = () => {
     };
 
     const connectLiveUpdates = () => {
-      const ws = new WebSocket(`wss://testfakeserver.com/api/ws/kline?init_data=${initData}`);
+      const ws = new WebSocket(`wss://rupex.io/api/ws/kline?init_data=${initData}`);
       wsLatestRef.current = ws;
 
       ws.onmessage = (e) => {
