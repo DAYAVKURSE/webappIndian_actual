@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/url"
 	"strconv"
 	"time"
@@ -43,8 +44,13 @@ func (b *BinanceWebsocketService) Start() {
 	u := url.URL{Scheme: "wss", Host: "stream.binance.com:9443", Path: "/ws/btcusdt@kline_1s"}
 	logger.Info("Connecting to Binance WebSocket at %s", u.String())
 
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	conn, resp, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
+		if resp != nil {
+			body, _ := io.ReadAll(resp.Body)
+			logger.Fatal("WS dial error: %v\nHTTP %s\nBody: %s",
+				err, resp.Status, string(body))
+		}
 		logger.Fatal("%v", err)
 	}
 
