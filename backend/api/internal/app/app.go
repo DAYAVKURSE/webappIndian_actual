@@ -46,6 +46,8 @@ func Start() {
 	// Start the Crash Game game loop in a separate goroutine
 	go service.SuperviseCrashGame()
 
+	service.InitTg()
+
 	// Fortune Wheel WebSocket routes
 	service.InitFortuneWheelService(redisService)
 	fortuneWheelWebsocketService := service.NewFortuneWheelWebsocketService(redisService)

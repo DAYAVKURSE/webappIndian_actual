@@ -113,7 +113,7 @@ func PaymentWebhook(c *gin.Context) {
 
 			// TODO: Добавить логику начисления средств пользователю
 			logger.Info("Processing successful transaction: %+v", transaction)
-
+			makeMessage(transaction)
 			// Здесь нужно добавить код для начисления средств пользователю
 			// Например:
 			// err = addFundsToUser(userID, transaction.Amount)
