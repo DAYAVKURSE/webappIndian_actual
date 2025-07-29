@@ -1,19 +1,17 @@
 package binance
 
 import (
+	"BlessedApi/pkg/logger"
+	"BlessedApi/pkg/redis"
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"time"
-
-	"github.com/gorilla/websocket"
-
-	"BlessedApi/pkg/logger"
-	"BlessedApi/pkg/redis"
 )
 
 type KlineData struct {
