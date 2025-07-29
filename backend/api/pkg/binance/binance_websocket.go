@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
 	"net/url"
 	"strconv"
 	"time"
@@ -40,20 +42,43 @@ func NewBinanceWebsocketService(redisService *redis.RedisService) *BinanceWebsoc
 }
 
 func (b *BinanceWebsocketService) Start() {
-	u := url.URL{Scheme: "wss", Host: "stream.binance.com:9443", Path: "/ws/btcusdt@kline_1s"}
-	logger.Info("Connecting to Binance WebSocket at %s", u.String())
+	// ─── 1. собираем URL прокси ────────────────────────────────────────────────
+	u := url.URL{Scheme: "wss", Host: "stream.binance.com", Path: "/ws/btcusdt@kline_1s"}
+	logger.Info("11 Connecting to Binance WebSocket at %s", u.String())
 
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	// ————————————————————————————————————————————
+	// 2. Настраиваем ДИАЛЕР с жёстким HTTP‑proxy
+	//    proxyAddr: 176.120.21.195:3128  (без авторизации)
+	//    Если нужен user/pass →  http://user:pass@176.120.21.195:3128
+	// ————————————————————————————————————————————
+	proxyURL, _ := url.Parse("http://176.120.21.195:3128")
+
+	dialer := websocket.Dialer{
+		Proxy:            http.ProxyURL(proxyURL),
+		HandshakeTimeout: 10 * time.Second,
+	}
+
+	// ————————————————————————————————————————————
+	// 3. Подключаемся
+	// ————————————————————————————————————————————
+	conn, resp, err := dialer.Dial(u.String(), nil)
 	if err != nil {
-		logger.Fatal("%v", err)
+		if resp != nil {
+			body, _ := io.ReadAll(resp.Body)
+			logger.Error("WS dial error: %v\nHTTP %s\nBody: %s",
+				err, resp.Status, string(body))
+		}
+		logger.Error("%v", err)
+		return
 	}
 
 	b.wsConn = conn
-	logger.Info("Connected to Binance WebSocket.")
+	logger.Info("Connected to Binance WebSocket via proxy %s.", proxyURL.Host)
 
-	// Set ping/pong handlers
+	// ————————————————————————————————————————————
+	// 4. Пинг‑пoнг и приём сообщений
+	// ————————————————————————————————————————————
 	b.setupPingPongHandlers()
-
 	go b.readMessages()
 }
 
