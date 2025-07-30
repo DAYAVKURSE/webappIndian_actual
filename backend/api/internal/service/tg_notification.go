@@ -14,13 +14,19 @@ var ChatId int64
 
 func InitTg() {
 	botToken := os.Getenv("BOT_TOKEN")
-	chatID, _ := strconv.ParseInt(os.Getenv("CHAT_ID"), 10, 64)
+	chatID, err := strconv.ParseInt(os.Getenv("CHAT_ID"), 10, 64)
+	if err != nil {
+		logger.Error(err.Error())
+	}
+
+	logger.Info("Start tgbot token %v  chat id %v", botToken, chatID)
 	bot, err := tgbotapi.NewBotAPI(botToken)
 	if err != nil {
 		logger.Error("telegram error: %v", err)
 	}
 	Tg = bot
 	ChatId = chatID
+
 }
 
 func SendMsgTg(transaction Transaction) {
