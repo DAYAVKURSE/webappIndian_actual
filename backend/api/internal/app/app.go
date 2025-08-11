@@ -1,6 +1,7 @@
 package app
 
 import (
+	"BlessedApi/cmd/db"
 	"context"
 	"net/http"
 	"os"
@@ -44,7 +45,9 @@ func Start() {
 	go service.SuperviseRouletteX14Game()
 
 	// Start the Crash Game game loop in a separate goroutine
-	go service.SuperviseCrashGame()
+	//go service.SuperviseCrashGame()
+
+	service.InitCrashGameModule(db.DB)
 
 	service.InitTg()
 
