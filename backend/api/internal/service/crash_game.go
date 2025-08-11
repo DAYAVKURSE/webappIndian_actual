@@ -1,6 +1,7 @@
 package service
 
 import (
+	"BlessedApi/internal/models/exchange"
 	"BlessedApi/pkg/logger"
 	"math"
 	"math/rand"
@@ -166,13 +167,23 @@ func (e *crashEngine) advance() {
 	e.emit("multiplier", gin.H{"value": e.curMultiplier})
 
 	// авто-кэшаут
-	logger.Info("bets %v", e.betsCurrent)
+
 	for _, b := range e.betsCurrent {
 		if !b.settled && b.CashOutMultiplier > 0 && e.curMultiplier >= b.CashOutMultiplier {
 			b.settled = true
 			e.emit("cashout", gin.H{"user_id": b.UserID, "win_amount": b.Amount * e.curMultiplier, "multiplier": e.curMultiplier, "is_auto": true})
 			logger.Info("cashout ", gin.H{"user_id": b.UserID, "win_amount": b.Amount * e.curMultiplier, "multiplier": e.curMultiplier, "is_auto": true})
 			// TODO: тут вызвать вашу экономику (обновление балансов)
+			err := crashGameCashout(nil, &models.CrashGameBet{
+				UserID:      b.UserID,
+				CrashGameID: e.curRoundID,
+				Amount:      b.Amount,
+			}, e.curMultiplier)
+			if err != nil {
+				logger.Error(err.Error())
+				return
+			}
+
 		}
 	}
 
@@ -212,3 +223,43 @@ func (e *crashEngine) last50() ([]models.CrashGame, error) {
 
 // helpers
 func randF(min, max float64) float64 { return min + rand.Float64()*(max-min) }
+
+// Bet must exists
+func crashGameCashout(tx *gorm.DB, bet *models.CrashGameBet, currentMultiplier float64) error {
+	if tx == nil {
+		tx = db.DB
+	}
+
+	bet.Status = "won"
+	bet.WinAmount = bet.Amount * currentMultiplier
+	bet.CashOutMultiplier = currentMultiplier
+
+	if err := tx.Save(&bet).Error; err != nil {
+		return logger.WrapError(err, "failed to update bet")
+	}
+
+	var user models.User
+	if err := tx.First(&user, bet.UserID).Error; err != nil {
+		return logger.WrapError(err, "failed to fetch user")
+	}
+
+	// Update user balances
+	toCashBalance := bet.FromCashBalance * currentMultiplier
+	toBonusBalance := bet.FromBonusBalance * currentMultiplier
+
+	win := models.Winning{
+		UserID:    user.ID,
+		WinAmount: toCashBalance + toBonusBalance,
+	}
+
+	if err := tx.Create(&win).Error; err != nil {
+		return logger.WrapError(err, "Failed to record winning")
+	}
+
+	err := exchange.UpdateUserBalances(tx, &user, toCashBalance, toBonusBalance, false)
+	if err != nil {
+		return logger.WrapError(err, "failed to update user balances")
+	}
+
+	return nil
+}
