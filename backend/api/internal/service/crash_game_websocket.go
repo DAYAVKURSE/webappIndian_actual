@@ -1,7 +1,12 @@
 package service
 
 import (
+	"BlessedApi/cmd/db"
+	"BlessedApi/internal/models"
+	"BlessedApi/internal/models/exchange"
+	"BlessedApi/pkg/logger"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"sync"
 	"time"
@@ -94,6 +99,9 @@ type crashPlaceInput struct {
 
 func PlaceCrashGameBet(c *gin.Context) {
 	// оставляем сигнатуру
+
+	errInsufficientBalance := errors.New("insufficient balance")
+
 	uid, err := middleware.GetUserIDFromGinContext(c)
 	if err != nil {
 		c.Status(401)
@@ -104,6 +112,45 @@ func PlaceCrashGameBet(c *gin.Context) {
 		c.JSON(400, gin.H{"error": "Invalid input"})
 		return
 	}
+
+	db.DB.Transaction(func(tx *gorm.DB) error {
+		var user models.User
+		if err := tx.First(&user, uid).Error; err != nil {
+			return logger.WrapError(err, "")
+		}
+
+		bet := models.CrashGameBet{
+			UserID:            uid,
+			CashOutMultiplier: in.CashOutMultiplier,
+			Status:            "active",
+		}
+
+		// ??? что за бонус баланс
+		bonusBalance, err := exchange.GetUserExchangedBalanceAmount(tx, user.ID)
+		if err != nil {
+			return logger.WrapError(err, "")
+		}
+
+		if user.BalanceRupee+bonusBalance < in.Amount {
+			logger.Warn("User %d has insufficient balance: has %.2f, needs %.2f", uid, user.BalanceRupee+bonusBalance, in.Amount)
+			return errInsufficientBalance
+		}
+
+		fromCashBalance, fromBonusBalance, err := exchange.UseExchangeBalancePayment(tx, &user, in.Amount)
+		if err != nil {
+			return logger.WrapError(err, "")
+		}
+
+		bet.Amount = fromCashBalance + fromBonusBalance
+		bet.FromBonusBalance = fromBonusBalance
+		bet.FromCashBalance = fromCashBalance
+
+		if err := tx.Create(&bet).Error; err != nil {
+			return logger.WrapError(err, "")
+		}
+
+		return nil
+	})
 
 	ackCh := make(chan placeAck, 1)
 

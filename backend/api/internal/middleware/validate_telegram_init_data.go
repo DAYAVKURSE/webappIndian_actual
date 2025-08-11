@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log" // Добавляем стандартный логгер
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -85,7 +84,7 @@ func GetUserIDFromGinContext(c *gin.Context) (int64, error) {
 	}
 
 	log.Printf("GetUserIDFromGinContext - checking context keys: %+v", c.Keys)
-	logger.Warn(strconv.FormatInt(userIDInt, 10))
+	//logger.Warn(strconv.FormatInt(userIDInt, 10))
 
 	return userIDInt, nil
 }
