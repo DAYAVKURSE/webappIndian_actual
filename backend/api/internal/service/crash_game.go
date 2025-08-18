@@ -3,6 +3,7 @@ package service
 import (
 	"BlessedApi/internal/models/exchange"
 	"BlessedApi/pkg/logger"
+	"errors"
 	"math"
 	"math/rand"
 	"sync"
@@ -143,29 +144,49 @@ func (e *crashEngine) loop() {
 
 	last := time.Now()
 	for {
-		<-tick.C
-		now := time.Now()
-		dt := now.Sub(last)
-		last = now
+		select {
+		case <-tick.C:
+			now := time.Now()
+			dt := now.Sub(last)
+			last = now
 
-		switch e.state {
-		case rsCountdown:
-			accum += dt
-			for accum >= time.Second {
-				accum -= time.Second
-				left--
-				if left > 0 {
-					e.emit("countdown_tick", gin.H{"seconds_left": left})
-				} else {
-					e.startRound()
-					left = crashCountdownSec
-					break
+			switch e.state {
+			case rsCountdown:
+				accum += dt
+				for accum >= time.Second {
+					accum -= time.Second
+					left--
+					if left > 0 {
+						e.emit("countdown_tick", gin.H{"seconds_left": left})
+					} else {
+						e.startRound()
+						left = crashCountdownSec
+						break
+					}
 				}
+
+			case rsPlaying:
+				e.advance(now)
 			}
 
-		case rsPlaying:
-			e.advance(now)
+		case cmd := <-e.cmdCh:
+			switch v := cmd.(type) {
+			case cmdPlaceBet:
+				// очередь: если игра уже идёт, то на следующий раунд
+				if e.state == rsPlaying {
+					e.betsQueue = append(e.betsQueue, &v.Bet)
+					v.Resp <- placeAck{Queued: true, Err: nil}
+				} else {
+					e.betsQueue = append(e.betsQueue, &v.Bet)
+					v.Resp <- placeAck{Queued: false, Err: nil}
+				}
+
+			case cmdManualCashout:
+				err := e.manualCashout(v.UserID)
+				v.Resp <- err
+			}
 		}
+
 	}
 }
 
@@ -226,11 +247,29 @@ func (e *crashEngine) advance(now time.Time) {
 }
 
 func (e *crashEngine) manualCashout(uid int64) error {
+	// если раунд не идёт — выходим с ошибкой
+	if e.state != rsPlaying {
+		return errors.New("no active round")
+	}
+
 	for _, b := range e.betsCurrent {
 		if b.UserID == uid && !b.settled {
 			b.settled = true
-			e.emit("cashout", gin.H{"user_id": b.UserID, "win_amount": b.Amount * e.curMultiplier, "multiplier": e.curMultiplier, "is_auto": false})
-			return nil
+
+			// отдать событие на фронт
+			e.emit("cashout", gin.H{
+				"user_id":    b.UserID,
+				"win_amount": b.Amount * e.curMultiplier,
+				"multiplier": e.curMultiplier,
+				"is_auto":    false,
+			})
+
+			// ВАЖНО: записать выигрыш в БД и начислить деньги
+			return crashGameCashout(nil, &models.CrashGameBet{
+				UserID:      b.UserID,
+				CrashGameID: e.curRoundID,
+				Amount:      b.Amount,
+			}, e.curMultiplier)
 		}
 	}
 	return gorm.ErrRecordNotFound

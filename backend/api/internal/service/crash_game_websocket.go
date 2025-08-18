@@ -98,70 +98,90 @@ type crashPlaceInput struct {
 }
 
 func PlaceCrashGameBet(c *gin.Context) {
-	// оставляем сигнатуру
-
 	errInsufficientBalance := errors.New("insufficient balance")
+	errExistingBet := errors.New("active bet already exists")
 
 	uid, err := middleware.GetUserIDFromGinContext(c)
 	if err != nil {
 		c.Status(401)
 		return
 	}
+
 	var in crashPlaceInput
 	if err := c.ShouldBindJSON(&in); err != nil {
 		c.JSON(400, gin.H{"error": "Invalid input"})
 		return
 	}
+	if in.Amount <= 0 {
+		c.JSON(400, gin.H{"error": "Amount must be > 0"})
+		return
+	}
 
-	db.DB.Transaction(func(tx *gorm.DB) error {
+	// ТРАНЗАКЦИЯ с проверкой существующей активной ставки
+	if err := db.DB.Transaction(func(tx *gorm.DB) error {
+		// запрет второй активной ставки
+		var existing models.CrashGameBet
+		if err := tx.Where("user_id = ? AND status = ?", uid, "active").
+			Order("id DESC").First(&existing).Error; err == nil {
+			return errExistingBet
+		} else if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return logger.WrapError(err, "check existing bet failed")
+		}
+
 		var user models.User
 		if err := tx.First(&user, uid).Error; err != nil {
-			return logger.WrapError(err, "")
+			return logger.WrapError(err, "load user failed")
+		}
+
+		bonusBalance, err := exchange.GetUserExchangedBalanceAmount(tx, user.ID)
+		if err != nil {
+			return logger.WrapError(err, "load bonus balance failed")
+		}
+		if user.BalanceRupee+bonusBalance < in.Amount {
+			return errInsufficientBalance
+		}
+
+		fromCash, fromBonus, err := exchange.UseExchangeBalancePayment(tx, &user, in.Amount)
+		if err != nil {
+			return logger.WrapError(err, "debit failed")
 		}
 
 		bet := models.CrashGameBet{
 			UserID:            uid,
+			Amount:            fromCash + fromBonus,
+			FromCashBalance:   fromCash,
+			FromBonusBalance:  fromBonus,
 			CashOutMultiplier: in.CashOutMultiplier,
 			Status:            "active",
 		}
-
-		// ??? что за бонус баланс
-		bonusBalance, err := exchange.GetUserExchangedBalanceAmount(tx, user.ID)
-		if err != nil {
-			return logger.WrapError(err, "")
-		}
-
-		if user.BalanceRupee+bonusBalance < in.Amount {
-			logger.Warn("User %d has insufficient balance: has %.2f, needs %.2f", uid, user.BalanceRupee+bonusBalance, in.Amount)
-			return errInsufficientBalance
-		}
-
-		fromCashBalance, fromBonusBalance, err := exchange.UseExchangeBalancePayment(tx, &user, in.Amount)
-		if err != nil {
-			return logger.WrapError(err, "")
-		}
-
-		bet.Amount = fromCashBalance + fromBonusBalance
-		bet.FromBonusBalance = fromBonusBalance
-		bet.FromCashBalance = fromCashBalance
-
 		if err := tx.Create(&bet).Error; err != nil {
-			return logger.WrapError(err, "")
+			return logger.WrapError(err, "create bet failed")
 		}
-
 		return nil
-	})
-
-	ackCh := make(chan placeAck, 1)
-
-	CrashGameWS.eng.cmdCh <- cmdPlaceBet{Bet: Bet{UserID: uid, Amount: in.Amount, CashOutMultiplier: in.CashOutMultiplier}, Resp: ackCh}
-	ack := <-ackCh
-
-	if ack.Err != nil {
-		c.JSON(400, gin.H{"error": ack.Err.Error()})
+	}); err != nil {
+		switch {
+		case errors.Is(err, errInsufficientBalance):
+			c.JSON(402, gin.H{"error": "Insufficient balance"})
+		case errors.Is(err, errExistingBet):
+			c.JSON(400, gin.H{"error": "You already have an active bet"})
+		default:
+			logger.Error("Place bet failed: %v", err)
+			c.JSON(500, gin.H{"error": "Failed to place bet"})
+		}
 		return
 	}
 
+	// только после успешной транзакции — в движок
+	ackCh := make(chan placeAck, 1)
+	CrashGameWS.eng.cmdCh <- cmdPlaceBet{
+		Bet:  Bet{UserID: uid, Amount: in.Amount, CashOutMultiplier: in.CashOutMultiplier},
+		Resp: ackCh,
+	}
+	ack := <-ackCh
+	if ack.Err != nil {
+		c.JSON(500, gin.H{"error": "Engine rejected bet"})
+		return
+	}
 	c.JSON(200, gin.H{"status": "accepted", "queued": ack.Queued})
 }
 
@@ -174,7 +194,13 @@ func ManualCashout(c *gin.Context) {
 	rc := make(chan error, 1)
 	CrashGameWS.eng.cmdCh <- cmdManualCashout{UserID: uid, Resp: rc}
 	if err := <-rc; err != nil {
-		c.JSON(404, gin.H{"error": "no active bet"})
+		switch err.Error() {
+		case "no active round":
+			c.JSON(400, gin.H{"error": "no active round"})
+		default:
+			// gorm.ErrRecordNotFound и прочие
+			c.JSON(404, gin.H{"error": "no active bet"})
+		}
 		return
 	}
 	c.JSON(200, gin.H{"status": "cashed_out"})
