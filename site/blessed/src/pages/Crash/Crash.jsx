@@ -1,319 +1,225 @@
-import { useEffect, useState, useRef } from 'react';
-import { crashPlace, crashCashout, crashGetHistory } from '@/requests';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import styles from './Crash.module.scss';
-import toast from 'react-hot-toast';
+
+import { crashPlace, crashCashout } from '@/requests';
 import useStore from '@/store';
-import { getAccessToken } from '../../utils/token-storage';
+
 import { MoneyGameStatus } from '@/components';
+import toast from 'react-hot-toast';
+
+import { getAccessToken } from '@/utils/token-storage';
+import { useWebSocketWithReconnect } from '@/hooks/useWebSocketWithReconnect.js';
+import { GAME_STATES } from './types';
 
 export const Crash = () => {
-  const initData = getAccessToken() || '';
+  const initData = getAccessToken();
   const { BalanceRupee, increaseBalanceRupee, decreaseBalanceRupee } = useStore();
+
+  // Game state
+  const [gameState, setGameState] = useState(GAME_STATES.WAITING);
+  const [multiplier, setMultiplier] = useState(1.0);
+  const [countdown, setCountdown] = useState(0);
+  const [crashPoint, setCrashPoint] = useState(0);
+
+  // Bet state
   const [betAmount, setBetAmount] = useState(100);
-  const [bet, setBet] = useState(0);
-  const [isBettingClosed, setIsBettingClosed] = useState(false);
-  const [autoOutputCoefficient, setAutoOutputCoefficient] = useState(0);
-  const [xValue, setXValue] = useState(1.2);
-  const [collapsed, setCollapsed] = useState(false);
-  const [overlayText, setOverlayText] = useState('Game starts soon');
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const crashRef = useRef(null);
+  const [activeBet, setActiveBet] = useState(null);
+  const [queuedBet, setQueuedBet] = useState(null);
+  const [autoCashoutMultiplier, setAutoCashoutMultiplier] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isCrashed, setIsCrashed] = useState(false);
-  const [isAutoEnabled, setIsAutoEnabled] = useState(false);
-  const [gameActive, setGameActive] = useState(false);
 
-  const [starPosition, setStarPosition] = useState({ x: 50, y: -40 });
-  const [isFalling, setIsFalling] = useState(false);
+  // Animation state
+  const starAnimationRef = useRef(null);
+  const starAnimationIsPlaying = useRef(null);
+  const animationPhaseRef = useRef(0);
+  const progressRef = useRef(0);
+  const [starPosition, setStarPosition] = useState({ x: 5, y: 90 });
 
-  const wsRef = useRef(null);
-  const multiplierTimerRef = useRef(null);
-  const [startMultiplierTime, setStartMultiplierTime] = useState(null);
+  // Refs
 
-  const valXValut = useRef(1);
-
-  // Добавляем новое состояние для отслеживания ставки в очереди
-  const [queuedBet, setQueuedBet] = useState(0);
+  const queuedBetRef = useRef(queuedBet);
+  const activeBetRef = useRef(activeBet);
+  const autoCashoutRef = useRef(autoCashoutMultiplier);
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setXValue(valXValut.current);
-    }, 80);
+    queuedBetRef.current = queuedBet;
+  }, [queuedBet]);
 
-    return () => clearInterval(interval);
-  }, []);
-
-  // Getting game history on component load
   useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const data = await crashGetHistory();
-        if (data && data.results) {
-          const lastResult = data.results[0];
-          if (lastResult) {
-            valXValut.current = parseFloat(lastResult.CrashPointMultiplier.toFixed(2));
-          }
-        }
-      } catch (error) {
-        // console.error('Error fetching game history:', error);
-      }
-    };
+    activeBetRef.current = activeBet;
+  }, [activeBet]);
 
-    fetchHistory();
-  }, []);
+  useEffect(() => {
+    autoCashoutRef.current = autoCashoutMultiplier;
+  }, [autoCashoutMultiplier]);
 
-  // Function to simulate multiplier growth on frontend
-  const simulateMultiplierGrowth = (startTime, initialMultiplier = 1.0) => {
-    if (multiplierTimerRef.current) {
-      clearInterval(multiplierTimerRef.current);
+  const handleWebSocketMessage = useCallback((message) => {
+    const { type, data } = message;
+
+    const queuedBet = queuedBetRef.current;
+    const activeBet = activeBetRef.current;
+
+    switch (type) {
+      case 'new_round':
+        handleNewRound(queuedBet);
+        break;
+      case 'countdown_tick':
+        handleCountdownTick(data);
+        break;
+      case 'multiplier_update':
+        handleMultiplierUpdate(data);
+        break;
+      case 'crash':
+        handleCrash(data, activeBet);
+        break;
+      case 'cashout':
+        handleCashout(data, activeBet);
+        break;
+      default:
+        console.log('Unknown message type:', type);
     }
+  }, []);
 
-    valXValut.current = initialMultiplier;
+  const handleNewRound = () => {
+    setGameState(GAME_STATES.NEW_ROUND);
+    setMultiplier(0);
+    setCountdown(10);
+    setCrashPoint(0);
+    setStarPosition({ x: 5, y: 90 });
 
-    const updateInterval = 100;
-    const growthFactor = 0.03;
-
-    let lastValue = initialMultiplier;
-
-    multiplierTimerRef.current = setInterval(() => {
-      const elapsedSeconds = (Date.now() - startTime) / 1000;
-      const newMultiplier = Math.exp(elapsedSeconds * growthFactor);
-
-      // 📌 Экспоненциальное усреднение
-      const smoothedMultiplier = (lastValue * 0.8 + newMultiplier * 0.2).toFixed(2);
-      lastValue = smoothedMultiplier;
-
-      valXValut.current = parseFloat(smoothedMultiplier);
-    }, updateInterval);
+    const queuedBet = queuedBetRef.current;
+    if (queuedBet) {
+      setActiveBet(queuedBet);
+      setQueuedBet(null);
+      queuedBetRef.current = null;
+      toast.success(`Queued bet ₹${queuedBet.amount} is now active!`);
+    }
   };
 
-  // Setting up dimensions and WebSocket connection
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (crashRef.current) {
-        setDimensions({
-          width: crashRef.current.offsetWidth,
-          height: crashRef.current.offsetHeight,
-        });
-      }
-    };
+  const handleCountdownTick = (data) => {
+    setGameState(GAME_STATES.COUNTDOWN);
+    setCountdown(data.seconds_left);
 
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
+    const queuedBet = queuedBetRef.current;
+    if (queuedBet) {
+      setActiveBet(queuedBet);
+      setQueuedBet(null);
+      queuedBetRef.current = null;
+      toast.success(`Queued bet ₹${queuedBet.amount} is now active!`);
+    }
+  };
 
-    // Checking for initData before creating WebSocket connection
-    if (!initData) {
-      toast.error('Authorization error. Please restart the application.');
-      return;
+  const handleMultiplierUpdate = (data) => {
+    setGameState(GAME_STATES.PLAYING);
+    setMultiplier(parseFloat(data.value.toFixed(2)));
+    startStarAnimation();
+  };
+
+  const handleCrash = (data, activeBet) => {
+    setGameState(GAME_STATES.CRASHED);
+    setCrashPoint(data.crash_point);
+    setMultiplier(data.crash_point);
+
+    if (activeBet) {
+      toast.error(`Crashed at ${data.crash_point.toFixed(2)}x! Lost ₹${activeBet.amount}`);
+      setActiveBet(null);
     }
 
-    const encoded_init_data = encodeURIComponent(initData);
-    const ws = new WebSocket(`wss://rupex.io/api/ws/crashgame/live?init_data=${encoded_init_data}`);
-    wsRef.current = ws;
+    stopStarAnimation();
+    setStarPosition((prev) => ({ ...prev, y: 100 }));
+  };
 
-    ws.onopen = () => {
-      console.log('WebSocket connection established');
-    };
-
-    ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-    };
-
-    ws.onmessage = async (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        // console.log("WebSocket data received:", data);
-
-        if (data.type === 'multiplier_update') {
-          // Updating game state
-          setIsBettingClosed(true);
-          setIsCrashed(false);
-          setGameActive(true);
-          setCollapsed(false);
-
-          // Ширина и высота области, по которой движется звезда
-          const maxWidth = window.innerWidth;
-          const maxHeight = window.innerHeight;
-
-          // Преобразуем multiplier в позицию звезды
-          const xPos = Math.min(data.multiplier * 80, maxWidth * 0.9); // Вправо (x растёт)
-          const yPos = Math.min(data.multiplier * 50, maxHeight * 0.9); // Вверх (y становится отрицательным)
-
-          // Устанавливаем позицию звезды
-          setStarPosition({
-            x: xPos,
-            y: -yPos, // Минус, чтобы шло вверх
-          });
-
-          // // Ограничиваем позицию звезды высотой контейнера
-          // const maxHeight = dimensions.height;
-          // const maxWidth = dimensions.width;
-
-          // // Вычисляем позицию с учетом ограничений
-          // const xPos = Math.min(data.multiplier * 50, maxWidth * 0.8); // 80% от ширины
-          // const yPos = Math.max(-data.multiplier * 40, -maxHeight * 0.8); // 80% от высоты вверх
-
-          // setStarPosition({
-          //     x: xPos,
-          //     y: yPos,
-          // });
-
-          // If this is the first multiplier update, start simulation
-          if (!startMultiplierTime) {
-            setStartMultiplierTime(Date.now());
-            simulateMultiplierGrowth(Date.now(), parseFloat(data.multiplier));
-          }
-
-          // Automatic cashout when reaching the specified multiplier
-          if (
-            isAutoEnabled &&
-            bet > 0 &&
-            parseFloat(data.multiplier) >= autoOutputCoefficient &&
-            autoOutputCoefficient > 0
-          ) {
-            handleCashout();
-            toast.success(`Auto cashout at ${data.multiplier}x`);
-          }
-        }
-
-        if (data.type === 'game_crash') {
-          // Stop multiplier growth simulation
-          if (multiplierTimerRef.current) {
-            clearInterval(multiplierTimerRef.current);
-            multiplierTimerRef.current = null;
-          }
-          setStartMultiplierTime(null);
-
-          setIsCrashed(true);
-          setGameActive(false);
-          setOverlayText(`Crashed at ${data.crash_point.toFixed(2)}x`);
-          setCollapsed(true);
-          valXValut.current = parseFloat(data.crash_point).toFixed(2);
-
-          setIsFalling(true);
-          // Оставляем звезду на последней позиции при крахе
-          setStarPosition((prev) => ({ x: prev.x, y: prev.y }));
-
-          setTimeout(() => {
-            if (bet > 0) {
-              // If the player had an active bet, show a loss message
-              toast.error(`Game crashed at ${data.crash_point.toFixed(2)}x! You lost ₹${bet}.`);
-              setBet(0);
-            }
-            valXValut.current = 1.2;
-            // Возвращаем звезду в начальную позицию
-            setStarPosition({ x: 50, y: -40 });
-            setIsFalling(false);
-          }, 3000);
-        }
-
-        if (data.type === 'timer_tick') {
-          setCollapsed(true);
-          console.log('Timer tick received:', data.remaining_time);
-
-          if (data.remaining_time > 13) {
-            setIsBettingClosed(true);
-            setGameActive(false);
-            setOverlayText('Game starts soon');
-            console.log('Betting closed - waiting for game');
-          } else if (data.remaining_time > 0) {
-            setIsBettingClosed(false);
-            setIsCrashed(false);
-            setGameActive(false);
-            setOverlayText(`Game starts in ${data.remaining_time} seconds`);
-            console.log('Betting open - time remaining:', data.remaining_time);
-
-            // If there's a queued bet and betting is open, place it
-            if (queuedBet > 0) {
-              console.log('Attempting to place queued bet:', queuedBet);
-              try {
-                const response = await crashPlace(queuedBet, autoOutputCoefficient);
-                if (response.ok) {
-                  setBet(queuedBet);
-                  toast.success('Queued bet placed!');
-                  setQueuedBet(0); // Clear queue
-                  console.log('Queued bet placed successfully');
-                } else {
-                  const errorData = await response.json();
-                  console.error('Failed to place queued bet:', errorData);
-                  toast.error(errorData.error || 'Failed to place queued bet');
-                  increaseBalanceRupee(queuedBet); // Return money on error
-                  setQueuedBet(0);
-                }
-              } catch (error) {
-                console.error('Error placing queued bet:', error);
-                toast.error('Failed to place queued bet');
-                increaseBalanceRupee(queuedBet); // Return money on error
-                setQueuedBet(0);
-              }
-            }
-          }
-        }
-
-        if (data.type === 'cashout_result') {
-          // Don't reset bet here to show the player they won
-          toast.success(`You won ₹${data.win_amount.toFixed(0)}! (${data.cashout_multiplier}x)`);
-
-          // Delay resetting the bet to give the user time to see the result
-          setTimeout(() => {
-            setBet(0);
-            increaseBalanceRupee(data.win_amount);
-          }, 2000);
-        }
-
-        // Processing another player's cashout message
-        if (data.type === 'other_cashout') {
-          toast.success(
-            `${data.username} won ₹${data.win_amount.toFixed(0)} at ${data.cashout_multiplier}x!`
-          );
-        }
-
-        // Processing another player's bet message
-        if (data.type === 'new_bet') {
-          toast.success(`${data.username} bet ₹${data.amount.toFixed(0)}`);
-        }
-
-        // Displaying active game start
-        if (data.type === 'game_started') {
-          toast.success('Game started!');
-          setIsBettingClosed(true);
-          setIsCrashed(false);
-          setGameActive(true);
-          setCollapsed(false);
-
-          // Start multiplier growth simulation with initial value of 1.0
-          setStartMultiplierTime(Date.now());
-          simulateMultiplierGrowth(Date.now(), 1.0);
-
-          // Очищаем ставку в очереди, если она не была размещена
-          if (queuedBet > 0) {
-            increaseBalanceRupee(queuedBet);
-            setQueuedBet(0);
-            toast.error('Failed to place queued bet - game started');
-          }
-        }
-      } catch (error) {
-        console.error('Error processing WebSocket message:', error);
-      }
-    };
-
-    return () => {
-      window.removeEventListener('resize', updateDimensions);
-      if (multiplierTimerRef.current) {
-        clearInterval(multiplierTimerRef.current);
-      }
-      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-        ws.close();
-      }
-    };
-  }, [increaseBalanceRupee, bet, autoOutputCoefficient, isAutoEnabled]);
-
-  // Handling bet
-  const handleBet = async () => {
-    if (!initData) {
-      toast.error('Authorization error. Please restart the application.');
-      return;
+  const handleCashout = (data, activeBet) => {
+    setGameState(GAME_STATES.CASHOUT);
+    if (activeBet) {
+      const winAmount = data.win_amount;
+      toast.success(`Won ₹${winAmount.toFixed(0)} at ${data.multiplier.toFixed(2)}x!`);
+      increaseBalanceRupee(winAmount);
+      setActiveBet(null);
     }
+  };
+
+  // Animation functions
+
+  const animateStar = () => {
+    setStarPosition((prev) => {
+      let { x, y } = prev;
+
+      if (animationPhaseRef.current === 0) {
+        const startX = 5;
+        const startY = 90;
+        const endX = 90;
+        const endY = 20;
+        const arcHeight = -20;
+
+        progressRef.current += 0.003;
+        const t = Math.min(progressRef.current, 1);
+
+        const easeInOutCubic = (t) => t * t;
+
+        const easedT = easeInOutCubic(t);
+
+        x = startX + (endX - startX) * easedT;
+        y = startY + (endY - startY) * easedT - arcHeight * Math.sin(Math.PI * easedT);
+
+        if (t >= 1) {
+          animationPhaseRef.current = 1;
+          progressRef.current = 0;
+        }
+      } else if (animationPhaseRef.current === 1) {
+        const centerX = 90;
+        const centerY = 20;
+        const radius = 3;
+        const speed = 0.05;
+
+        progressRef.current += speed;
+
+        x = centerX + radius * Math.sin(progressRef.current);
+        y = centerY + radius * Math.sin(progressRef.current) * 0.5;
+      } else if (animationPhaseRef.current === 2) {
+        const startX = 80;
+        const startY = 20;
+        const endX = 75;
+        const endY = 15;
+        const arcHeight = -15;
+
+        progressRef.current += 0.01;
+        const t = Math.min(progressRef.current, 1);
+
+        x = startX + (endX - startX) * t;
+        y = startY + (endY - startY) * t - arcHeight * Math.sin(Math.PI * t);
+
+        if (t >= 1) {
+          animationPhaseRef.current = 1;
+          progressRef.current = 0;
+        }
+      }
+
+      return { x, y };
+    });
+
+    starAnimationRef.current = requestAnimationFrame(animateStar);
+  };
+
+  const startStarAnimation = () => {
+    if (starAnimationIsPlaying.current) return;
+    starAnimationIsPlaying.current = true;
+
+    cancelAnimationFrame(starAnimationRef.current);
+    setStarPosition({ x: 5, y: 90 });
+    animationPhaseRef.current = 0;
+    progressRef.current = 0;
+    starAnimationRef.current = requestAnimationFrame(animateStar);
+  };
+
+  const stopStarAnimation = () => {
+    cancelAnimationFrame(starAnimationRef.current);
+    starAnimationIsPlaying.current = false;
+  };
+
+  // Bet handling functions
+  const handlePlaceBet = async () => {
+    if (!initData || loading) return;
 
     if (betAmount <= 0) {
       toast.error('Bet amount must be greater than 0');
@@ -325,265 +231,238 @@ export const Crash = () => {
       return;
     }
 
-    // Проверяем, есть ли уже ставка в очереди
-    if (queuedBet > 0) {
-      toast.error('You already have a bet in queue');
-      return;
-    }
+    setLoading(true);
 
     try {
-      setLoading(true);
-      console.log('Attempting to place bet:', betAmount, 'Betting closed:', isBettingClosed);
+      const betData = {
+        Amount: betAmount,
+        CashOutMultiplier: autoCashoutMultiplier ? parseFloat(autoCashoutMultiplier) : 0,
+      };
 
-      if (isBettingClosed) {
-        // If betting is closed, queue the bet
-        setQueuedBet(betAmount);
+      const response = await crashPlace(betData.Amount, betData.CashOutMultiplier);
+
+      if (!response.ok) return toast.error('Failed to place bet');
+
+      const data = await response.json();
+
+      if (data.queued) {
+        setQueuedBet({ amount: betAmount, cashoutMultiplier: betData.CashOutMultiplier });
         decreaseBalanceRupee(betAmount);
-        toast.success('Bet will be placed in the next game!');
-        console.log('Bet queued for next game');
-        return;
-      }
-
-      const response = await crashPlace(betAmount, autoOutputCoefficient);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Server response to bet:', data);
-        setBet(betAmount);
-        decreaseBalanceRupee(betAmount);
-        toast.success('Bet accepted! Waiting for game to start');
-
-        setCollapsed(true);
-        setOverlayText('Your bet is accepted! Waiting for game...');
-        setTimeout(() => {
-          setCollapsed(false);
-        }, 2000);
+        toast.success('Bet queued for next round!');
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
-        console.error('Bet error:', errorData);
-        toast.error(errorData.error || 'Error placing bet');
-        increaseBalanceRupee(betAmount); // Return money on error
+        setActiveBet({ amount: betAmount, cashoutMultiplier: betData.CashOutMultiplier });
+        decreaseBalanceRupee(betAmount);
+        toast.success('Bet placed for current round!');
       }
-    } catch (err) {
-      console.error('Error placing bet:', err.message);
+    } catch (error) {
+      console.error('Error placing bet:', error);
       toast.error('Failed to place bet');
-      increaseBalanceRupee(betAmount); // Return money on error
     } finally {
       setLoading(false);
     }
   };
 
-  // Handling cashout
-  const handleCashout = async () => {
-    if (!initData) {
-      toast.error('Authorization error. Please restart the application.');
-      return;
-    }
+  const performCashout = async () => {
+    if (!activeBet || loading) return;
 
-    if (bet <= 0) {
-      toast.error('No active bet');
-      return;
-    }
-
-    if (isCrashed) {
-      toast.error('Game already finished');
-      return;
-    }
+    setLoading(true);
 
     try {
-      setLoading(true);
+      setActiveBet(null);
       const response = await crashCashout();
 
       if (response.ok) {
-        const data = await response.json();
-        console.log('Server response to cashout:', data);
-        // Don't reset bet here as it will happen when cashout_result is received via WebSocket
-        toast.success(`Cashout request sent at multiplier ${xValue}x`);
+        toast.success(`Cashout requested at ${multiplier}x`);
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'An error occurred' }));
-        console.error('Cashout error:', errorData);
-        toast.error(errorData.error || 'Error cashing out');
+        const error = await response.json();
+        toast.error(error.error || 'Failed to cashout');
       }
-    } catch (err) {
-      console.error('Exception during cashout:', err.message);
-      toast.error('Failed to cash out');
+    } catch (error) {
+      console.error('Error cashing out:', error);
+      toast.error('Failed to cashout');
     } finally {
       setLoading(false);
     }
   };
 
-  // Toggling auto-cashout
-  const toggleAutoCashout = () => {
-    setIsAutoEnabled(!isAutoEnabled);
-    if (!isAutoEnabled) {
-      toast.success(`Auto-cashout enabled at ${autoOutputCoefficient}x`);
-    } else {
-      toast.success('Auto-cashout disabled');
+  // Utility functions
+  const adjustBetAmount = (delta) => {
+    setBetAmount((prev) => Math.max(10, prev + delta));
+  };
+
+  const multiplyBetAmount = (factor) => {
+    setBetAmount((prev) => Math.max(10, Math.round(prev * factor)));
+  };
+
+  const canPlaceBet = () => {
+    return !loading && !activeBet && betAmount > 0 && betAmount <= BalanceRupee;
+  };
+
+  const canCashout = () => {
+    return !loading && activeBet && gameState === GAME_STATES.PLAYING;
+  };
+
+  const getStatusText = useCallback(() => {
+    switch (gameState) {
+      case GAME_STATES.NEW_ROUND:
+        return 'New round';
+      case GAME_STATES.WAITING:
+        return 'Waiting for next round';
+      case GAME_STATES.PLAYING:
+        return 'Game in progress';
+      case GAME_STATES.CASHOUT:
+        return 'Cashout';
+      case GAME_STATES.CRASHED:
+        return `Crashed at ${crashPoint.toFixed(2)}x`;
+      case GAME_STATES.COUNTDOWN:
+        return `Game starts in ${countdown}s`;
+      default:
+        return 'Waiting for next round';
     }
-  };
+  }, [gameState, countdown, crashPoint]);
 
-  // Changing auto-cashout coefficient
-  const handleCoefficientChange = (e) => {
-    const value = parseFloat(e.target.value);
-    if (!isNaN(value) && value >= 1) {
-      setAutoOutputCoefficient(value);
-    }
-  };
+  const getStatusTextButton = useCallback(() => {
+    if (loading) return 'Processing...';
+    if (queuedBet) return 'Bet Queued';
+    if (gameState === GAME_STATES.COUNTDOWN) return 'Place Bet';
+    return 'Queue Bet';
+  }, [loading, queuedBet, gameState]);
 
-  // Changing bet amount
-  const handleAmountChange = (delta) => {
-    setBetAmount((prevAmount) => {
-      const newAmount = prevAmount + delta;
-      return newAmount > 0 ? newAmount : prevAmount;
-    });
-  };
-
-  // Doubling or halving bet amount
-  const handleMultiplyAmount = (factor) => {
-    setBetAmount((prevAmount) => {
-      const newAmount = Math.round(prevAmount * factor);
-      return newAmount > 0 ? newAmount : prevAmount;
-    });
-  };
+  useWebSocketWithReconnect(
+    `wss://rupex.io/api/ws/crashgame/live?init_data=${initData}`,
+    handleWebSocketMessage
+  );
 
   return (
-    <div className={styles.crash}>
+    <div className={styles['crash-game']}>
       <MoneyGameStatus />
 
-      {/* Main game screen */}
-      <div className={styles.crash_wrapper} ref={crashRef}>
-        <div className={`${styles.crash__collapsed} ${collapsed ? styles.fadeIn : styles.fadeOut}`}>
-          <p>{overlayText}</p>
+      {/* Game Area */}
+      <div className={styles['game-container']}>
+        {/* Grid Background */}
+        <div className={styles['grid-background']} />
+
+        {/* Status Overlay */}
+        <div className={styles['status-overlay']}>
+          <div className={styles['status-text']}>{getStatusText()}</div>
         </div>
 
-        {/* Star animation */}
+        {/* Star */}
         <div
-          className={`${styles.star} ${isFalling ? styles.falling : ''}`}
+          className={`${styles.star} ${gameState === GAME_STATES.CRASHED ? styles.crashed : ''}`}
           style={{
-            transform: `translate(${starPosition.x}px, ${starPosition.y}px)`,
+            left: `${starPosition.x}%`,
+            top: `${starPosition.y}%`,
           }}
         >
           <img src="/star.svg" alt="Star" />
-          <img className={styles.fire} src="/fire.gif" alt="Star" />
         </div>
 
-        {/* Multiplier display */}
-        <div className={styles.multiplier}>{`${xValue}`.slice(0, 3)} x</div>
+        {/* Multiplier Display */}
+        <div className={styles['multiplier-display']}>{multiplier.toFixed(2)}x</div>
 
-        {bet > 0 && !isCrashed && <div className={styles.activeBet}>Your bet: ₹{bet}</div>}
-        {queuedBet > 0 && <div className={styles.queuedBet}>Queued bet: ₹{queuedBet}</div>}
+        {/* Active Bet Indicator */}
+        {activeBet && (
+          <div className={styles['active-bet-indicator']}>
+            Active: ₹{activeBet.amount}
+            {activeBet.cashoutMultiplier > 0 && <span> @ {activeBet.cashoutMultiplier}x</span>}
+          </div>
+        )}
+
+        {/* Queued Bet Indicator */}
+        {queuedBet && <div className={styles['queued-bet-indicator']}>Queued: ₹{queuedBet.amount}</div>}
       </div>
 
-      {/* Bet control section */}
-      <div className={styles.betSection}>
-        <div className={styles.coefficientContainer}>
-          {/* <div className={styles.coefficientLabel}>
-            Coefficient
-            <button
-              className={`${styles.autoCashoutBtn} ${isAutoEnabled ? styles.active : ''}`}
-              onClick={toggleAutoCashout}
-            >
-              Auto {isAutoEnabled ? 'ON' : 'OFF'}
-            </button>
-          </div> */}
-
-          <div className={styles.coefficientInput}>
+      {/* Controls */}
+      <div className={styles['controls-section']}>
+        {/* Auto Cashout */}
+        <div className={styles['auto-cashout-section']}>
+          <label>Auto Cashout Multiplier</label>
+          <div className={styles['coefficient-input-container']}>
             <input
               type="number"
-              min="1.0"
-              step="0.1"
-              value={autoOutputCoefficient === 0 ? '' : autoOutputCoefficient}
-              onChange={handleCoefficientChange}
-              className={styles.autoInput}
-              placeholder="Coefficient"
+              min="1.01"
+              step="0.01"
+              value={autoCashoutMultiplier}
+              onChange={(e) => setAutoCashoutMultiplier(e.target.value)}
+              placeholder="e.g. 2.00"
+              className={styles['auto-cashout-input']}
             />
+            <div
+              className={`${styles['bet-adjust-buttons']} ${styles['bet-input-container']} ${styles['quick-coefficient-buttons']}`}
+            >
+              <button onClick={() => setAutoCashoutMultiplier('1.5')}>1.5x</button>
+              <button onClick={() => setAutoCashoutMultiplier('2.0')}>2.0x</button>
+              <button onClick={() => setAutoCashoutMultiplier('5.0')}>5.0x</button>
+              <button onClick={() => setAutoCashoutMultiplier('10.0')}>10x</button>
+            </div>
           </div>
         </div>
 
-        <div className={styles.betControls}>
-          <div className={styles.betAmountContainer}>
-            <div className={styles.betAmount}>
-              <input
-                className={styles.amount__input}
-                value={betAmount}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, ''); // Удаляем все нецифровые символы
-                  setBetAmount(value);
+        {/* Bet Amount Controls */}
+        <div className={styles['bet-controls']}>
+          <div className={styles['bet-amount-section']}>
+            <label>Bet Amount</label>
+            <div className={`${styles['bet-adjust-buttons']} ${styles['bet-input-container']}`}>
+              <button
+                style={{
+                  fontSize: '20px',
+                  fontWeight: 500,
                 }}
-              ></input>
-              <div className={styles.betAmountButtons}>
-                <button className={styles.betButton} onClick={() => handleAmountChange(-100)}>
-                  <img src="/trading_min.svg" alt="trading_min" />
-                </button>
-                <button className={styles.betButton} onClick={() => handleAmountChange(100)}>
-                  <img src="/trading_plus.svg" alt="trading_plus" />
-                </button>
-              </div>
+                onClick={() => adjustBetAmount(-100)}
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min="10"
+                value={betAmount}
+                style={{
+                  textAlign: 'center',
+                  height: '60px',
+                }}
+                onChange={(e) => setBetAmount(Math.max(10, parseInt(e.target.value) || 10))}
+                className={styles['bet-amount-input']}
+              />
+              <button
+                style={{
+                  fontSize: '20px',
+                  fontWeight: 500,
+                }}
+                onClick={() => adjustBetAmount(100)}
+              >
+                +
+              </button>
             </div>
 
-            <div className={styles.quickButtons}>
-              <button className={styles.quickButton} onClick={() => handleMultiplyAmount(0.5)}>
-                /2
-              </button>
-              <button className={styles.quickButton} onClick={() => handleMultiplyAmount(2)}>
-                x2
-              </button>
+            <div className={styles['bet-multiplier-buttons']}>
+              <button onClick={() => multiplyBetAmount(0.5)}>÷2</button>
+              <button onClick={() => multiplyBetAmount(2)}>×2</button>
             </div>
           </div>
 
-          {bet > 0 ? (
-            <button
-              className={`${styles.mainButton} ${gameActive && !isCrashed ? styles.activeButton : ''}`}
-              onClick={handleCashout}
-              disabled={!gameActive || loading || isCrashed}
-            >
-              {loading ? 'Loading...' : 'Cashout'}
-            </button>
-          ) : (
-            <button
-              className={`${styles.mainButton} ${isBettingClosed ? styles.queuedButton : ''}`}
-              onClick={handleBet}
-              disabled={loading || queuedBet > 0}
-            >
-              {loading ? (
-                'Loading...'
-              ) : queuedBet > 0 ? (
-                `Queued: ₹${queuedBet}`
-              ) : gameActive ? (
-                <span>
-                  Queue Bet{' '}
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M13.0942 10L8.08507 4.99167L6.90674 6.17L10.7401 10.0033L6.90674 13.8308L8.08507 15.0092L13.0942 10Z"
-                      fill="#FFFFFF"
-                    ></path>
-                  </svg>
-                </span>
-              ) : (
-                <span>
-                  Place Bet{' '}
-                  <svg
-                    width="24"
-                    height="24"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      d="M13.0942 10L8.08507 4.99167L6.90674 6.17L10.7401 10.0033L6.90674 13.8308L8.08507 15.0092L13.0942 10Z"
-                      fill="#FFFFFF"
-                    ></path>
-                  </svg>
-                </span>
-              )}
-            </button>
-          )}
+          {/* Main Action Button */}
+          <div className={styles['main-button-container']}>
+            {canCashout() ? (
+              <button
+                className={`${styles['main-button']} ${styles['cashout-button']}`}
+                onClick={performCashout}
+                disabled={loading}
+              >
+                {loading ? 'Processing...' : `Cashout ${multiplier.toFixed(2)}x`}
+              </button>
+            ) : (
+              <button
+                className={`${styles['main-button']} ${
+                  gameState === GAME_STATES.COUNTDOWN ? styles['bet-button'] : styles['queue-button']
+                }`}
+                onClick={handlePlaceBet}
+                disabled={!canPlaceBet() || !!queuedBet}
+              >
+                {getStatusTextButton()}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

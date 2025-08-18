@@ -31,7 +31,7 @@ export const Other = () => {
       <div className={styles.other_dev} onClick={() => copyLink()} />
 
       <div className={styles.other__social}>
-        <a href="https://t.me/RupeXBot">
+        <a >
           <img src="/telegram.png" alt="telegram" />
         </a>
         <a>

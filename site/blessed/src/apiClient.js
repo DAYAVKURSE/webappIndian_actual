@@ -60,7 +60,7 @@ export async function apiClient(path, options = {}) {
 
   let response = await makeRequest(token || '');
 
-  if (response.status === 400) {
+  if (response.status === 401) {
     try {
       console.log('Token refresh triggered');
 
