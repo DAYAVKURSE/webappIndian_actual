@@ -134,7 +134,7 @@ func (e *crashEngine) chooseCrash() float64 {
 
 func (e *crashEngine) loop() {
 	// 20ms для плавных обновлений
-	tick := time.NewTicker(20 * time.Millisecond)
+	tick := time.NewTicker(200 * time.Millisecond)
 	defer tick.Stop()
 
 	left := crashCountdownSec
