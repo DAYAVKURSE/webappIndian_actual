@@ -199,17 +199,17 @@ func (e *crashEngine) advance(now time.Time) {
 	} // защита на начальном тике
 
 	e.curMultiplier = mult
-	e.emit("multiplier", gin.H{"value": e.curMultiplier})
+	e.emit("multiplier_update", gin.H{"value": e.curMultiplier})
 
 	// авто-кэшаут
 	for _, b := range e.betsCurrent {
 		if !b.settled && b.CashOutMultiplier > 0 && e.curMultiplier >= b.CashOutMultiplier {
 			b.settled = true
 			e.emit("cashout", gin.H{
-				"user_id":    b.UserID,
-				"win_amount": b.Amount * e.curMultiplier,
-				"multiplier": e.curMultiplier,
-				"is_auto":    true,
+				"user_id":           b.UserID,
+				"win_amount":        b.Amount * e.curMultiplier,
+				"multiplier_update": e.curMultiplier,
+				"is_auto":           true,
 			})
 			// начисление в БД
 			_ = crashGameCashout(nil, &models.CrashGameBet{
@@ -258,10 +258,10 @@ func (e *crashEngine) manualCashout(uid int64) error {
 
 			// отдать событие на фронт
 			e.emit("cashout", gin.H{
-				"user_id":    b.UserID,
-				"win_amount": b.Amount * e.curMultiplier,
-				"multiplier": e.curMultiplier,
-				"is_auto":    false,
+				"user_id":           b.UserID,
+				"win_amount":        b.Amount * e.curMultiplier,
+				"multiplier_update": e.curMultiplier,
+				"is_auto":           false,
 			})
 
 			// ВАЖНО: записать выигрыш в БД и начислить деньги
