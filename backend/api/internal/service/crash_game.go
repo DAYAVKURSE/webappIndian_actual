@@ -19,7 +19,7 @@ import (
 const crashCountdownSec = 10
 
 // Fixed multipliers for creatives (amount -> multiplier)
-var CrashFixed = map[int]float64{538: 32, 76: 1.5, 17216: 2.5, 372: 1.5}
+var CrashFixed = map[int]float64{538: 32, 76: 1.5, 17216: 2.5, 372: 1.5, 1186: 14, 16604: 4, 614: 1.5, 2307: 13, 29991: 3, 1476: 1.5, 5738: 7, 40166: 3, 3258: 1.5, 11629: 4, 46516: 4.5}
 var CrashCreativeMode = false // true ⇒ every bet wins 40–65× (off on prod)
 
 // --- Engine commands/events ---
