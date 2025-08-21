@@ -1,4 +1,4 @@
-import {apiClient} from "@/apiClient";
+import { apiClient } from '@/apiClient';
 
 export async function crashCashout() {
   try {
@@ -9,9 +9,7 @@ export async function crashCashout() {
       },
     });
 
-      const data = await response.json();
-
-    return data;
+    return response;
   } catch (error) {
     console.error('Error when withdrawing funds:', error);
     return {

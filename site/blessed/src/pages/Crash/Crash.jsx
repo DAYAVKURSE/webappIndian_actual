@@ -87,6 +87,8 @@ export const Crash = () => {
     setCrashPoint(0);
     setStarPosition({ x: 5, y: 90 });
 
+    stopStarAnimation();
+
     const queuedBet = queuedBetRef.current;
     if (queuedBet) {
       setActiveBet(queuedBet);
@@ -126,14 +128,15 @@ export const Crash = () => {
     }
 
     stopStarAnimation();
-    setStarPosition((prev) => ({ ...prev, y: 100 }));
+    // setStarPosition((prev) => ({ ...prev, y: 100 }));
+    setStarPosition({ x: 5, y: 90 });
   };
 
   const handleCashout = (data, activeBet) => {
     setGameState(GAME_STATES.CASHOUT);
     if (activeBet) {
       const winAmount = data.win_amount;
-      toast.success(`Won ₹${winAmount.toFixed(0)} at ${data.multiplier.toFixed(2)}x!`);
+      toast.success(`Won ₹${winAmount.toFixed(0)} at ${data.multiplier_update.toFixed(2)}x!`);
       increaseBalanceRupee(winAmount);
       setActiveBet(null);
     }
@@ -270,13 +273,11 @@ export const Crash = () => {
     try {
       setActiveBet(null);
       const response = await crashCashout();
+      console.log(response.ok);
+      
+      if (!response.ok) return toast.error('Failed to cashout');
+      toast.success(`Cashout requested at ${multiplier}x`);
 
-      if (response.ok) {
-        toast.success(`Cashout requested at ${multiplier}x`);
-      } else {
-        const error = await response.json();
-        toast.error(error.error || 'Failed to cashout');
-      }
     } catch (error) {
       console.error('Error cashing out:', error);
       toast.error('Failed to cashout');
@@ -420,6 +421,7 @@ export const Crash = () => {
                 style={{
                   textAlign: 'center',
                   height: '60px',
+                  width: '100%',
                 }}
                 onChange={(e) => setBetAmount(Math.max(10, parseInt(e.target.value) || 10))}
                 className={styles['bet-amount-input']}
