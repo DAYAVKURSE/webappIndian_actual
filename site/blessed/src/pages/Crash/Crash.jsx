@@ -128,18 +128,17 @@ export const Crash = () => {
     }
 
     stopStarAnimation();
-    // setStarPosition((prev) => ({ ...prev, y: 100 }));
     setStarPosition({ x: 5, y: 90 });
   };
 
   const handleCashout = (data, activeBet) => {
     setGameState(GAME_STATES.CASHOUT);
-    if (activeBet) {
-      const winAmount = data.win_amount;
-      toast.success(`Won ₹${winAmount.toFixed(0)} at ${data.multiplier_update.toFixed(2)}x!`);
-      increaseBalanceRupee(winAmount);
-      setActiveBet(null);
-    }
+
+    const winAmount = data.win_amount;
+    toast.success(`Won ₹${winAmount.toFixed(0)} at ${data.multiplier_update.toFixed(2)}x!`);
+    increaseBalanceRupee(winAmount);
+
+    setActiveBet(null);
   };
 
   // Animation functions
@@ -274,10 +273,10 @@ export const Crash = () => {
       setActiveBet(null);
       const response = await crashCashout();
       console.log(response.ok);
-      
+
       if (!response.ok) return toast.error('Failed to cashout');
       toast.success(`Cashout requested at ${multiplier}x`);
-
+      decreaseBalanceRupee(activeBet.amount);
     } catch (error) {
       console.error('Error cashing out:', error);
       toast.error('Failed to cashout');
@@ -382,7 +381,7 @@ export const Crash = () => {
           <div className={styles['coefficient-input-container']}>
             <input
               type="number"
-              min="1.01"
+              min="1.00"
               step="0.01"
               value={autoCashoutMultiplier}
               onChange={(e) => setAutoCashoutMultiplier(e.target.value)}
@@ -416,14 +415,14 @@ export const Crash = () => {
               </button>
               <input
                 type="number"
-                min="10"
                 value={betAmount}
                 style={{
                   textAlign: 'center',
                   height: '60px',
                   width: '100%',
                 }}
-                onChange={(e) => setBetAmount(Math.max(10, parseInt(e.target.value) || 10))}
+                inputMode="numeric"
+                onChange={(e) => setBetAmount(e.target.value)}
                 className={styles['bet-amount-input']}
               />
               <button
