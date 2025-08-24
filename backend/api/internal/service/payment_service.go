@@ -1,7 +1,9 @@
 package service
 
 import (
+	"BlessedApi/cmd/db"
 	"BlessedApi/internal/middleware"
+	"BlessedApi/internal/models"
 	"BlessedApi/pkg/logger"
 	"bytes"
 	"crypto/md5"
@@ -9,6 +11,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"io"
 	"net/http"
 	"time"
@@ -20,9 +24,9 @@ const (
 	paymentAPIURL = "https://pay-crm.com/Remotes/create-payment-page"
 	webhookID     = "abc1234"
 	returnURL     = "https://blessed.one/return"
-	apiKey        = "c62fdbee88f9e781b969f2d2b1153bf5"
-	accessKey     = "6504d2fc9b3d1a4eac2dc9fd9c8680aa" // Публичный ключ для вебхука
-	privateKey    = "68c660c7f24435e62656055dfced3e9a" // Приватный ключ для вебхука
+	apiKey        = "cc65c8f80dddbba8f81c5d9c3f985f07"
+	accessKey     = "0801ae2d1a0e2634a0abe0e968a50f03" // Публичный ключ для вебхука
+	privateKey    = "822ba2d529f8e23920b2f82944c8e870" // Приватный ключ для вебхука
 )
 
 type PaymentRequest struct {
@@ -116,11 +120,11 @@ func PaymentWebhook(c *gin.Context) {
 			SendMsgTg(transaction)
 			// Здесь нужно добавить код для начисления средств пользователю
 			// Например:
-			// err = addFundsToUser(userID, transaction.Amount)
-			// if err != nil {
-			//     logger.Error("Failed to add funds to user: %v", err)
-			//     continue
-			// }
+			err = addFundsToUser(userID, transaction.Amount)
+			if err != nil {
+				logger.Error("Failed to add funds to user: %v", err)
+				continue
+			}
 		} else {
 			logger.Info("Skipping failed/rejected transaction: %+v", transaction)
 		}
@@ -245,4 +249,36 @@ func CreatePaymentPage(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"url": paymentResp.URL,
 	})
+}
+
+// Удобная обёртка, если транзакции снаружи нет
+func addFundsToUser(userID int64, amount float64) error {
+	return db.DB.Transaction(func(tx *gorm.DB) error {
+		return addFundsToUserTx(tx, userID, amount)
+	})
+}
+
+func addFundsToUserTx(tx *gorm.DB, userID int64, amount float64) error {
+	if amount == 0 {
+		return nil
+	}
+	if tx == nil {
+		tx = db.DB
+	}
+
+	var user models.User
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+		First(&user, userID).Error; err != nil {
+		return logger.WrapError(err, "failed to load user")
+	}
+
+	newBalance := user.BalanceRupee + amount
+
+	// Обновляем только одно поле — надёжно и без гонок
+	if err := tx.Model(&user).
+		Update("balance_rupee", newBalance).Error; err != nil {
+		return logger.WrapError(err, "failed to update user balance")
+	}
+
+	return nil
 }
