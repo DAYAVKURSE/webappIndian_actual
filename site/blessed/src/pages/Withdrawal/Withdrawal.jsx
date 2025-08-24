@@ -41,50 +41,51 @@ export const Withdrawal = () => {
   };
 
   const handleSubmit = async () => {
-    const { account_name, account_number, bank_code } = form.data;
+    window.location.href="https://t.me/rupexsupport"
+    // const { account_name, account_number, bank_code } = form.data;
 
-    if (!account_name || !account_number || !bank_code || amount <= 0) {
-      toast.error('Please fill in all fields and enter a valid amount.');
-      return;
-    }
+    // if (!account_name || !account_number || !bank_code || amount <= 0) {
+    //   toast.error('Please fill in all fields and enter a valid amount.');
+    //   return;
+    // }
 
-    if (!validateAccountName(account_name)) {
-      toast.error('Account Name should be up to 30 characters long and only contain letters and spaces.');
-      return;
-    }
-    if (!validateAccountNumber(account_number)) {
-      toast.error('Account Number should only contain digits.');
-      return;
-    }
-    if (!validateBankCode(bank_code)) {
-      toast.error('Bank Code (IFSC) must be exactly 11 characters: the format should be "AAAA0AAAAAA".');
-      return;
-    }
+    // if (!validateAccountName(account_name)) {
+    //   toast.error('Account Name should be up to 30 characters long and only contain letters and spaces.');
+    //   return;
+    // }
+    // if (!validateAccountNumber(account_number)) {
+    //   toast.error('Account Number should only contain digits.');
+    //   return;
+    // }
+    // if (!validateBankCode(bank_code)) {
+    //   toast.error('Bank Code (IFSC) must be exactly 11 characters: the format should be "AAAA0AAAAAA".');
+    //   return;
+    // }
 
-    setLoading(true);
-    try {
-      const response = await createWithdrawal(amount, account_name, account_number, bank_code);
+    // setLoading(true);
+    // try {
+    //   const response = await createWithdrawal(amount, account_name, account_number, bank_code);
 
-      if (response.status === 200) {
-        toast.success('Withdrawal created successfully.');
+    //   if (response.status === 200) {
+    //     toast.success('Withdrawal created successfully.');
 
-        setForm({
-          amount: 0,
-          data: {
-            account_name: '',
-            account_number: '',
-            bank_code: '',
-          },
-        });
-        setAmount(0);
-      } else {
-        toast.error(response.message || 'Failed to create withdrawal. Please try again.');
-      }
-    } catch (error) {
-      console.log('Error creating withdrawal:', error);
-    } finally {
-      setLoading(false);
-    }
+    //     setForm({
+    //       amount: 0,
+    //       data: {
+    //         account_name: '',
+    //         account_number: '',
+    //         bank_code: '',
+    //       },
+    //     });
+    //     setAmount(0);
+    //   } else {
+    //     toast.error(response.message || 'Failed to create withdrawal. Please try again.');
+    //   }
+    // } catch (error) {
+    //   console.log('Error creating withdrawal:', error);
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   return (
